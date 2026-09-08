@@ -296,3 +296,23 @@
 - Resolution/bitrate remain on the overlay's right. Up hide, Down/OK show and automatic hide use the same overlay visibility without resizing the video.
 - Added a real Compose Android regression test: video bounds are identical with controls shown, hidden, then shown again. Passed on TV emulator (1 test); build/lint/all 23 unit tests passed.
 - Integrated Chromecast verification will follow the logo and reported catalog-sort fix.
+
+### S33 - original official brand assets
+
+- Commit `a72e5a8`: Header and preview use the website's original white transparent logo; launcher uses the official favicon, and TV banner centers the unmodified logo with proportional XML sizing.
+- Current public website configuration and raw asset hashes are recorded in BRAND_ASSETS.md. No runtime image download is required for branding.
+- Integrated build/lint passed. Final device installation awaits the newly reported catalog-sort fix, reproduced on emulator despite healthy direct public API results.
+
+### S34 - catalog sorting stale UI fix
+
+- Commit `48c17c9`: direct API returned20 items while switching filters left the LazyColumn rendering an old empty snapshot. Replaced keyed rememberLazyListState groups with input-keyed rememberSaveable/LazyListState.Saver in browse and search.
+- Independent real API/UI test matched first movies for all four sorts, switched back to cached results and loaded20→40 at the end. Real D-pad sorting kept focus and displayed4123/20 on emulator.
+- Source, regression and screenshot evidence are in verification/CATALOG_SORT_REGRESSION.md.
+
+### S35 - visible video focus and grouped episode selection
+
+- Nonfullscreen control Up now focuses a visibly outlined video area; OK enters fullscreen and Down returns to the first control. Root is focusable only while fullscreen controls are hidden, eliminating the invisible nonfullscreen focus trap.
+- All eight main buttons remain composed in a horizontal scroll row, so returning to the first control never targets an unloaded lazy item.
+- Episode selection moved below controls: choose a group of10, then a concrete episode; original API episode numbers are preserved. Fullscreen uses the same picker inside the translucent overlay.
+- Episode/group Up navigates toward controls instead of hiding them. Automatic hiding pauses while browsing episodes, and auto-next retains the browsed group to avoid destroying its focus.
+- Compose Android tests passed for fixed video bounds, selecting21–30 without playback,21/30 visibility, group/episode/control D-pad navigation, explicit episode24 selection and retaining focus when playback advances outside the group. Build/lint/all23 unit tests passed. Integrated Chromecast check follows.
