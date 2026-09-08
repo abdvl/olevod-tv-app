@@ -197,3 +197,9 @@
 - Capture the token used to construct each API request. Only invalidate the session if the response still belongs to the active token.
 - Regression covers old-token expiration after a new token is active, and expiration of the actual current session.
 - assembleDebug, lintDebug and all 18 unit tests passed. Physical device will receive this API-only update after the independent UI run.
+
+### S16 - fullscreen Back key
+
+- Independent physical test exposed hidden controls consuming the first Back key.
+- Back now bypasses the video wake-control handler and reaches the existing page handler.
+- Emulator verified hidden-controls UI had no text, then one Back restored the header/details/fullscreen button. Build/lint/18 unit tests passed. Physical confirmation follows next install.

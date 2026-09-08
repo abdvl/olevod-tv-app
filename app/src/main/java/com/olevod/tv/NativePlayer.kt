@@ -105,7 +105,7 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
     LaunchedEffect(full,controls){if(full&&!controls)surfaceFocus.requestFocus()else playFocus.requestFocus()}
     BackHandler(speedMenu){speedMenu=false}
     Row(Modifier.fillMaxSize().background(Color.Black).focusRequester(surfaceFocus).focusable().onPreviewKeyEvent { event ->
-        if(event.type!=KeyEventType.KeyDown)false else {interactionTick++;when(event.nativeKeyEvent.keyCode){
+        if(event.type!=KeyEventType.KeyDown || event.nativeKeyEvent.keyCode==AndroidKeyEvent.KEYCODE_BACK)false else {interactionTick++;when(event.nativeKeyEvent.keyCode){
             AndroidKeyEvent.KEYCODE_MEDIA_PLAY_PAUSE->{if(player.isPlaying)player.pause()else player.play();true}
             AndroidKeyEvent.KEYCODE_MEDIA_FAST_FORWARD->{player.seekForward();true}
             AndroidKeyEvent.KEYCODE_MEDIA_REWIND->{player.seekBack();true}
