@@ -5,7 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.runtime.*
@@ -43,7 +43,7 @@ fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit) {
     val result=feed?.state?:CatalogFeedState()
     val movies=if(term.isBlank())home.sections.firstOrNull{it.category.id==1}?.movies.orEmpty()else result.items
     val words=if(term.isBlank())(vm.searchHistory+hot).distinct().take(20)else(suggestions+movies.map{it.title}).distinct().take(20)
-    val listState=key(term){rememberLazyListState()}
+    val listState=rememberSaveable(term,saver=LazyListState.Saver){LazyListState()}
     LaunchedEffect(Unit){try{hot=vm.api.hotWords()}catch(e:Exception){if(e is CancellationException)throw e}}
     LaunchedEffect(term){suggestions=emptyList();if(term.isNotBlank())try{delay(350);suggestions=vm.api.suggestions(term)}catch(e:Exception){if(e is CancellationException)throw e}}
     LaunchedEffect(feed){if(feed!=null&&feed.state.items.isEmpty()&&feed.state.error==null){delay(400);feed.loadNext()}}

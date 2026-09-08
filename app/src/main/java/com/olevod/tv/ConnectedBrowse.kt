@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -48,7 +48,8 @@ fun ConnectedBrowse(categoryName:String,vm:AppViewModel,open:(Movie)->Unit,choos
     val movies=result.items
     val total=result.total
     val loading=result.loading
-    val listState=key(filter){rememberLazyListState()}
+    // Reset scroll by saveable input, without moving a keyed composition group ahead of feed effects.
+    val listState=rememberSaveable(filter,saver=LazyListState.Saver){LazyListState()}
     LaunchedEffect(feed){if(feed!=null&&feed.state.items.isEmpty()&&feed.state.error==null)feed.loadNext()}
     LaunchedEffect(feed,listState){
         snapshotFlow {
