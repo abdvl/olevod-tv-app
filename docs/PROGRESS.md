@@ -352,3 +352,10 @@
 - Build/lint and independent source review passed. SearchFocusUiTest passed on emulator against actual API responses: remote M/N input, Right to suggestion column, select魔女, first result focus, Back to input, cached same-query repeat, and second Back exits search.
 - Test keyboard activation uses native Android DPAD_CENTER; touch-clicking TV key buttons did not enter letters in the initial test harness. Real MN suggestions confirmed魔女 as first entry.
 - Installed debug APK on Chromecast successfully. Physical follow-through was interrupted when the foreground changed to system UI; no new app crash was found in the crash buffer. Do not claim full physical search-path verification. No further device navigation was sent after that mismatch.
+
+### S40a - reusable exit confirmation dialog
+
+- Added ExitConfirmationDialog with caller-owned visibility and separate dismiss/confirm callbacks. It performs no Activity or navigation operations itself.
+- Continue watching is the default focus; explicit horizontal targets connect Continue and Exit, with outer/up/down edges stopped. Remote Back uses Dialog dismissal and never invokes exit confirmation.
+- Added two Android Compose tests for initial focus, Left/Right navigation and boundaries, both OK actions, and Back cancellation from the Exit button. Tests use native Android remote key events.
+- Independent component implementation complete; build and emulator execution are pending the main agent's combined mini-home/root-routing integration. No device was controlled during this step.
