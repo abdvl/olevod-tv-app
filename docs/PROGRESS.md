@@ -283,3 +283,9 @@
 - Recent cards have distinct focus identities from category copies of the same movie. Independent review caught and fixed the row's 8dp width excess and absent-episode wording.
 - Chromecast confirmed recent playback above recommendations. Opening 01:01 record prepared media at 61568ms; one Back restored the same recent card after record reordering. Screenshot: chromecast-home-recent.png / chromecast-recent-return.png.
 - Build, lint and 20 unit tests passed. Latest APK includes the above fullscreen Up gesture.
+
+### S31 - current video resolution and bitrate
+
+- Fullscreen controls reserve a non-focusable information area on the right, refreshed from ExoPlayer's current video format every 500ms.
+- Shows actual format width/height and the supplied average bitrate; peak-only values are explicitly marked. Missing metadata is shown as unavailable, never replaced by network download speed.
+- Retry/episode changes clear the prior display. Three new tests cover average precedence, peak labeling and missing data; build/lint/all 23 tests passed. Integrated device check follows the official-logo update.

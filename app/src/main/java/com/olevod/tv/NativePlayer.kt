@@ -62,6 +62,7 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
     var position by remember{mutableLongStateOf(0)}
     var duration by remember{mutableLongStateOf(0)}
     var speed by remember{mutableFloatStateOf(1f)}
+    var trackInfo by remember{mutableStateOf(videoTrackInfo(-1,-1,-1,-1))}
     var favorite by remember{mutableStateOf(false)}
     var favoriteBusy by remember{mutableStateOf(false)}
     var note by remember{mutableStateOf("")}
@@ -85,7 +86,7 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
         onDispose{saveProgress();owner.lifecycle.removeObserver(observer);player.removeListener(listener);session.release();player.release()}
     }
     LaunchedEffect(movie.id,retry) {
-        saveProgress();player.stop();detail=null;error=null;buffering=true
+        saveProgress();player.stop();trackInfo=videoTrackInfo(-1,-1,-1,-1);detail=null;error=null;buffering=true
         try { val d=vm.api.detail(movie.id);detail=d;favorite=d.favorite;episode=d.episodes.indexOfFirst{it.index==(resume?.episode?:d.resumeEpisode)}.takeIf{it>=0}?:0;if(d.episodes.isEmpty()){error="该影片暂无可用播放源";buffering=false} }
         catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e);buffering=false}
     }
@@ -93,12 +94,18 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
         val d=detail?:return@LaunchedEffect
         val item=d.episodes.getOrNull(episode)?:return@LaunchedEffect
         if(!item.uri.startsWith("https://")){error="此片源暂不支持原生播放";buffering=false;return@LaunchedEffect}
+        trackInfo=videoTrackInfo(-1,-1,-1,-1)
         player.setMediaItem(MediaItem.Builder().setMediaId(item.index.toString()).setUri(item.uri).setMediaMetadata(MediaMetadata.Builder().setTitle(d.movie.title).build()).build())
         val start=if(item.index==resume?.episode)resume.positionMs.takeUnless{resume.durationMs>0&&it>=resume.durationMs-10000}?:0 else if(item.index==d.resumeEpisode)d.resumeSeconds*1000 else 0
         if(start>0)player.seekTo(start)
         error=null;player.prepare();if(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))player.play();ended=false
     }
-    LaunchedEffect(player){while(true){position=player.currentPosition.coerceAtLeast(0);duration=player.duration.takeIf{it!=C.TIME_UNSET&&it>0}?:0;delay(500)}}
+    LaunchedEffect(player){while(true){
+        position=player.currentPosition.coerceAtLeast(0);duration=player.duration.takeIf{it!=C.TIME_UNSET&&it>0}?:0
+        val format=player.videoFormat
+        trackInfo=videoTrackInfo(format?.width?:-1,format?.height?:-1,format?.averageBitrate?:-1,format?.peakBitrate?:-1)
+        delay(500)
+    }}
     LaunchedEffect(player){while(true){delay(10000);if(player.isPlaying&&owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))saveProgress(false)}}
     LaunchedEffect(controls,playing,speedMenu,full,interactionTick){if(full&&controls&&playing&&!speedMenu){delay(5000);controls=false}}
     LaunchedEffect(ended){if(ended&&episode+1<(detail?.episodes?.size?:0)){saveProgress();episode++}}
@@ -125,7 +132,8 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
             if(controls || !full)Column(Modifier.padding(horizontal=if(full)30.dp else 0.dp),verticalArrangement=Arrangement.spacedBy(9.dp)) {
                 Box(Modifier.fillMaxWidth().height(3.dp).background(Panel)){Box(Modifier.fillMaxWidth(if(duration>0)(position.toFloat()/duration).coerceIn(0f,1f)else 0f).fillMaxHeight().background(Green))}
                 Row(Modifier.fillMaxWidth()){Text(clock(position),color=Muted,fontSize=11.sp);Spacer(Modifier.weight(1f));Text(clock(duration),color=Muted,fontSize=11.sp)}
-                LazyRow(horizontalArrangement=Arrangement.spacedBy(2.dp)) {
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
+                LazyRow(Modifier.weight(1f),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
                     item{TvAction(if(full)"退出全屏"else"全屏",Icons.Rounded.Fullscreen,selected=true,modifier=Modifier.focusRequester(fullFocus),onClick=toggleFull)}
                     item{TvAction(if(playing)"暂停" else "播放",if(playing)Icons.Rounded.Pause else Icons.Rounded.PlayArrow){if(playing)player.pause() else player.play()}}
                     item{TvAction("30秒",Icons.Rounded.Replay30){player.seekBack()}}
@@ -134,6 +142,11 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
                     item{TvAction("5分钟",Icons.Rounded.FastForward){player.seekTo(jumpPosition(player.currentPosition,player.duration,300000))}}
                     item{TvAction("${speed}×"){speedMenu=true}}
                     item{TvAction(if(favoriteBusy)"处理中…"else if(favorite)"已收藏"else"收藏",Icons.Rounded.BookmarkBorder){if(!favoriteBusy){favoriteBusy=true;scope.launch{try{vm.api.favorite(movie.id,!favorite);favorite=!favorite;note=""}catch(e:Exception){if(e is CancellationException)throw e;note=safeError(e)}finally{favoriteBusy=false}}}}}
+                }
+                if(full)Column(Modifier.width(145.dp),horizontalAlignment=Alignment.End,verticalArrangement=Arrangement.spacedBy(3.dp)){
+                    Text(trackInfo.resolution,color=White,fontSize=12.sp,maxLines=1)
+                    Text(trackInfo.bitrate,color=Muted,fontSize=11.sp,maxLines=1)
+                }
                 }
                 if(note.isNotBlank())Text(note,color=Gold,fontSize=11.sp)
             }
