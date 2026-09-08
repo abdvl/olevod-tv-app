@@ -133,3 +133,11 @@
 - 网站历史页读取本地记录并发同步；匿名history/list和watches/sync均code12。
 - 未登录不能验证全部云记录或安全同步，因此没有把未知字段自动写回账号。
 - 详细待验证步骤见 CLOUD_HISTORY_STATUS.md。
+
+### S16 — fix: harden TV focus, sessions and playback lifecycle
+
+- 输入框仅确定后进入编辑框；补全联想词分组解析、本地搜索历史、列表卡片返回焦点。
+- 直播时间签名与布局修正；频道收藏使用网站明确channelId/favoriteType字段，影片收藏优先vodId。
+- 独立审查驱动修复：异步详情返回不得后台起播、历史账户在播放开始捕获、暂停后台不刷新观看时间、切集先保存。
+- 会话过期清除本地token，以网站userId分账户；媒体URL不进入数据类日志输出。
+- 当前assembleDebug、lintDebug与13项协议测试通过；Android数据库集成测试通过；UI复测仍在独立agent中。

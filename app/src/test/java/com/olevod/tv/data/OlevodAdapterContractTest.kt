@@ -1,6 +1,7 @@
 package com.olevod.tv.data
 
 import kotlinx.coroutines.runBlocking
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okio.Buffer
@@ -35,6 +36,27 @@ class OlevodAdapterContractTest {
             assertTrue(result.items.isEmpty())
             assertEquals(0, result.total)
             assertFalse(result.hasMore)
+        } finally { server.shutdown() }
+    }
+
+    @Test fun liveDistributionGetsFreshTimeSignatureWithoutAccountToken() = runBlocking {
+        val server = MockWebServer()
+        server.start()
+        try {
+            repeat(2) { server.enqueue(MockResponse().setBody("""{"code":0,"data":{"detail":{"hls":"https://media.example.test/live.m3u8?quality=hd"},"programs":[]}}""")) }
+            var clock = 1700000000L
+            val api = OlevodApi(token = { "private.header.signature" }, base = server.url("/").toString(), now = { clock })
+            val channel = Channel(58, "CCTV13HD", "News", "", "")
+            val first = api.liveDetail(channel, "2026-09-08").uri.toHttpUrl()
+            assertEquals(RequestSignature.at(clock), first.queryParameter("token"))
+            assertEquals("hd", first.queryParameter("quality"))
+            assertNull(first.queryParameter("_he"))
+            assertNull(first.queryParameter("_pl"))
+            assertNull(first.queryParameter("_si"))
+            clock++
+            val second = api.liveDetail(channel, "2026-09-08").uri.toHttpUrl()
+            assertEquals(RequestSignature.at(clock), second.queryParameter("token"))
+            assertNotEquals(first.queryParameter("token"), second.queryParameter("token"))
         } finally { server.shutdown() }
     }
 

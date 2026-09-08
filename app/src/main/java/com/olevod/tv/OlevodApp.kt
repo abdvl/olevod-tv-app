@@ -58,6 +58,8 @@ import org.json.JSONArray
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
+private val LocalPosterFocus=compositionLocalOf<MutableState<Long>?>{null}
+
 internal val Bg = Color(0xFF101718)
 internal val Panel = Color(0xFF1B2526)
 internal val Green = Color(0xFF66E681)
@@ -86,18 +88,20 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     CompositionLocalProvider(LocalBringIntoViewSpec provides EdgeBringIntoViewSpec) {
     MaterialTheme(colorScheme=darkColorScheme(primary=Green,onPrimary=Bg,surface=Panel,onSurface=White,background=Bg)) {
         Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF192425),Bg)))) {
-            if(!full) Header(screen,if(preview || screen !in listOf("home","browse","search","player","account","live"))"界面预览" else "实时内容",{screen=it})
+            if(!full) Header(screen,if(preview)"界面预览" else "实时内容",{screen=it})
             if(!full && screen in listOf("home","browse","live")) Navigation(category=if(screen=="home")"首页" else if(screen=="live")"直播" else category) { label -> if(label=="首页") screen="home" else if(label=="直播") screen="live" else {category=label;screen="browse"} }
-            pageStates.SaveableStateProvider(screen) { when(screen) {
+            pageStates.SaveableStateProvider(screen) {
+                val lastPoster=rememberSaveable{mutableLongStateOf(-1)}
+                CompositionLocalProvider(LocalPosterFocus provides lastPoster){ when(screen) {
                 "home" -> if(preview) HomeScreen(movies,heroes,openMovie,{category=it;screen="browse"}) else ConnectedHome(home,vm,openMovie){category=it;screen="browse"}
                 "browse" -> if(preview) BrowseScreen(category,movies,openMovie) else ConnectedBrowse(category,vm,openMovie)
                 "search" -> if(preview) SearchScreen(movies,openMovie) else ConnectedSearch(vm,openMovie)
                 "player" -> if(preview) PlayerPreview(selected,movies,full,{full=!full},openMovie) else NativePlayer(selected,vm,full){full=!full}
                 "live" -> if(preview) LivePreview() else LiveScreen(vm,full){full=!full}
                 "history" -> if(!preview) HistoryScreen(vm,openMovie) else EmptyCollection("观看历史","从上次的精彩，继续看下去","开始播放后，此设备的观看记录会出现在这里",Icons.Rounded.History){screen="home"}
-                "favorites" -> if(!preview) FavoritesScreen(vm,openMovie){screen="account"} else EmptyCollection("我的收藏","把喜欢的故事留在这里","登录后可同步欧乐账号的收藏",Icons.Rounded.BookmarkBorder){screen="account"}
+                "favorites" -> if(!preview) FavoritesScreen(vm,openMovie,{screen="account"}){vm.pendingChannel=it;screen="live"} else EmptyCollection("我的收藏","把喜欢的故事留在这里","登录后可同步欧乐账号的收藏",Icons.Rounded.BookmarkBorder){screen="account"}
                 "account" -> if(preview) AccountPreview() else AccountScreen(vm)
-            }}
+            }}}
         }
     }
 }
@@ -199,8 +203,11 @@ internal fun SectionHeading(title:String,subtitle:String="",more:(()->Unit)?=nul
 
 @Composable
 internal fun PosterCard(movie:Movie,modifier:Modifier=Modifier,posterRatio:Float=.72f,onFocused:()->Unit={},onClick:()->Unit) {
+    val remembered=LocalPosterFocus.current
+    val focus=remember{FocusRequester()}
+    LaunchedEffect(Unit){if(remembered?.value==movie.id)focus.requestFocus()}
     Column(modifier,verticalArrangement=Arrangement.spacedBy(7.dp)) {
-        Card(onClick=onClick,modifier=Modifier.onFocusChanged{if(it.isFocused)onFocused()}.fillMaxWidth().aspectRatio(posterRatio),shape=CardDefaults.shape(RoundedCornerShape(9.dp)),scale=CardDefaults.scale(focusedScale=1.035f),border=CardDefaults.border(focusedBorder=Border(androidx.compose.foundation.BorderStroke(2.dp,Green)))) {
+        Card(onClick=onClick,modifier=Modifier.focusRequester(focus).onFocusChanged{if(it.isFocused){remembered?.value=movie.id;onFocused()}}.fillMaxWidth().aspectRatio(posterRatio),shape=CardDefaults.shape(RoundedCornerShape(9.dp)),scale=CardDefaults.scale(focusedScale=1.035f),border=CardDefaults.border(focusedBorder=Border(androidx.compose.foundation.BorderStroke(2.dp,Green)))) {
             Box(Modifier.fillMaxSize().background(Panel)) {
                 AsyncImage(movie.image,movie.title,Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent,Color.Transparent,Color.Black.copy(alpha=.8f)))))
@@ -237,15 +244,16 @@ private fun BrowseScreen(category:String,movies:List<Movie>,open:(Movie)->Unit) 
 @Composable
 private fun SearchScreen(movies:List<Movie>,open:(Movie)->Unit) {
     var query by rememberSaveable { mutableStateOf("") }
+    var editRequest by remember{mutableIntStateOf(0)}
     val input=remember { FocusRequester() }
     val keyboard=LocalSoftwareKeyboardController.current
     Row(Modifier.fillMaxSize().padding(40.dp,12.dp,40.dp,20.dp),horizontalArrangement=Arrangement.spacedBy(30.dp)) {
         Column(Modifier.width(254.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
             Text("发现想看的故事",color=White,fontSize=22.sp,fontWeight=FontWeight.Bold)
-            InputBox(query,{query=it},"输入片名 / 演员",Modifier.focusRequester(input))
+            InputBox(query,{query=it},"输入片名 / 演员",Modifier.focusRequester(input),editRequest=editRequest)
             Row { TvAction("清空",Icons.Rounded.Close){query=""};TvAction("退格",Icons.Rounded.Backspace){query=query.dropLast(1)} }
             Column(verticalArrangement=Arrangement.spacedBy(5.dp)) { "abcdefghijklmnopqrstuvwxyz1234567890".chunked(6).forEach { line ->Row(horizontalArrangement=Arrangement.spacedBy(5.dp)){line.forEach{c->KeyButton(c.toString(),Modifier.weight(1f)){query+=c}}} } }
-            TvAction("中文 / 语音输入",Icons.Rounded.Keyboard){input.requestFocus();keyboard?.show()}
+            TvAction("中文 / 语音输入",Icons.Rounded.Keyboard){editRequest++}
             Text("支持系统输入法与手机遥控输入",fontSize=11.sp,color=Muted)
         }
         Box(Modifier.width(1.dp).fillMaxHeight().background(White.copy(alpha=.08f)))
@@ -264,21 +272,24 @@ private fun SearchScreen(movies:List<Movie>,open:(Movie)->Unit) {
     }
 }
 @Composable internal fun KeyButton(label:String,modifier:Modifier,onClick:()->Unit) { Button(onClick=onClick,modifier=modifier.height(30.dp),contentPadding=PaddingValues(0.dp),colors=ButtonDefaults.colors(containerColor=Panel,contentColor=White,focusedContainerColor=Green,focusedContentColor=Bg),shape=ButtonDefaults.shape(RoundedCornerShape(7.dp))){Text(label,fontSize=16.sp)} }
-@Composable internal fun InputBox(value:String,change:(String)->Unit,hint:String,modifier:Modifier=Modifier,password:Boolean=false) {
-    val interaction=remember{MutableInteractionSource()};val focused by interaction.collectIsFocusedAsState()
+@Composable internal fun InputBox(value:String,change:(String)->Unit,hint:String,modifier:Modifier=Modifier,password:Boolean=false,editRequest:Int=0) {
+    val interaction=remember{MutableInteractionSource()}
+    val focused by interaction.collectIsFocusedAsState()
+    var editing by remember{mutableStateOf(false)}
     val keyboard=LocalSoftwareKeyboardController.current
-    val focus=LocalFocusManager.current
-    val imeOpen=WindowInsets.ime.getBottom(LocalDensity.current)>0
-    BasicTextField(value,change,modifier.onPreviewKeyEvent {
-        when {
-            !imeOpen && (it.key==Key.DirectionDown || it.key==Key.DirectionUp) -> {
-                if(it.type==KeyEventType.KeyDown)focus.moveFocus(if(it.key==Key.DirectionDown)FocusDirection.Down else FocusDirection.Up)
-                true
-            }
-            it.type==KeyEventType.KeyUp && (it.key==Key.DirectionCenter || it.key==Key.Enter)->{keyboard?.show();true}
-            else->false
+    LaunchedEffect(editRequest){if(editRequest>0)editing=true}
+    Box(modifier.fillMaxWidth().border(1.dp,if(focused)Green else Muted.copy(alpha=.3f),RoundedCornerShape(8.dp)).background(Panel,RoundedCornerShape(8.dp)).clickable(interactionSource=interaction,indication=null){editing=true}.padding(13.dp)) {
+        Text(if(value.isBlank())hint else if(password)"•".repeat(value.length)else value,color=if(value.isBlank())Muted else White,fontSize=15.sp,maxLines=1)
+    }
+    if(editing)androidx.compose.ui.window.Dialog(onDismissRequest={keyboard?.hide();editing=false}) {
+        val input=remember{FocusRequester()}
+        Column(Modifier.fillMaxWidth().background(Panel,RoundedCornerShape(12.dp)).padding(24.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
+            Text(hint,color=White,fontSize=20.sp)
+            BasicTextField(value,change,Modifier.fillMaxWidth().focusRequester(input).border(1.dp,Green,RoundedCornerShape(6.dp)).padding(12.dp),textStyle=TextStyle(color=White,fontSize=18.sp),singleLine=true,keyboardOptions=KeyboardOptions(imeAction=androidx.compose.ui.text.input.ImeAction.Done,keyboardType=if(password)androidx.compose.ui.text.input.KeyboardType.Password else androidx.compose.ui.text.input.KeyboardType.Text),keyboardActions=androidx.compose.foundation.text.KeyboardActions(onDone={keyboard?.hide();editing=false}),cursorBrush=androidx.compose.ui.graphics.SolidColor(Green),visualTransformation=if(password)PasswordVisualTransformation()else VisualTransformation.None)
+            TvAction("完成"){keyboard?.hide();editing=false}
         }
-    }.fillMaxWidth().border(1.dp,if(focused)Green else Muted.copy(alpha=.3f),RoundedCornerShape(8.dp)).background(Panel,RoundedCornerShape(8.dp)).padding(13.dp),textStyle=TextStyle(color=White,fontSize=15.sp),singleLine=true,keyboardOptions=KeyboardOptions(showKeyboardOnFocus=false),interactionSource=interaction,cursorBrush=androidx.compose.ui.graphics.SolidColor(Green),visualTransformation=if(password)PasswordVisualTransformation() else VisualTransformation.None,decorationBox={inner->Box{if(value.isEmpty())Text(hint,color=Muted,fontSize=15.sp);inner()}})
+        LaunchedEffect(Unit){input.requestFocus();keyboard?.show()}
+    }
 }
 
 @Composable

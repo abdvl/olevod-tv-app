@@ -16,15 +16,21 @@ data class HomeSection(val category:Category,val movies:List<Movie> = emptyList(
 data class HomeState(val heroes:List<Hero> = emptyList(),val sections:List<HomeSection> = emptyList(),val loading:Boolean=true,val error:String?=null)
 
 class AppViewModel(application:Application):AndroidViewModel(application) {
+    private val searchPrefs=application.getSharedPreferences("search",0)
+    var searchHistory by mutableStateOf(runCatching{org.json.JSONArray(searchPrefs.getString("words","[]")).let{a->(0 until a.length()).map{a.getString(it)}}}.getOrDefault(emptyList()))
+        private set
+    fun saveQuery(query:String){if(query.isBlank())return;searchHistory=(listOf(query.trim())+searchHistory).distinct().take(20);searchPrefs.edit().putString("words",org.json.JSONArray(searchHistory).toString()).apply()}
+    fun clearSearchHistory(){searchHistory=emptyList();searchPrefs.edit().remove("words").apply()}
+    var pendingChannel by mutableStateOf<Channel?>(null)
     val sessions=SessionStore(application)
     val history=HistoryStore(application){sessions.accountKey}
     init{viewModelScope.launch{history.load()}}
-    fun record(movie:Movie,episode:Int,position:Long,duration:Long){viewModelScope.launch{history.save(movie,episode,position,duration)}}
+    fun record(movie:Movie,episode:Int,position:Long,duration:Long,account:String=sessions.accountKey){viewModelScope.launch{history.save(movie,episode,position,duration,account)}}
     var sessionVersion by mutableIntStateOf(0)
         private set
-    val api=OlevodApi(token={sessions.token})
-    suspend fun login(username:String,password:String,captcha:String,captchaId:String){val result=api.login(username,password,captcha,captchaId);sessions.save(result.first,result.second,username);history.load();sessionVersion++;loadHome()}
-    fun logout(){sessions.clear();viewModelScope.launch{history.load()};sessionVersion++;loadHome()}
+    val api=OlevodApi(token={sessions.token},onUnauthorized={logout()})
+    suspend fun login(username:String,password:String,captcha:String,captchaId:String){val result=api.login(username,password,captcha,captchaId);sessions.save(result.token,result.name,result.accountId);history.load();sessionVersion++;loadHome()}
+    fun logout(){sessions.clear();history.clearView();viewModelScope.launch{history.load()};sessionVersion++;loadHome()}
     private val _home=MutableStateFlow(HomeState())
     val home=_home.asStateFlow()
     private var homeJob:Job?=null

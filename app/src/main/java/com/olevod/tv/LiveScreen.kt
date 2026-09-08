@@ -31,7 +31,8 @@ import java.time.ZoneId
 
 @Composable
 fun LiveScreen(vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
-    var selected by remember{mutableStateOf<Channel?>(null)}
+    var selected by remember{mutableStateOf<Channel?>(vm.pendingChannel)}
+    LaunchedEffect(Unit){vm.pendingChannel=null}
     BackHandler(selected!=null&&!full){selected=null}
     if(selected!=null){LiveWatch(selected!!,vm,full,toggleFull);return}
     var groups by remember{mutableStateOf<List<Pair<Int,String>>>(emptyList())}
@@ -61,6 +62,7 @@ private fun LiveWatch(channel:Channel,vm:AppViewModel,full:Boolean,toggleFull:()
     var date by remember{mutableStateOf(today)}
     var detail by remember{mutableStateOf<LiveDetail?>(null)}
     var uri by remember{mutableStateOf("")}
+    var favorite by remember{mutableStateOf(false)}
     var replay by remember{mutableStateOf(false)}
     var title by remember{mutableStateOf(channel.title)}
     var error by remember{mutableStateOf<String?>(null)}
@@ -75,13 +77,13 @@ private fun LiveWatch(channel:Channel,vm:AppViewModel,full:Boolean,toggleFull:()
         player.addListener(listener);owner.lifecycle.addObserver(observer)
         onDispose{owner.lifecycle.removeObserver(observer);player.removeListener(listener);session.release();player.release()}
     }
-    LaunchedEffect(channel.id,date,retry,vm.sessionVersion){error=null;try{val d=vm.api.liveDetail(channel,date.toString());detail=d;if(uri.isBlank()||retry>0){replay=false;uri=d.uri;title=channel.title}}catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e);loading=false}}
-    LaunchedEffect(uri,retry){if(uri.isBlank())return@LaunchedEffect;if(!uri.startsWith("https://")){error="频道没有可用的安全播放源";loading=false;return@LaunchedEffect};player.setMediaItem(MediaItem.Builder().setUri(uri).setMediaMetadata(MediaMetadata.Builder().setTitle(title).build()).build());player.prepare();player.play()}
-    Row(Modifier.fillMaxSize().padding(if(full)24.dp else 40.dp,12.dp),horizontalArrangement=Arrangement.spacedBy(22.dp)){
+    LaunchedEffect(channel.id,date,retry,vm.sessionVersion){error=null;try{val d=vm.api.liveDetail(channel,date.toString());detail=d;favorite=d.favorite;if(uri.isBlank()||retry>0){replay=false;uri=d.uri;title=channel.title}}catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e);loading=false}}
+    LaunchedEffect(uri,retry){if(uri.isBlank())return@LaunchedEffect;if(!uri.startsWith("https://")){error="频道没有可用的安全播放源";loading=false;return@LaunchedEffect};player.setMediaItem(MediaItem.Builder().setUri(uri).setMediaMetadata(MediaMetadata.Builder().setTitle(title).build()).build());player.prepare();if(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))player.play()}
+    Row(Modifier.fillMaxSize().padding(start=if(full)24.dp else 40.dp,top=12.dp,end=if(full)24.dp else 40.dp,bottom=36.dp),horizontalArrangement=Arrangement.spacedBy(22.dp)){
         Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(12.dp)){
-            Box(Modifier.fillMaxWidth().then(if(full)Modifier.weight(1f)else Modifier.aspectRatio(16f/9))){AndroidView(factory={PlayerView(it).apply{this.player=player;useController=false;isFocusable=false}},update={it.keepScreenOn=playing},modifier=Modifier.fillMaxSize());if(loading)Text("正在缓冲…",color=White,modifier=Modifier.background(Bg).padding(15.dp));error?.let{ErrorNotice(it){uri="";retry++}}}
+            Box(Modifier.fillMaxWidth().weight(1f)){AndroidView(factory={PlayerView(it).apply{this.player=player;useController=false;isFocusable=false}},update={it.keepScreenOn=playing},modifier=Modifier.fillMaxSize());if(loading)Text("正在缓冲…",color=White,modifier=Modifier.background(Bg).padding(15.dp));error?.let{ErrorNotice(it){uri="";retry++}}}
             Text(if(replay)"回看 · $title" else "直播 · ${channel.title}",color=Green,fontSize=17.sp)
-            LazyRow{item{TvAction(if(playing)"暂停"else"播放"){if(playing)player.pause()else player.play()}};if(replay){item{TvAction("后退30秒"){player.seekBack()}};item{TvAction("快进30秒"){player.seekForward()}}};item{TvAction(if(full)"退出全屏"else"全屏",onClick=toggleFull)};if(replay)item{TvAction("返回直播"){replay=false;title=channel.title;uri=detail?.uri?:""}}}
+            LazyRow{item{TvAction(if(playing)"暂停"else"播放"){if(playing)player.pause()else player.play()}};if(replay){item{TvAction("后退30秒"){player.seekBack()}};item{TvAction("快进30秒"){player.seekForward()}}};item{TvAction(if(full)"退出全屏"else"全屏",onClick=toggleFull)};item{TvAction(if(favorite)"已收藏"else"收藏"){scope.launch{try{vm.api.favoriteChannel(channel.id,!favorite);favorite=!favorite}catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e)}}}};if(replay)item{TvAction("返回直播"){replay=false;title=channel.title;uri=detail?.uri?:""}}}
         }
         if(!full)Column(Modifier.width(275.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
             SectionTitle("节目单","北京时间")

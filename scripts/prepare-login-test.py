@@ -1,0 +1,25 @@
+"""Inject locally supplied login input without exposing credentials in process arguments."""
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+root = Path(__file__).resolve().parents[1]
+if len(sys.argv) != 2:
+    raise SystemExit("Usage: python3 scripts/prepare-login-test.py CURRENT_CAPTCHA")
+values = {}
+for line in (root / ".secrects").read_text().splitlines():
+    if "=" in line and not line.lstrip().startswith("#"):
+        key, value = line.split("=", 1)
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        values[key.strip()] = value
+state = json.loads((root / ".tools/captcha-state.json").read_text())
+payload = {"username": values["username"], "password": values["password"],
+           "captcha": sys.argv[1], "captcha_id": state["captchaId"]}
+adb = root / ".tools/android-sdk/platform-tools/adb"
+subprocess.run([str(adb), "-s", "emulator-5554", "shell", "run-as", "com.olevod.tv", "sh", "-c",
+                "'mkdir -p files && cat > files/.login-test.json'"],
+               input=json.dumps(payload).encode(), check=True, stdout=subprocess.DEVNULL)
+print("Private login test input prepared; no credentials printed.")

@@ -47,6 +47,7 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
     val surfaceFocus=remember{FocusRequester()}
     val playFocus=remember{FocusRequester()}
     var interactionTick by remember{mutableIntStateOf(0)}
+    val accountAtStart=remember(movie.id){vm.sessions.accountKey}
     val resume=remember(movie.id){vm.history.records.value.find{it.movie.id==movie.id}}
     var detail by remember(movie.id){mutableStateOf<Detail?>(null)}
     var episode by remember(movie.id){mutableIntStateOf(-1)}
@@ -68,11 +69,11 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
     }
     val currentDetail by rememberUpdatedState(detail)
     val currentEpisode by rememberUpdatedState(episode)
-    fun saveProgress(){val d=currentDetail;val ep=d?.episodes?.getOrNull(currentEpisode);if(d!=null&&ep!=null)vm.record(d.movie,ep.index,player.currentPosition,player.duration.coerceAtLeast(0))}
+    fun saveProgress(){val d=currentDetail;val ep=d?.episodes?.getOrNull(currentEpisode);if(d!=null&&ep!=null)vm.record(d.movie,ep.index,player.currentPosition,player.duration.coerceAtLeast(0),accountAtStart)}
     DisposableEffect(player,owner) {
         val session=MediaSession.Builder(context,player).build()
         val listener=object:Player.Listener {
-            override fun onIsPlayingChanged(value:Boolean){playing=value}
+            override fun onIsPlayingChanged(value:Boolean){playing=value;if(!value)saveProgress()}
             override fun onPlaybackStateChanged(state:Int){buffering=state==Player.STATE_BUFFERING;ended=state==Player.STATE_ENDED}
             override fun onPlayerError(e:PlaybackException){error="视频暂时无法播放，可重新加载或返回选择其他影片";buffering=false}
         }
@@ -93,12 +94,12 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
         player.setMediaItem(MediaItem.Builder().setUri(item.uri).setMediaMetadata(MediaMetadata.Builder().setTitle(d.movie.title).build()).build())
         val start=if(item.index==resume?.episode)resume.positionMs.takeUnless{resume.durationMs>0&&it>=resume.durationMs-10000}?:0 else if(item.index==d.resumeEpisode)d.resumeSeconds*1000 else 0
         if(start>0)player.seekTo(start)
-        player.prepare();player.play();ended=false
+        error=null;player.prepare();if(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))player.play();ended=false
     }
     LaunchedEffect(player){while(true){position=player.currentPosition.coerceAtLeast(0);duration=player.duration.takeIf{it!=C.TIME_UNSET&&it>0}?:0;delay(500)}}
-    LaunchedEffect(player){while(true){delay(10000);saveProgress()}}
+    LaunchedEffect(player){while(true){delay(10000);if(player.isPlaying&&owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))saveProgress()}}
     LaunchedEffect(controls,playing,speedMenu,full,interactionTick){if(full&&controls&&playing&&!speedMenu){delay(5000);controls=false}}
-    LaunchedEffect(ended){if(ended&&episode+1<(detail?.episodes?.size?:0))episode++}
+    LaunchedEffect(ended){if(ended&&episode+1<(detail?.episodes?.size?:0)){saveProgress();episode++}}
     LaunchedEffect(full,controls){if(full&&!controls)surfaceFocus.requestFocus()else playFocus.requestFocus()}
     BackHandler(speedMenu){speedMenu=false}
     Row(Modifier.fillMaxSize().background(Color.Black).focusRequester(surfaceFocus).focusable().onPreviewKeyEvent { event ->
@@ -135,7 +136,7 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
             Text(detail?.description?:"正在加载影片信息…",color=Muted,fontSize=13.sp,lineHeight=21.sp)
             detail?.let{d->Text("导演：${d.director}\n主演：${d.actor}",color=Muted,fontSize=12.sp,lineHeight=20.sp)}
             Text("选集",color=White,fontSize=18.sp)
-            detail?.episodes?.chunked(4)?.forEach{row->Row(horizontalArrangement=Arrangement.spacedBy(4.dp)){row.forEach{ep->TvAction(if((detail?.episodes?.size?:0)>1)ep.index.toString() else ep.title,selected=detail?.episodes?.getOrNull(episode)?.index==ep.index){episode=detail!!.episodes.indexOf(ep)}}}}
+            detail?.episodes?.chunked(4)?.forEach{row->Row(horizontalArrangement=Arrangement.spacedBy(4.dp)){row.forEach{ep->TvAction(if((detail?.episodes?.size?:0)>1)ep.index.toString() else ep.title,selected=detail?.episodes?.getOrNull(episode)?.index==ep.index){saveProgress();episode=detail!!.episodes.indexOf(ep)}}}}
         }
     }
     if(speedMenu)Dialog(onDismissRequest={speedMenu=false}){Column(Modifier.background(Panel).padding(25.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){Text("播放速度",color=White,fontSize=22.sp);listOf(.5f,.75f,1f,1.25f,1.5f,1.75f,2f).forEach{value->TvAction("${value}×",selected=speed==value){speed=value;player.setPlaybackSpeed(value);speedMenu=false}}}}
