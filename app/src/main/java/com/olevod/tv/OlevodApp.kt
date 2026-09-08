@@ -95,7 +95,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
                 "player" -> if(preview) PlayerPreview(selected,movies,full,{full=!full},openMovie) else NativePlayer(selected,vm,full){full=!full}
                 "live" -> if(preview) LivePreview() else LiveScreen(vm,full){full=!full}
                 "history" -> if(!preview) HistoryScreen(vm,openMovie) else EmptyCollection("观看历史","从上次的精彩，继续看下去","开始播放后，此设备的观看记录会出现在这里",Icons.Rounded.History){screen="home"}
-                "favorites" -> EmptyCollection("我的收藏","把喜欢的故事留在这里","登录后可同步欧乐账号的收藏",Icons.Rounded.BookmarkBorder){screen="account"}
+                "favorites" -> if(!preview) FavoritesScreen(vm,openMovie){screen="account"} else EmptyCollection("我的收藏","把喜欢的故事留在这里","登录后可同步欧乐账号的收藏",Icons.Rounded.BookmarkBorder){screen="account"}
                 "account" -> if(preview) AccountPreview() else AccountScreen(vm)
             }}
         }
