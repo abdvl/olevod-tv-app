@@ -111,10 +111,10 @@ class OlevodApi(
         return LoginSession(d.getString("token"),user.optString("userNickName").ifBlank{user.optString("userName","已登录")},user.get("userId").toString())
     }
     suspend fun favorite(id:Long,save:Boolean){request(if(save)listOf("pub","vod","favorite")else listOf("pub","vod","favorite","cancel"),if(save)JSONObject().put("id",id)else JSONObject().put("ids",JSONArray().put(id)))}
-    suspend fun favorites(page:Int):CatalogPage {val o=request(listOf("pub","vod","favorite","list"),JSONObject().put("page",page).put("pageSize",20)).getJSONObject("data");return CatalogPage(o.optJSONArray("list").objects().map{movie(it).copy(id=it.getLong("vodId"))},o.optInt("total"),page,20)}
+    suspend fun favorites(page:Int):CatalogPage {val o=request(listOf("pub","vod","favorite","list"),JSONObject().put("page",page).put("pageSize",20)).getJSONObject("data");return CatalogPage(o.optJSONArray("list").objects().map{movie(it).copy(id=it.getLong("vodId"))},o.optInt("total",-1),page,20)}
     suspend fun cloudHistory(page:Int):CloudHistoryPage {
         val o=request(listOf("pub","vod","history","list"),JSONObject().put("page",page).put("pageSize",20)).getJSONObject("data")
-        return CloudHistoryPage(o.optJSONArray("list").objects().map{WatchRecord(movie(it).copy(id=it.getLong("vodId")),it.optInt("episode"),(it.optDouble("watchDuration",0.0)*1000).toLong(),(it.optDouble("watchPercent",0.0)*1000).toLong(),0)},o.optInt("total"))
+        return CloudHistoryPage(o.optJSONArray("list").objects().map{WatchRecord(movie(it).copy(id=it.getLong("vodId")),it.optInt("episode"),(it.optDouble("watchDuration",0.0)*1000).toLong(),(it.optDouble("watchPercent",0.0)*1000).toLong(),0)},o.optInt("total",-1))
     }
     suspend fun syncWatch(record:WatchRecord) {
         require(record.movie.id>0 && record.positionMs>=1000 && record.durationMs>0)

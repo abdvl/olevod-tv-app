@@ -1,31 +1,33 @@
 package com.olevod.tv
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
-import com.olevod.tv.data.WatchRecord
-import kotlinx.coroutines.CancellationException
 
 @Composable
-fun CloudHistoryPanel(vm:AppViewModel,open:(Movie)->Unit,login:()->Unit) {
-    val metadata=rememberHistoryMetadata(vm)
-    var page by rememberSaveable{mutableIntStateOf(1)}
-    var records by remember{mutableStateOf<List<WatchRecord>>(emptyList())}
-    var total by remember{mutableIntStateOf(0)}
-    var error by remember{mutableStateOf<String?>(null)}
-    var loading by remember{mutableStateOf(true)}
-    var retry by remember{mutableIntStateOf(0)}
+fun CloudHistoryPanel(vm:AppViewModel,open:(Movie)->Unit,login:()->Unit,up:FocusRequester=FocusRequester.Default){
     val loggedIn=vm.sessionVersion.let{vm.sessions.token!=null}
-    LaunchedEffect(page,retry,vm.sessionVersion){if(!loggedIn)return@LaunchedEffect;loading=true;error=null;try{val result=vm.api.cloudHistory(page);records=result.items;total=result.total}catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e)}finally{loading=false}}
-    Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(14.dp)){
-        vm.historySyncError?.let{Text(it,color=Muted,fontSize=12.sp)}
-        when{!loggedIn->TvAction("登录查看网站历史",onClick=login);error!=null->ErrorNotice(error!!){retry++};loading->Text("正在加载网站历史…",color=Muted);records.isEmpty()->Text("网站账号没有更多观看历史",color=Muted);else->LazyColumn(Modifier.weight(1f),contentPadding=PaddingValues(horizontal=6.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){items(records,key={it.movie.id}){r->HistoryRecordCard(r,metadata){movie->vm.pendingResume=r.copy(movie=movie);open(movie)}}}}
-        if(loggedIn&&!loading)Row{if(page>1)TvAction("上一页"){page--};Text("第 $page 页 · 共 $total 部",color=Muted,modifier=Modifier.padding(12.dp));if(page*20<total)TvAction("下一页"){page++}}
+    val feed=remember(vm.sessionVersion){if(loggedIn)vm.cloudHistoryFeed()else null}
+    val metadata=rememberHistoryMetadata(vm)
+    val entry=remember{FocusRequester()}
+    val result=feed?.state
+    DisposableEffect(feed){onDispose{feed?.cancel()}}
+    LaunchedEffect(feed){if(feed!=null&&feed.state.nextPage==1&&feed.state.error==null)feed.loadNext()}
+    val page=LocalPageFocus.current
+    DisposableEffect(page,result?.items?.isNotEmpty(),loggedIn,result?.error){page?.enter={if(!loggedIn||result?.items?.isNotEmpty()==true||result?.error!=null)entry.requestFocus()else up.requestFocus()};onDispose{page?.enter=null}}
+    Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(12.dp)){
+        vm.historySyncError?.let{Text(it,color=Muted,fontSize=13.sp)}
+        when{
+            !loggedIn->TvAction("登录查看网站历史",modifier=Modifier.focusRequester(entry).restoreContentFocus("cloud-login"),onClick=login)
+            result==null||result.items.isEmpty()->Column(Modifier.focusRequester(entry)){
+                when{result?.error!=null->ErrorNotice(result.error){feed?.loadNext()};result?.loading==true||result?.nextPage==1->Text("正在加载网站历史…",color=Muted);else->Text("网站账号没有更多观看历史",color=Muted)}
+            }
+            else->HistoryGrid(result.items,metadata,"cloud:${vm.sessionVersion}",entry,up,{record,movie->vm.pendingResume=record.copy(movie=movie);open(movie)},
+                loading=result.loading,endReached=result.endReached,error=result.error,loadMore={feed?.loadNext()})
+        }
     }
 }
