@@ -52,3 +52,11 @@ debug可用 `--es screen home|browse|search|player|live|history|favorites|accoun
 ## 暂停后继续
 
 先读 `PROGRESS.md` 当前状态表，再看 `git status --short` 和最近提交，恢复未验收项。截图在 `docs/verification/screenshots/`；中间可批注截图在本机 `artifacts/screenshots/`。
+
+## Wireless Chromecast development
+
+Discover current ports with `adb mdns services`. Use `adb pair IP:PAIR_PORT`, enter the temporary code interactively, then `adb connect IP:CONNECT_PORT`. The ports are different and can change; do not assume 5555.
+
+Always pass `adb -s IP:CONNECT_PORT` when the emulator is also connected. The private login helper accepts `ANDROID_SERIAL=IP:CONNECT_PORT`; it writes credentials to a temporary private file and atomically renames it only after transfer completes.
+
+The supplied Chromecast has been paired, installed and logged in on the device. Read `verification/CHROMECAST_REGRESSION.md` for physical-device outcomes, separate from simulator results.

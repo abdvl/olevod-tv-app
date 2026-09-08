@@ -17,10 +17,10 @@
 | S14 | 影视收藏增删通过；频道列表可用，取消接口60秒回读未生效 |
 | S15 | 云历史分页读取、新观看同步及真实回读通过；离线补传未实现 |
 | S16 | 焦点、后台播放、账号竞争、异常恢复及云同步顺序已修，独立复查通过 |
-| S17 | build/lint/17单元测试通过；Chromecast 192.168.128.86:5555拒绝连接，等待启用调试 |
+| S17 | build/lint/17单元测试通过；Chromecast已配对安装、实机登录通过，独立实机回归中 |
 
 - 登录依赖已解除：用户授权本次登录调试代填验证码，Android同客户端验证码登录已成功；Chrome因Mac锁定暂不可用。
-- 下一步：连接用户提供的Chromecast，安装并做实机验收；频道取消收藏保留为未解决的网站接口问题。
+- 下一步：完成Chromecast实机播放与遥控器验收；频道取消收藏保留为未解决的网站接口问题。
 - 用户已授权每步本地commit、使用Android Studio、独立agent验证和`.secrects`测试账号。未推送远端。
 - 恢复时保留已完成提交，先检查未提交修改和本表的“待验收”。
 
@@ -176,3 +176,11 @@
 - Native encrypted login, cross-process session, local history storage, actual VIP playback and cloud watch sync/read-back passed.
 - Independent agent verified CCTV13, Dongfang after retry, programme replay, full two-row home and card focus restoration. Ordered cloud queue fix reviewed independently.
 - Cloud history UI displays the actual account records. Chromecast audio, HDR/4K and sustained playback remain pending physical-device connection.
+
+### S10/S17 - physical Chromecast installation and login
+
+- User supplied a LAN Chromecast and explicitly enabled debugging. Standard port 5555 was closed; device advertised its wireless TLS connect/pair services through mDNS.
+- Paired using the user-provided code, installed current debug APK, launched native home. Android 14, physical display 3840x2160 and logical override 1920x1080 reported.
+- Fixed login helper to select ANDROID_SERIAL and atomically rename a completed private input file; Wi-Fi transfer previously exposed an empty file to the test reader.
+- Native CAPTCHA login passed after correcting image recognition. A fresh instrumentation process read encrypted session and authenticated profile/VIP/history successfully.
+- Independent agent now owns physical-device regression; no pairing code, password or token is stored in these notes.
