@@ -1,5 +1,7 @@
 package com.olevod.tv
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,13 +61,23 @@ fun ConnectedBrowse(categoryName:String,vm:AppViewModel,open:(Movie)->Unit,choos
     PosterFocusGroup(filter.toString()){LazyColumn(Modifier.fillMaxSize().padding(horizontal=28.dp),state=listState,verticalArrangement=Arrangement.spacedBy(12.dp),contentPadding=PaddingValues(top=8.dp,bottom=64.dp)) {
         item(key="filters"){
             Column(Modifier.fillMaxWidth().background(Panel,RoundedCornerShape(12.dp)).padding(horizontal=12.dp,vertical=10.dp),verticalArrangement=Arrangement.spacedBy(2.dp)){
-                BrowseOptions("排序",listOf("desc" to "最新上传","update" to "最近更新","hot" to "人气最高","score" to "评分最高"),sort){sort=it}
-                BrowseOptions("分类",categories.map{it.id.toString() to it.name},category?.id?.toString().orEmpty()){id->categories.firstOrNull{it.id.toString()==id}?.let{chooseCategory(it.name)}}
-                BrowseOptions("类型",listOf("0" to "全部类型")+(category?.types?:emptyList()).map{it.first.toString() to it.second},type.toString()){type=it.toInt()}
-                BrowseOptions("地区",listOf("0" to "全部地区")+(category?.areas?:emptyList()).map{it to it},area){area=it}
-                BrowseOptions("年份",listOf("0" to "全部年份")+(category?.years?:emptyList()).map{it to it},year){year=it}
-                BrowseOptions("范围",listOf("3" to "全部影片","1" to "会员","2" to "免费"),membership.toString()){membership=it.toInt()}
-                BrowseOptions("字母",listOf("0" to "全部字母")+('A'..'Z').map{it.toString() to it.toString()},initial){initial=it}
+                val rows=listOf(
+                    BrowseFilterRow("排序",listOf("desc" to "最新上传","update" to "最近更新","hot" to "人气最高","score" to "评分最高"),sort){sort=it},
+                    BrowseFilterRow("分类",categories.map{it.id.toString() to it.name}.ifEmpty{listOf("1" to categoryName)},category?.id?.toString().orEmpty()){id->categories.firstOrNull{it.id.toString()==id}?.let{chooseCategory(it.name)}},
+                    BrowseFilterRow("类型",listOf("0" to "全部类型")+(category?.types?:emptyList()).map{it.first.toString() to it.second},type.toString()){type=it.toInt()},
+                    BrowseFilterRow("地区",listOf("0" to "全部地区")+(category?.areas?:emptyList()).map{it to it},area){area=it},
+                    BrowseFilterRow("年份",listOf("0" to "全部年份")+(category?.years?:emptyList()).map{it to it},year){year=it},
+                    BrowseFilterRow("范围",listOf("3" to "全部影片","1" to "会员","2" to "免费"),membership.toString()){membership=it.toInt()},
+                    BrowseFilterRow("字母",listOf("0" to "全部字母")+('A'..'Z').map{it.toString() to it.toString()},initial){initial=it}
+                )
+                val targets=remember(rows.map{it.options.map{p->p.first}}){rows.map{r->r.options.map{FocusRequester()}}}
+                rows.forEachIndexed { rowIndex,row ->
+                    BrowseOptions(row,targets[rowIndex]) { column ->
+                        val up=if(rowIndex>0)targets[rowIndex-1][column.coerceAtMost(targets[rowIndex-1].lastIndex)]else FocusRequester.Default
+                        val down=if(rowIndex<rows.lastIndex)targets[rowIndex+1][column.coerceAtMost(targets[rowIndex+1].lastIndex)]else FocusRequester.Default
+                        Modifier.focusProperties { this.up=up;this.down=down }
+                    }
+                }
             }
         }
         item(key="summary"){
@@ -97,22 +110,27 @@ fun ConnectedBrowse(categoryName:String,vm:AppViewModel,open:(Movie)->Unit,choos
     }}
 }
 
+private data class BrowseFilterRow(val title:String,val options:List<Pair<String,String>>,val value:String,val choose:(String)->Unit)
+
 @Composable
-private fun BrowseOptions(title:String,options:List<Pair<String,String>>,value:String,choose:(String)->Unit){
+private fun BrowseOptions(row:BrowseFilterRow,targets:List<FocusRequester>,directions:(Int)->Modifier){
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
-        Text(title,color=Muted,fontSize=12.sp,modifier=Modifier.width(48.dp))
-        LazyRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
-            items(options.distinctBy{it.first},key={it.first}){(key,label)->BrowseChip(label,key==value){choose(key)}}
+        Text(row.title,color=Muted,fontSize=12.sp,modifier=Modifier.width(48.dp))
+        // Compose every chip so explicit vertical targets remain reachable even off screen.
+        Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)){
+            row.options.forEachIndexed{index,(key,label)->
+                BrowseChip(label,key==row.value,Modifier.focusRequester(targets[index]).then(directions(index))){row.choose(key)}
+            }
         }
     }
 }
 
 @Composable
-private fun BrowseChip(label:String,selected:Boolean,onClick:()->Unit){
+private fun BrowseChip(label:String,selected:Boolean,modifier:Modifier=Modifier,onClick:()->Unit){
     val interaction=remember{MutableInteractionSource()}
     val focused by interaction.collectIsFocusedAsState()
     Text(label,color=if(focused)Bg else if(selected)Green else White,fontSize=12.sp,lineHeight=16.sp,fontWeight=if(focused||selected)FontWeight.Bold else FontWeight.Normal,
-        modifier=Modifier.clip(RoundedCornerShape(30.dp)).background(if(focused)Green else if(selected)Green.copy(alpha=.1f)else androidx.compose.ui.graphics.Color.Transparent)
+        modifier=modifier.clip(RoundedCornerShape(30.dp)).background(if(focused)Green else if(selected)Green.copy(alpha=.1f)else androidx.compose.ui.graphics.Color.Transparent)
             .border(if(selected&&!focused)1.dp else 0.dp,if(selected&&!focused)Green.copy(alpha=.3f)else androidx.compose.ui.graphics.Color.Transparent,RoundedCornerShape(30.dp))
             .clickable(interactionSource=interaction,indication=null,onClick=onClick).padding(horizontal=11.dp,vertical=3.dp))
 }

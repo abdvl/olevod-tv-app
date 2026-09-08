@@ -255,3 +255,16 @@
 
 - All six top navigation buttons show only their icon when unfocused; the focused button expands to show icon plus title.
 - Accessible icon descriptions remain available. Build, lint and 20 unit tests passed; bundled with the next device installation.
+
+### S27 - rich watch-history cards
+
+- Commit `86eda01`: local and cloud history now display cover, available year/region/score, update note, episode, position/duration and progress bar.
+- Missing metadata is fetched only for composed rows through a cached loader with three concurrent requests at most; failure retains the original record.
+- Resume explicitly carries the selected record and enriched movie. Build/lint passed; physical review pending below.
+
+### S28 - deterministic D-pad focus
+
+- Category filters use explicit up/down links to adjacent rows; all horizontal chips are composed, so an off-screen target remains reachable and scrolls into view.
+- Search keyboard has explicit four-direction links. The right edge enters suggestions/results, and Left returns to the remembered keyboard key; first result column can return to suggestions.
+- Emulator D-pad checks passed: all seven category rows down/up; search header → input → clear → A, across to F, down L/R/X/4/0, right into a suggestion and left back to 0.
+- Build/lint/all 20 unit tests passed. Independent Chromecast verification follows.
