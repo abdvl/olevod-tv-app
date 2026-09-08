@@ -1,0 +1,335 @@
+{
+  "schema_version": 1,
+  "milestone": "v0.1 accounting cutoff to approved UI v2 design",
+  "implementation_included": false,
+  "source": "Local Codex session logs; only aggregate usage metadata is retained here. No prompts, credentials, raw logs or generated-image payloads.",
+  "period": {
+    "start_exclusive_utc": "2026-09-08T05:56:12.276Z",
+    "end_inclusive_utc": "2026-09-08T14:35:11.093Z",
+    "start_local": "2026-09-07T22:56:12.276-07:00",
+    "end_local": "2026-09-08T07:35:11.093-07:00",
+    "timezone": "America/Los_Angeles",
+    "start_basis": "Exact main-task snapshot used by the existing v0.1 README row",
+    "end_basis": "Completed push of approved UI v2 specification",
+    "design_commit": "62b11e16bee367a6048e771ea0c8e01ae87f3f48"
+  },
+  "scope": {
+    "included": [
+      "Main-task usage after the v0.1 snapshot, including remaining token/cost discussion",
+      "UI design iterations, discussion, specification, review, commit and push",
+      "All three direct subagents; the two old agents have zero interval usage",
+      "One context-compaction request recorded in the request ledger"
+    ],
+    "excluded": [
+      "This accounting/update/push turn and subsequent implementation",
+      "Independent tasks, including the earlier separate Token history editing task",
+      "Unobservable image-generation charges and other additional tool/service fees",
+      "Unrecorded earlier compaction differences from the historical v0.1 snapshot; that row remains unchanged"
+    ]
+  },
+  "method": {
+    "primary": "Sum each unique response_id token_usage_record.usage in (start, end], filtering each record by its own thread_id. Never sum cumulative snapshots.",
+    "cross_check": "For each session, request_ledger_at_cutoff minus request_ledger_before equals request_ledger_increment. Snapshot deltas also reconcile after the explicitly recorded compaction difference.",
+    "future_accounting": "Resume after end_inclusive_utc using the request ledger counters stored here; do not subtract the old UI snapshot from a request-ledger counter."
+  },
+  "sessions": [
+    {
+      "role": "main",
+      "session_id": "01a07e67-b5bc-78c1-873a-9b14a987f5c3",
+      "request_count_in_interval": 89,
+      "snapshot_before": {
+        "input_tokens": 97066692,
+        "cached_input_tokens": 95269632,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 315671,
+        "reasoning_output_tokens": 91274,
+        "total_tokens": 97382363
+      },
+      "snapshot_at_cutoff": {
+        "input_tokens": 111301088,
+        "cached_input_tokens": 108924928,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 399902,
+        "reasoning_output_tokens": 113861,
+        "total_tokens": 111700990
+      },
+      "snapshot_delta": {
+        "input_tokens": 14234396,
+        "cached_input_tokens": 13655296,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 84231,
+        "reasoning_output_tokens": 22587,
+        "total_tokens": 14318627
+      },
+      "request_ledger_before": {
+        "input_tokens": 98135871,
+        "cached_input_tokens": 95723648,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 344860,
+        "reasoning_output_tokens": 91274,
+        "total_tokens": 98480731
+      },
+      "request_ledger_at_cutoff": {
+        "input_tokens": 112611121,
+        "cached_input_tokens": 109614464,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 433184,
+        "reasoning_output_tokens": 113861,
+        "total_tokens": 113044305
+      },
+      "request_ledger_increment": {
+        "input_tokens": 14475250,
+        "cached_input_tokens": 13890816,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 88324,
+        "reasoning_output_tokens": 22587,
+        "total_tokens": 14563574
+      },
+      "ledger_minus_snapshot_increment": {
+        "input_tokens": 240854,
+        "cached_input_tokens": 235520,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 4093,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 244947
+      },
+      "last_ledger_timestamp_before": "2026-09-08T05:56:12.076Z",
+      "last_ledger_timestamp_in_interval": "2026-09-08T14:35:11.091Z"
+    },
+    {
+      "role": "verification",
+      "session_id": "01a07e7c-157d-7312-948c-86f2e30e4637",
+      "request_count_in_interval": 0,
+      "snapshot_before": {
+        "input_tokens": 56535613,
+        "cached_input_tokens": 55832064,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 84720,
+        "reasoning_output_tokens": 6337,
+        "total_tokens": 56620333
+      },
+      "snapshot_at_cutoff": {
+        "input_tokens": 56535613,
+        "cached_input_tokens": 55832064,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 84720,
+        "reasoning_output_tokens": 6337,
+        "total_tokens": 56620333
+      },
+      "snapshot_delta": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 0
+      },
+      "request_ledger_before": {
+        "input_tokens": 57010369,
+        "cached_input_tokens": 56301568,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 90271,
+        "reasoning_output_tokens": 6337,
+        "total_tokens": 57100640
+      },
+      "request_ledger_at_cutoff": {
+        "input_tokens": 57010369,
+        "cached_input_tokens": 56301568,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 90271,
+        "reasoning_output_tokens": 6337,
+        "total_tokens": 57100640
+      },
+      "request_ledger_increment": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 0
+      },
+      "ledger_minus_snapshot_increment": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 0
+      },
+      "last_ledger_timestamp_before": "2026-09-08T05:32:13.355Z",
+      "last_ledger_timestamp_in_interval": null
+    },
+    {
+      "role": "sort_fix",
+      "session_id": "01a07f34-a94e-7601-8006-683f4e347f8f",
+      "request_count_in_interval": 0,
+      "snapshot_before": {
+        "input_tokens": 4383364,
+        "cached_input_tokens": 4292352,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 13418,
+        "reasoning_output_tokens": 2708,
+        "total_tokens": 4396782
+      },
+      "snapshot_at_cutoff": {
+        "input_tokens": 4383364,
+        "cached_input_tokens": 4292352,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 13418,
+        "reasoning_output_tokens": 2708,
+        "total_tokens": 4396782
+      },
+      "snapshot_delta": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 0
+      },
+      "request_ledger_before": {
+        "input_tokens": 4383364,
+        "cached_input_tokens": 4292352,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 13418,
+        "reasoning_output_tokens": 2708,
+        "total_tokens": 4396782
+      },
+      "request_ledger_at_cutoff": {
+        "input_tokens": 4383364,
+        "cached_input_tokens": 4292352,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 13418,
+        "reasoning_output_tokens": 2708,
+        "total_tokens": 4396782
+      },
+      "request_ledger_increment": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 0
+      },
+      "ledger_minus_snapshot_increment": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 0
+      },
+      "last_ledger_timestamp_before": "2026-09-08T04:24:19.067Z",
+      "last_ledger_timestamp_in_interval": null
+    },
+    {
+      "role": "design_spec_review",
+      "session_id": "01a08162-75b9-7713-802a-4313b45aca26",
+      "request_count_in_interval": 11,
+      "snapshot_before": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 0
+      },
+      "snapshot_at_cutoff": {
+        "input_tokens": 750951,
+        "cached_input_tokens": 680064,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 3860,
+        "reasoning_output_tokens": 2005,
+        "total_tokens": 754811
+      },
+      "snapshot_delta": {
+        "input_tokens": 750951,
+        "cached_input_tokens": 680064,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 3860,
+        "reasoning_output_tokens": 2005,
+        "total_tokens": 754811
+      },
+      "request_ledger_before": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 0
+      },
+      "request_ledger_at_cutoff": {
+        "input_tokens": 750951,
+        "cached_input_tokens": 680064,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 3860,
+        "reasoning_output_tokens": 2005,
+        "total_tokens": 754811
+      },
+      "request_ledger_increment": {
+        "input_tokens": 750951,
+        "cached_input_tokens": 680064,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 3860,
+        "reasoning_output_tokens": 2005,
+        "total_tokens": 754811
+      },
+      "ledger_minus_snapshot_increment": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 0
+      },
+      "last_ledger_timestamp_before": null,
+      "last_ledger_timestamp_in_interval": "2026-09-08T14:26:34.122Z"
+    }
+  ],
+  "request_count": 100,
+  "models": {
+    "gpt-6-astra": 100
+  },
+  "max_request_input_tokens": 240854,
+  "usage": {
+    "input_tokens": 15226201,
+    "cached_input_tokens": 14570880,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 92184,
+    "reasoning_output_tokens": 24592,
+    "total_tokens": 15318385
+  },
+  "uncached_input_tokens": 655321,
+  "pricing": {
+    "checked_date": "2026-09-08",
+    "currency": "USD",
+    "basis": "Standard API equivalent; not an actual Codex subscription bill or confirmed service-tier charge",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+    "rates_per_million_tokens": {
+      "uncached_input": "10.00",
+      "cached_input": "1.00",
+      "cache_write_input": "12.50",
+      "output": "50.00"
+    },
+    "long_context_input_threshold": 272000,
+    "long_context_requests": 0,
+    "unrounded_cost_usd": {
+      "uncached_input": "6.55321",
+      "cached_input": "14.57088",
+      "output": "4.6092",
+      "total": "25.73329"
+    },
+    "rounded_total_usd": "25.73",
+    "rounding": "Sum unrounded Decimal costs, then round the total to two decimals."
+  },
+  "image_generation": {
+    "tool": "image_gen.imagegen",
+    "calls": 20,
+    "returned_images": 20,
+    "final_approved_images_in_spec": 10,
+    "model": null,
+    "usage": null,
+    "additional_cost_usd": null,
+    "status": "Uncounted: tool results expose images and saved paths, but no model identity or billable usage. Null does not mean zero."
+  }
+}
