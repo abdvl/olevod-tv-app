@@ -250,3 +250,8 @@
 - Catalog and search lists have 64dp bottom content padding.
 - Poster focus requests visibility for the whole image/title/year container, not just the image; requests from cards that lost focus are ignored.
 - Reuse existing category metadata when returning to the catalog to reduce transient empty-top layout before focus restoration.
+
+### S26 - compact header with focused labels
+
+- All six top navigation buttons show only their icon when unfocused; the focused button expands to show icon plus title.
+- Accessible icon descriptions remain available. Build, lint and 20 unit tests passed; bundled with the next device installation.

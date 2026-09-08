@@ -3,6 +3,7 @@ package com.olevod.tv
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.BringIntoViewSpec
 import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
@@ -137,10 +138,12 @@ internal fun TvAction(label: String, icon: ImageVector? = null, selected: Boolea
 private fun HeaderIcon(label:String,icon:ImageVector,selected:Boolean,onClick:()->Unit){
     val interaction=remember{MutableInteractionSource()}
     val focused by interaction.collectIsFocusedAsState()
-    Box(Modifier.padding(end=6.dp).size(40.dp).clip(RoundedCornerShape(50))
+    Row(Modifier.padding(end=6.dp).height(40.dp).clip(RoundedCornerShape(50))
         .background(if(focused)Green else if(selected)Color(0xFF263E31)else Color.Transparent)
-        .clickable(interactionSource=interaction,indication=null,onClick=onClick),contentAlignment=Alignment.Center){
+        .clickable(interactionSource=interaction,indication=null,onClick=onClick)
+        .animateContentSize().padding(horizontal=10.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)){
         Icon(icon,contentDescription=label,tint=if(focused)Bg else if(selected)Green else White,modifier=Modifier.size(22.dp))
+        if(focused)Text(label,color=Bg,fontSize=14.sp,fontWeight=FontWeight.Bold,maxLines=1)
     }
 }
 
@@ -149,16 +152,16 @@ private fun Header(screen:String,status:String,go:(String)->Unit,accountLabel:St
     Row(Modifier.fillMaxWidth().padding(start=38.dp,end=38.dp,top=19.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically) {
         HeaderIcon("首页",Icons.Rounded.Home,screen=="home"){go("home")}
         HeaderIcon("电影目录",Icons.Rounded.GridView,screen=="browse"){go("directory")}
-        TvAction("搜索",Icons.Rounded.Search,screen=="search"){go("search")}
-        TvAction("历史",Icons.Rounded.History,screen=="history"){go("history")}
-        TvAction("收藏",Icons.Rounded.BookmarkBorder,screen=="favorites"){go("favorites")}
+        HeaderIcon("搜索",Icons.Rounded.Search,screen=="search"){go("search")}
+        HeaderIcon("历史",Icons.Rounded.History,screen=="history"){go("history")}
+        HeaderIcon("收藏",Icons.Rounded.BookmarkBorder,screen=="favorites"){go("favorites")}
         Spacer(Modifier.weight(1f))
         Text(status,fontSize=10.sp,color=Muted,modifier=Modifier.border(1.dp,Muted.copy(alpha=.3f),RoundedCornerShape(4.dp)).padding(horizontal=6.dp,vertical=3.dp))
         Spacer(Modifier.width(18.dp))
         Text("OLE",color=White,fontSize=22.sp,fontWeight=FontWeight.Black,letterSpacing=2.sp)
         Text(" TV",color=Green,fontSize=22.sp,fontWeight=FontWeight.Black)
         Spacer(Modifier.width(18.dp))
-        TvAction(accountLabel,Icons.Rounded.AccountCircle,screen=="account"){go("account")}
+        HeaderIcon(accountLabel,Icons.Rounded.AccountCircle,screen=="account"){go("account")}
     }
 }
 
