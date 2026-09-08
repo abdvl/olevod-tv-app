@@ -43,7 +43,8 @@ fun ConnectedBrowse(categoryName:String,vm:AppViewModel,open:(Movie)->Unit,choos
     LaunchedEffect(retry){error=null;try{if(categories.isEmpty()||retry>0)categories=vm.api.categories()}catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e)}}
     val category=categories.firstOrNull{it.name==categoryName || (categoryName=="VIP蓝光"&&it.id==6)}
     val filter=Filter(category?.id?:1,area,year,type,initial,membership,sort)
-    val feed=remember(filter,category!=null){if(category==null)null else vm.catalogFeed(filter)}
+    val feed=remember(filter,category!=null,vm.sessionVersion){if(category==null)null else vm.catalogFeed(filter)}
+    DisposableEffect(feed){onDispose{feed?.cancel()}}
     val result=feed?.state?:CatalogFeedState(loading=true)
     val movies=result.items
     val total=result.total
@@ -83,7 +84,7 @@ fun ConnectedBrowse(categoryName:String,vm:AppViewModel,open:(Movie)->Unit,choos
         }
         item(key="summary"){
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
-                Text("$categoryName · $total 部",color=White,fontSize=15.sp,fontWeight=FontWeight.Bold)
+                Text(categoryName+if(total>=0)" · $total 部"else"",color=White,fontSize=15.sp,fontWeight=FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
                 Text("已加载 ${movies.size} 部",color=Muted,fontSize=12.sp)
                 Spacer(Modifier.width(12.dp))

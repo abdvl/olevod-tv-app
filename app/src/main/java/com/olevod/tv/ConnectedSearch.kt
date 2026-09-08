@@ -47,7 +47,8 @@ fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit) {
     var lastKey by remember{mutableIntStateOf(5)}
     val home by vm.home.collectAsStateWithLifecycle()
     val term=query.trim()
-    val feed=remember(term){if(term.isBlank())null else vm.searchFeed(term)}
+    val feed=remember(term,vm.sessionVersion){if(term.isBlank())null else vm.searchFeed(term)}
+    DisposableEffect(feed){onDispose{feed?.cancel()}}
     val result=feed?.state?:CatalogFeedState()
     val movies=if(term.isBlank())home.sections.firstOrNull{it.category.id==1}?.movies.orEmpty()else result.items
     val words=if(term.isBlank())(vm.searchHistory+hot).distinct().take(20)else(suggestions+movies.map{it.title}).distinct().take(20)
@@ -102,7 +103,7 @@ fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit) {
             if(term.isBlank()&&vm.searchHistory.isNotEmpty())TvAction("清除搜索记录"){vm.clearSearchHistory()}
         }
         Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(12.dp)){
-            Text(if(term.isBlank())"最近更新"else"包含「$term」的影片 · ${result.total} 部",color=White,fontSize=17.sp)
+            Text(if(term.isBlank())"最近更新"else"包含「$term」的影片"+if(result.total>=0)" · ${result.total} 部"else"",color=White,fontSize=17.sp)
             PosterFocusGroup(term){LazyColumn(Modifier.weight(1f).focusRequester(resultsFocus).focusGroup(),state=listState,verticalArrangement=Arrangement.spacedBy(18.dp),contentPadding=PaddingValues(4.dp,5.dp,4.dp,64.dp)){
                 items(movies.chunked(2),key={it.first().id}){row->Row(horizontalArrangement=Arrangement.spacedBy(14.dp)){
                     row.forEachIndexed{column,m->PosterCard(m,Modifier.weight(1f).then(if(m.id==movies.firstOrNull()?.id)Modifier.focusRequester(firstResult)else Modifier).focusProperties{if(column==0)left=if(words.isNotEmpty())suggestionsFocus else keys[lastKey]},posterRatio=.74f){if(term.isNotBlank())vm.saveQuery(term);open(m)}}

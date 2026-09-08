@@ -66,7 +66,7 @@ internal val LocalPosterFocus=compositionLocalOf<MutableState<Long>?>{null}
 @Composable
 internal fun PosterFocusGroup(identity:String,content:@Composable ()->Unit){
     val lastPoster=rememberSaveable(identity){mutableLongStateOf(-1)}
-    CompositionLocalProvider(LocalPosterFocus provides lastPoster){content()}
+    CompositionLocalProvider(LocalPosterFocus provides lastPoster, LocalFocusSection provides identity){content()}
 }
 
 data class Movie(val id: Long, val title: String, val image: String, val note: String = "", val score: String = "", val category: Int = 1, val year: String = "", val area: String = "", val vip: Boolean = false)
@@ -87,6 +87,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     var browseBack by rememberSaveable{mutableStateOf("home")}
     var confirmExit by rememberSaveable{mutableStateOf(false)}
     var full by rememberSaveable { mutableStateOf(false) }
+    var routeEpochs by rememberSaveable { mutableStateOf(mapOf<String,Int>()) }
     val headerTargets=remember { navigationItems.associate { it.key to FocusRequester() } }
     val selectedCategoryId=when(category){"连续剧","电视剧"->2;"综艺"->3;"动漫"->4;"VIP蓝光","VIP蓝光影院","VIP"->6;"短剧"->14;else->1}
     val selectedNavigation=if(screen=="category")categoryNavigationKey(selectedCategoryId)else screen
@@ -101,14 +102,19 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     MaterialTheme(colorScheme=darkColorScheme(primary=Green,onPrimary=Bg,surface=Panel,onSurface=White,background=Bg)) {
         Column(Modifier.fillMaxSize().background(Bg)) {
             if(!full) UnifiedHeader(selectedNavigation,headerTargets,{pageFocus.enterContent()}) { target ->
+                pageFocus.restoreBody=null
                 val id=navigationCategoryId(target)
                 if(id!=null){category=when(id){2->"连续剧";6->"VIP蓝光影院";else->categoryLabel(id)};screen="category"}
                 else if(target=="browse"){category="电影";browseBack="home";screen="browse"}
                 else screen=target
+                val destination=if(screen in listOf("category","browse"))"$screen:$category"else screen
+                routeEpochs=routeEpochs+(destination to ((routeEpochs[destination]?:0)+1))
             }
-            Box(Modifier.weight(1f).fillMaxWidth().focusRequester(contentFocus).focusProperties{up=headerFocus}.focusGroup()) {
+            Box(Modifier.weight(1f).fillMaxWidth().focusRequester(contentFocus).focusGroup()) {
             CompositionLocalProvider(LocalPageFocus provides pageFocus) {
-            pageStates.SaveableStateProvider(screen) {
+            val routeKey=when(screen){"category","browse"->"$screen:$category";"player"->"player:${selected.id}";else->screen}
+            pageStates.SaveableStateProvider("$routeKey:${routeEpochs[routeKey]?:0}:${if(screen in listOf("history","favorites","account"))vm.sessionVersion else 0}") {
+                ContentFocusScope {
                 val lastPoster=rememberSaveable{mutableLongStateOf(-1)}
                 CompositionLocalProvider(LocalPosterFocus provides lastPoster){ when(screen) {
                 "home" -> if(preview) HomeScreen(movies,heroes,openMovie,{category=it;browseBack="home";screen="browse"}) else ConnectedHome(home,vm,openMovie,{screen="history"},headerTargets.getValue("home"),recentFocus,{pageFocus.enter=it}){category=it;browseBack="home";screen="browse"}
@@ -126,6 +132,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
                 "favorites" -> if(!preview) FavoritesScreen(vm,openMovie,{screen="account"}){vm.pendingChannel=it;screen="live"} else EmptyCollection("我的收藏","把喜欢的故事留在这里","登录后可同步欧乐账号的收藏",Icons.Rounded.BookmarkBorder){screen="account"}
                 "account" -> if(preview) AccountPreview() else AccountScreen(vm)
             }}}
+                }
             }}
         }
         if(confirmExit)ExitConfirmationDialog(onDismiss={confirmExit=false},onConfirm={confirmExit=false;onExit()})
@@ -173,7 +180,7 @@ private fun HomeScreen(movies:List<Movie>,heroes:List<Hero>,open:(Movie)->Unit,m
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun HomeMovieGroup(movies:List<Movie>,open:(Movie)->Unit,title:String="电影",more:()->Unit) {
-    Column(Modifier.focusGroup().padding(bottom=20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+    PosterFocusGroup("latest:$title") { Column(Modifier.focusGroup().padding(bottom=20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         SectionHeading(title,"最近更新 · ${movies.size} 部",more)
         movies.chunked(5).forEach { row ->
             Row(horizontalArrangement=Arrangement.spacedBy(16.dp)) {
@@ -182,11 +189,11 @@ internal fun HomeMovieGroup(movies:List<Movie>,open:(Movie)->Unit,title:String="
             }
         }
     }
-}
+}}
 
 @Composable
 internal fun HeroCard(hero:Hero,modifier:Modifier,onClick:()->Unit) {
-    Card(onClick=onClick,modifier=modifier.height(138.dp),shape=CardDefaults.shape(RoundedCornerShape(12.dp)),scale=CardDefaults.scale(focusedScale=1f),border=CardDefaults.border(focusedBorder=Border(androidx.compose.foundation.BorderStroke(2.dp,Green)))) {
+    Card(onClick=onClick,modifier=modifier.restoreContentFocus("hero:${hero.id}").height(138.dp),shape=CardDefaults.shape(RoundedCornerShape(12.dp)),scale=CardDefaults.scale(focusedScale=1f),border=CardDefaults.border(focusedBorder=Border(androidx.compose.foundation.BorderStroke(2.dp,Green)))) {
         Box(Modifier.fillMaxSize()) {
             AsyncImage(hero.image,hero.title,Modifier.fillMaxSize(),contentScale=ContentScale.Fit)
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent,Color.Black.copy(alpha=.8f)))))

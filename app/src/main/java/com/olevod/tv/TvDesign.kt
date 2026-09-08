@@ -72,7 +72,12 @@ internal fun navigationCategoryId(key: String): Int? = when(key) { "movie" -> 1;
 /** A page explicitly registers its entry target; the header never points at a disposed row. */
 internal class PageFocusController(val header: FocusRequester, val fallback: FocusRequester) {
     var enter: (() -> Unit)? = null
-    fun enterContent() { enter?.invoke() ?: fallback.requestFocus() }
+    var restoreBody: (() -> Boolean)? = null
+    var forceEntry=false
+    fun enterContent() {
+        if(!forceEntry && restoreBody?.invoke()==true)return
+        enter?.invoke() ?: fallback.requestFocus()
+    }
 }
 internal val LocalPageFocus = compositionLocalOf<PageFocusController?> { null }
 
@@ -138,8 +143,7 @@ internal fun PosterTile(movie: Movie, modifier: Modifier=Modifier, onFocused:()-
     val titleHeight = with(LocalDensity.current) { 38.sp.toDp() }
     val focusOutset = with(LocalDensity.current) { 4.dp.toPx() }
     var measuredSize by remember { mutableStateOf(IntSize.Zero) }
-    LaunchedEffect(Unit) { if(memory?.value==focusIdentity) { withFrameNanos{}; focus.requestFocus() } }
-    Column(modifier.bringIntoViewRequester(bring).onSizeChanged{measuredSize=it}.focusRequester(focus)
+    Column(modifier.bringIntoViewRequester(bring).onSizeChanged{measuredSize=it}.restoreContentFocus(focusIdentity.toString(),focus)
         .onFocusChanged { if(it.isFocused) { memory?.value=focusIdentity; onFocused(); scope.launch { withFrameNanos{}; bring.bringIntoView(Rect(-focusOutset,-focusOutset,
                 measuredSize.width+focusOutset,measuredSize.height+focusOutset)) } } }
         .testTag("poster:${movie.id}").semantics(mergeDescendants=true) { contentDescription=movie.title }

@@ -106,18 +106,22 @@ class AppViewModel(application:Application):AndroidViewModel(application) {
     fun catalogFeed(filter:Filter):CatalogFeed {
         catalogFeeds.remove(filter)?.let{catalogFeeds[filter]=it;return it}
         val feed=CatalogFeed(api,filter,viewModelScope);catalogFeeds[filter]=feed
-        while(catalogFeeds.size>8)catalogFeeds.remove(catalogFeeds.keys.first())
+        while(catalogFeeds.size>8)catalogFeeds.remove(catalogFeeds.keys.first())?.cancel()
         return feed
     }
     private val searchFeeds=linkedMapOf<String,CatalogFeed>()
     fun searchFeed(query:String):CatalogFeed {
         searchFeeds.remove(query)?.let{searchFeeds[query]=it;return it}
         val feed=CatalogFeed(viewModelScope){page->api.search(query,page=page,size=20)};searchFeeds[query]=feed
-        while(searchFeeds.size>8)searchFeeds.remove(searchFeeds.keys.first())
+        while(searchFeeds.size>8)searchFeeds.remove(searchFeeds.keys.first())?.cancel()
         return feed
     }
-    suspend fun login(username:String,password:String,captcha:String,captchaId:String){saveLoginCredentials(username,password);val result=api.login(username,password,captcha,captchaId);kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO){sessions.save(result.token,result.name,result.accountId)};history.load();sessionVersion++;loadHome()}
-    fun logout(){sessions.clear();history.clearView();viewModelScope.launch{history.load()};sessionVersion++;loadHome()}
+    private fun clearAccountFeeds(){
+        catalogFeeds.values.forEach{it.cancel()};catalogFeeds.clear()
+        searchFeeds.values.forEach{it.cancel()};searchFeeds.clear()
+    }
+    suspend fun login(username:String,password:String,captcha:String,captchaId:String){saveLoginCredentials(username,password);val result=api.login(username,password,captcha,captchaId);kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO){sessions.save(result.token,result.name,result.accountId)};clearAccountFeeds();history.clearView();history.load();sessionVersion++;loadHome()}
+    fun logout(){sessions.clear();clearAccountFeeds();history.clearView();viewModelScope.launch{history.load()};sessionVersion++;loadHome()}
     private val _home=MutableStateFlow(HomeState())
     val home=_home.asStateFlow()
     private var homeJob:Job?=null

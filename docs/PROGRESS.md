@@ -419,3 +419,12 @@
 - Verification: app/test builds, existing unit tests and lint passed. Independent `V2FoundationUiTest` final rerun passed 3/3, zero skips: header key traversal/confirm-only route selection, unclipped last-row card bounds/no scaling, and pixel checks for all four corners of 2:3, 3:4 and very tall source fixtures.
 - Earlier validation exposed an unmounted test focus target, a real missing scroll outset, and an incorrect image-load probe in letterboxing; all corrected and rerun. Full histories and per-page behavior remain in their later checkpoints; this is not whole-v2 or Chromecast acceptance.
 - Next: V2-02 source focus identity and shared cumulative feed. Its work may exist uncommitted; use the status document and Git diff to resume rather than repeat this checkpoint.
+
+### S48 / V2-02 - source focus and cumulative feeds
+
+- Added a saved route/section/entity focus identity, keeping duplicate titles in different home sections independent. Header revisits reset only the destination; returning from playback preserves its source route and scroll state. Mounted-target restoration is one-shot and metadata changes do not trigger it again; deep list and missing-source recovery remain page-level acceptance work.
+- Generalized cumulative feeds with one in-flight request, deduplicated appends, cancellation/generation protection, preserved retry page/items, and a bounded error for wholly repeated pages. Unknown totals use -1 internally and are omitted in UI labels.
+- Account transitions cancel cached feeds; active catalog/search compositions include sessionVersion to obtain fresh feeds. Disposal cancels outstanding requests while preserving completed pages.
+- App/test builds, unit tests and lint passed. Independent Android regression: 4/4 passed, zero skips; new duplicate-section restoration test plus the three foundation tests. PagedFeed unit cases passed 3/3 for repeat pages, non-cooperative late responses and canceled-request preservation.
+- Independent review caught unknown totals leaking into text and active feed keys missing sessionVersion. Both corrected; final build/unit/lint log is `.tools/v2-02-fixes-build.log`. See `docs/verification/v2/V2-02.md` for frozen artifacts and exact verification boundaries.
+- Next: V2-03 home layout. Its ConnectedHome draft is intentionally outside this checkpoint commit.

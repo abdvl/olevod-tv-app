@@ -18,7 +18,7 @@ import org.json.JSONObject
 
 data class Category(val id:Int,val name:String,val areas:List<String>,val years:List<String>,val types:List<Pair<Int,String>>)
 data class Filter(val category:Int=1,val area:String="0",val year:String="0",val type:Int=0,val initial:String="0",val membership:Int=3,val sort:String="update")
-data class CatalogPage(val items:List<Movie>,val total:Int,val page:Int,val pageSize:Int) { val hasMore get()=page*pageSize<total }
+data class CatalogPage(val items:List<Movie>,val total:Int,val page:Int,val pageSize:Int) { val hasMore get()=if(total>=0)page*pageSize<total else items.size>=pageSize }
 data class Episode(val index:Int,val title:String,val uri:String,val vip:Boolean){override fun toString()="Episode(index=$index, title=$title, uri=[redacted], vip=$vip)"}
 data class Detail(val movie:Movie,val description:String,val actor:String,val director:String,val episodes:List<Episode>,val favorite:Boolean,val resumeEpisode:Int,val resumeSeconds:Long)
 data class Channel(val id:Long,val streamId:String,val title:String,val image:String,val programme:String)
@@ -91,7 +91,7 @@ class OlevodApi(
         require(filter.sort in setOf("update","desc","hot","score"))
         require(filter.membership in 1..3)
         val o=get("v1","pub","vod","list","true",filter.membership.toString(),filter.initial,filter.area,filter.category.toString(),filter.type.toString(),filter.year,filter.sort,page.toString(),size.toString()) as JSONObject
-        return CatalogPage(o.optJSONArray("list").objects().map(::movie),o.optInt("total"),page,size)
+        return CatalogPage(o.optJSONArray("list").objects().map(::movie),o.optInt("total",-1),page,size)
     }
     suspend fun detail(id:Long):Detail {
         val o=get("v1","pub","vod","detail",id.toString(),"true") as JSONObject
@@ -100,7 +100,7 @@ class OlevodApi(
     suspend fun search(query:String,category:Int=0,page:Int=1,size:Int=20):CatalogPage {
         val o=get("v1","pub","index","search",query,"vod",category.toString(),page.toString(),size.toString()) as JSONObject
         val group=o.optJSONArray("data").objects().firstOrNull{it.optString("type")=="vod"}
-        return CatalogPage(group?.optJSONArray("list").objects().map(::movie),group?.optInt("total")?:0,page,size)
+        return CatalogPage(group?.optJSONArray("list").objects().map(::movie),group?.optInt("total",-1)?:0,page,size)
     }
     suspend fun hotWords():List<String> = (get("v1","pub","index","search","hot","keywords") as JSONArray).objects().filter{it.optString("type")=="vod"}.flatMap{it.optJSONArray("words").strings()}
     suspend fun suggestions(query:String):List<String> {val d=get("v1","pub","index","search","keywords",query);return when(d){is JSONArray->d.objects().filter{it.optString("type")=="vod"}.flatMap{it.optJSONArray("words").strings()}.distinct();else->emptyList()}}
