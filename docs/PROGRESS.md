@@ -9,7 +9,7 @@
 | 步骤 | 当前状态 |
 | --- | --- |
 | S01–S06 | 完成：工程/界面/API与真实首页 |
-| S07–S08 | 已接通：真实筛选、搜索；独立验证美国筛选与热词结果，更多排序/分页边界继续回归 |
+| S07–S08 | 真实分类、四种排序和跨页、多条件筛选、中文搜索通过；独立UI搜索与筛选通过 |
 | S09 | 普通点播与控制已独立通过；VIP80632原生播放成功 |
 | S10 | 原生验证码登录、磁盘加密和跨进程会话已实际通过 |
 | S11–S12 | 独立通过：CCTV13、东方卫视（重试恢复）、午夜新闻回看原生播放 |
@@ -184,3 +184,10 @@
 - Fixed login helper to select ANDROID_SERIAL and atomically rename a completed private input file; Wi-Fi transfer previously exposed an empty file to the test reader.
 - Native CAPTCHA login passed after correcting image recognition. A fresh instrumentation process read encrypted session and authenticated profile/VIP/history successfully.
 - Independent agent now owns physical-device regression; no pairing code, password or token is stored in these notes.
+
+### S07/S08 - live catalog coverage
+
+- Read-only Android integration passed for all six homepage categories with 10-item retrieval.
+- All four sort modes returned distinct first/second pages with 20 items each.
+- Combined USA / 2025 / free / score filter returned matching results; Chinese search matched the requested title.
+- Test was executed on emulator-5554 while the independent agent owned Chromecast, without interrupting physical playback.
