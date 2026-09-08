@@ -387,3 +387,9 @@
 
 - Added the standard MIT License with copyright 2026 Aikepaer Abuduweili and linked it from README. Clarified that third-party dependencies, branding and website media retain their respective rights/licenses.
 - Documentation-only change; checked formatting and license link before committing and pushing.
+
+### S44 - release token history
+
+- Added README Token history with the previously reported v0.1 development snapshot, model, main/subagent totals, cached/uncached input, output and Standard API equivalent cost ($202.00).
+- Documented snapshot boundaries (includes publication, MIT License and initial usage inquiry), pricing date, assumptions, excluded fees and future per-release incremental accounting. No raw task logs or credentials published.
+- Verified arithmetic and Markdown formatting; documentation-only change.
