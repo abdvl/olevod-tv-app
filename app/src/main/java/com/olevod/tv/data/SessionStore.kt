@@ -11,7 +11,7 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import org.json.JSONObject
 
-/** Only the session is persisted. Password and CAPTCHA never reach disk. */
+/** AES-GCM vault. The default store holds sessions; credentials use a separate named vault. */
 class SessionStore(context:Context,storeName:String="session") {
     private val prefs=context.getSharedPreferences(storeName,Context.MODE_PRIVATE)
     private val alias="olevod-$storeName-v1"

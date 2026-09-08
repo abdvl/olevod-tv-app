@@ -20,7 +20,7 @@
 | S17 | build/lint/18单元测试通过；Chromecast已配对安装、实机登录通过，独立实机回归中 |
 
 - 登录依赖已解除：用户授权本次登录调试代填验证码，Android同客户端验证码登录已成功；Chrome因Mac锁定暂不可用。
-- 下一步：完成Chromecast实机播放与遥控器验收；频道取消收藏保留为未解决的网站接口问题。
+- 下一步：完成新增账号记忆、验证码数字键盘、导航与续播的实机验收。用户已明确暂缓直播稳定性排查，保留现有直播功能及问题记录。
 - 用户已授权每步本地commit、使用Android Studio、独立agent验证和`.secrects`测试账号。未推送远端。
 - 恢复时保留已完成提交，先检查未提交修改和本表的“待验收”。
 
@@ -203,3 +203,11 @@
 - Independent physical test exposed hidden controls consuming the first Back key.
 - Back now bypasses the video wake-control handler and reaches the existing page handler.
 - Emulator verified hidden-controls UI had no text, then one Back restored the header/details/fullscreen button. Build/lint/18 unit tests passed. Physical confirmation follows next install.
+
+### S18 - user-requested login memory and navigation shortcuts
+
+- Explicit user request replaces the earlier session-only retention choice: username/password now live in a separate Android Keystore AES-GCM vault. Logout retains it; a clear action removes it.
+- Login form autofills remembered credentials and initially focuses the on-screen numeric CAPTCHA keypad. Digits can be selected directly with the remote, without obscuring the CAPTCHA with the system keyboard.
+- Global header has accessible icon-only Home and Movie Directory shortcuts. Directory always selects the movie category.
+- Encrypted synthetic credentials passed disk reopen/no-plaintext/session-logout/clear testing. User-provided test credentials were privately initialized on Chromecast and read back successfully.
+- Build/lint/18 unit tests passed. Independent agent is validating the new controls on physical Chromecast; no new APK installation until that run finishes.

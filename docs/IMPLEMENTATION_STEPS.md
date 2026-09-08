@@ -29,3 +29,8 @@
 `步骤 / 做了什么 / 实际执行验证 / 已知限制 / 下一步`。提交历史用 commit subject 关联步骤，避免把当前提交 hash 递归写入本次内容。
 凭据从用户本地 `.secrects` 读取，只在必要登录测试中使用，不输出值、不打包、不提交。仅记录格式和测试是否成功。
 独立验证 agent 不修改主实现；报告位于 `docs/verification/`，主 agent 修复后重新请求验证。
+
+## Accepted follow-up implementation steps
+
+- S18: encrypted username/password memory, direct numeric CAPTCHA entry, icon-only Home / Movie Directory navigation; validate persistence and physical remote focus, then commit.
+- S19: physical Chromecast regression and final installation, with server-source failures and untested HDR/long-play limits stated explicitly.

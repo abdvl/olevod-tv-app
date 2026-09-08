@@ -88,7 +88,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     CompositionLocalProvider(LocalBringIntoViewSpec provides EdgeBringIntoViewSpec) {
     MaterialTheme(colorScheme=darkColorScheme(primary=Green,onPrimary=Bg,surface=Panel,onSurface=White,background=Bg)) {
         Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF192425),Bg)))) {
-            if(!full) Header(screen,if(preview)"界面预览" else "实时内容",{screen=it},vm.sessionVersion.let{if(vm.sessions.token!=null)"账号"else"登录"})
+            if(!full) Header(screen,if(preview)"界面预览" else "实时内容",{if(it=="directory"){category="电影";screen="browse"}else screen=it},vm.sessionVersion.let{if(vm.sessions.token!=null)"账号"else"登录"})
             if(!full && screen in listOf("home","browse","live")) Navigation(category=if(screen=="home")"首页" else if(screen=="live")"直播" else category) { label -> if(label=="首页") screen="home" else if(label=="直播") screen="live" else {category=label;screen="browse"} }
             pageStates.SaveableStateProvider(screen) {
                 val lastPoster=rememberSaveable{mutableLongStateOf(-1)}
@@ -128,8 +128,21 @@ internal fun TvAction(label: String, icon: ImageVector? = null, selected: Boolea
 }
 
 @Composable
+private fun HeaderIcon(label:String,icon:ImageVector,selected:Boolean,onClick:()->Unit){
+    val interaction=remember{MutableInteractionSource()}
+    val focused by interaction.collectIsFocusedAsState()
+    Box(Modifier.padding(end=6.dp).size(40.dp).clip(RoundedCornerShape(50))
+        .background(if(focused)Green else if(selected)Color(0xFF263E31)else Color.Transparent)
+        .clickable(interactionSource=interaction,indication=null,onClick=onClick),contentAlignment=Alignment.Center){
+        Icon(icon,contentDescription=label,tint=if(focused)Bg else if(selected)Green else White,modifier=Modifier.size(22.dp))
+    }
+}
+
+@Composable
 private fun Header(screen:String,status:String,go:(String)->Unit,accountLabel:String="登录") {
     Row(Modifier.fillMaxWidth().padding(start=38.dp,end=38.dp,top=19.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically) {
+        HeaderIcon("首页",Icons.Rounded.Home,screen=="home"){go("home")}
+        HeaderIcon("电影目录",Icons.Rounded.GridView,screen=="browse"){go("directory")}
         TvAction("搜索",Icons.Rounded.Search,screen=="search"){go("search")}
         TvAction("历史",Icons.Rounded.History,screen=="history"){go("history")}
         TvAction("收藏",Icons.Rounded.BookmarkBorder,screen=="favorites"){go("favorites")}
@@ -272,7 +285,7 @@ private fun SearchScreen(movies:List<Movie>,open:(Movie)->Unit) {
     }
 }
 @Composable internal fun KeyButton(label:String,modifier:Modifier,onClick:()->Unit) { Button(onClick=onClick,modifier=modifier.height(30.dp),contentPadding=PaddingValues(0.dp),colors=ButtonDefaults.colors(containerColor=Panel,contentColor=White,focusedContainerColor=Green,focusedContentColor=Bg),shape=ButtonDefaults.shape(RoundedCornerShape(7.dp))){Text(label,fontSize=16.sp)} }
-@Composable internal fun InputBox(value:String,change:(String)->Unit,hint:String,modifier:Modifier=Modifier,password:Boolean=false,editRequest:Int=0) {
+@Composable internal fun InputBox(value:String,change:(String)->Unit,hint:String,modifier:Modifier=Modifier,password:Boolean=false,editRequest:Int=0,onEditingFinished:()->Unit={}) {
     val interaction=remember{MutableInteractionSource()}
     val focused by interaction.collectIsFocusedAsState()
     var editing by remember{mutableStateOf(false)}
@@ -281,12 +294,12 @@ private fun SearchScreen(movies:List<Movie>,open:(Movie)->Unit) {
     Box(modifier.fillMaxWidth().border(1.dp,if(focused)Green else Muted.copy(alpha=.3f),RoundedCornerShape(8.dp)).background(Panel,RoundedCornerShape(8.dp)).clickable(interactionSource=interaction,indication=null){editing=true}.padding(13.dp)) {
         Text(if(value.isBlank())hint else if(password)"•".repeat(value.length)else value,color=if(value.isBlank())Muted else White,fontSize=15.sp,maxLines=1)
     }
-    if(editing)androidx.compose.ui.window.Dialog(onDismissRequest={keyboard?.hide();editing=false}) {
+    if(editing)androidx.compose.ui.window.Dialog(onDismissRequest={keyboard?.hide();editing=false;onEditingFinished()}) {
         val input=remember{FocusRequester()}
         Column(Modifier.fillMaxWidth().background(Panel,RoundedCornerShape(12.dp)).padding(24.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
             Text(hint,color=White,fontSize=20.sp)
-            BasicTextField(value,change,Modifier.fillMaxWidth().focusRequester(input).border(1.dp,Green,RoundedCornerShape(6.dp)).padding(12.dp),textStyle=TextStyle(color=White,fontSize=18.sp),singleLine=true,keyboardOptions=KeyboardOptions(imeAction=androidx.compose.ui.text.input.ImeAction.Done,keyboardType=if(password)androidx.compose.ui.text.input.KeyboardType.Password else androidx.compose.ui.text.input.KeyboardType.Text),keyboardActions=androidx.compose.foundation.text.KeyboardActions(onDone={keyboard?.hide();editing=false}),cursorBrush=androidx.compose.ui.graphics.SolidColor(Green),visualTransformation=if(password)PasswordVisualTransformation()else VisualTransformation.None)
-            TvAction("完成"){keyboard?.hide();editing=false}
+            BasicTextField(value,change,Modifier.fillMaxWidth().focusRequester(input).border(1.dp,Green,RoundedCornerShape(6.dp)).padding(12.dp),textStyle=TextStyle(color=White,fontSize=18.sp),singleLine=true,keyboardOptions=KeyboardOptions(imeAction=androidx.compose.ui.text.input.ImeAction.Done,keyboardType=if(password)androidx.compose.ui.text.input.KeyboardType.Password else androidx.compose.ui.text.input.KeyboardType.Text),keyboardActions=androidx.compose.foundation.text.KeyboardActions(onDone={keyboard?.hide();editing=false;onEditingFinished()}),cursorBrush=androidx.compose.ui.graphics.SolidColor(Green),visualTransformation=if(password)PasswordVisualTransformation()else VisualTransformation.None)
+            TvAction("完成"){keyboard?.hide();editing=false;onEditingFinished()}
         }
         LaunchedEffect(Unit){input.requestFocus();keyboard?.show()}
     }
@@ -337,7 +350,7 @@ private fun PlayerPreview(movie:Movie,movies:List<Movie>,full:Boolean,toggleFull
 
 @Composable private fun EmptyCollection(title:String,headline:String,subtitle:String,icon:ImageVector,go:()->Unit){Column(Modifier.fillMaxSize().padding(40.dp,25.dp)){SectionHeading(title);Column(Modifier.fillMaxSize(),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){Icon(icon,null,Modifier.size(60.dp),tint=Green.copy(alpha=.6f));Spacer(Modifier.height(20.dp));Text(headline,fontSize=24.sp,color=White);Spacer(Modifier.height(9.dp));Text(subtitle,fontSize=14.sp,color=Muted);Spacer(Modifier.height(25.dp));TvAction("去发现精彩",Icons.Rounded.ArrowForward,selected=true,onClick=go)}}}
 
-@Composable private fun AccountPreview(){var user by remember{mutableStateOf("")};var pwd by remember{mutableStateOf("")};var captcha by remember{mutableStateOf("")};var message by remember{mutableStateOf("")};Row(Modifier.fillMaxSize().padding(65.dp,25.dp),horizontalArrangement=Arrangement.spacedBy(90.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(17.dp)){Text("欢迎回到",color=Muted,fontSize=24.sp);Text("你的私人影院",color=White,fontSize=39.sp,fontWeight=FontWeight.Bold);Box(Modifier.size(44.dp,4.dp).background(Green));Text("同步收藏，继续精彩。\n在大屏上，找到喜欢的每一个故事。",color=Muted,fontSize=16.sp,lineHeight=28.sp);Text("使用欧乐影院账号登录",color=Green,fontSize=13.sp)};Column(Modifier.width(320.dp).clip(RoundedCornerShape(16.dp)).background(Panel).padding(25.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){Text("账号登录",color=White,fontSize=23.sp,fontWeight=FontWeight.Bold);InputBox(user,{user=it},"账号 / 邮箱");InputBox(pwd,{pwd=it},"密码",password=true);InputBox(captcha,{captcha=it},"图片验证码");Text("验证码区域 · 登录接口接入中",color=Muted,fontSize=12.sp);TvAction("登录",Icons.Rounded.ArrowForward,selected=true,modifier=Modifier.fillMaxWidth()){message="当前为界面预览，尚未提交账号"};if(message.isNotEmpty())Text(message,color=Gold,fontSize=11.sp);Text("密码不会保存到本机",color=Muted,fontSize=11.sp)}}}
+@Composable private fun AccountPreview(){var user by remember{mutableStateOf("")};var pwd by remember{mutableStateOf("")};var captcha by remember{mutableStateOf("")};var message by remember{mutableStateOf("")};Row(Modifier.fillMaxSize().padding(65.dp,25.dp),horizontalArrangement=Arrangement.spacedBy(90.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(17.dp)){Text("欢迎回到",color=Muted,fontSize=24.sp);Text("你的私人影院",color=White,fontSize=39.sp,fontWeight=FontWeight.Bold);Box(Modifier.size(44.dp,4.dp).background(Green));Text("同步收藏，继续精彩。\n在大屏上，找到喜欢的每一个故事。",color=Muted,fontSize=16.sp,lineHeight=28.sp);Text("使用欧乐影院账号登录",color=Green,fontSize=13.sp)};Column(Modifier.width(320.dp).clip(RoundedCornerShape(16.dp)).background(Panel).padding(25.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){Text("账号登录",color=White,fontSize=23.sp,fontWeight=FontWeight.Bold);InputBox(user,{user=it},"账号 / 邮箱");InputBox(pwd,{pwd=it},"密码",password=true);InputBox(captcha,{captcha=it},"图片验证码");Text("验证码区域 · 登录接口接入中",color=Muted,fontSize=12.sp);TvAction("登录",Icons.Rounded.ArrowForward,selected=true,modifier=Modifier.fillMaxWidth()){message="当前为界面预览，尚未提交账号"};if(message.isNotEmpty())Text(message,color=Gold,fontSize=11.sp);Text("账号密码可加密记住，验证码每次重新输入",color=Muted,fontSize=11.sp)}}}
 
 @Composable private fun LivePreview(){var channel by remember{mutableStateOf("央视")};Column(Modifier.fillMaxSize().padding(40.dp,18.dp)){SectionHeading("电视直播","此刻，正在发生");Spacer(Modifier.height(15.dp));FilterLine(listOf("全部频道","央视","地方"),channel){channel=it};Spacer(Modifier.height(25.dp));Row(horizontalArrangement=Arrangement.spacedBy(17.dp)){listOf("CCTV 13" to "新闻","CCTV 6" to "电影","CCTV 5" to "体育").forEach{(logo,name)->Card(onClick={},modifier=Modifier.weight(1f).height(170.dp),colors=CardDefaults.colors(containerColor=Panel),border=CardDefaults.border(focusedBorder=Border(androidx.compose.foundation.BorderStroke(2.dp,Green)))){Column(Modifier.fillMaxSize().padding(22.dp),verticalArrangement=Arrangement.SpaceBetween){Row(Modifier.fillMaxWidth()){Text(logo,fontSize=26.sp,color=White,fontWeight=FontWeight.Black);Spacer(Modifier.weight(1f));Text("LIVE",color=Green,fontSize=10.sp)};Column{Text(name,color=White,fontSize=18.sp);Text("频道预览 · 实时节目待接入",color=Muted,fontSize=11.sp)}}}}}}
 

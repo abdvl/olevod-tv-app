@@ -24,6 +24,9 @@ class AppViewModel(application:Application):AndroidViewModel(application) {
     fun clearSearchHistory(){searchHistory=emptyList();searchPrefs.edit().remove("words").apply()}
     var pendingResume:WatchRecord?=null
     var pendingChannel by mutableStateOf<Channel?>(null)
+    val credentials=CredentialsStore(application)
+    fun rememberCredentials(username:String,password:String){if(username.isNotBlank()&&password.isNotBlank())viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO){credentials.save(username,password)}}
+    fun forgetCredentials(){credentials.clear()}
     val sessions=SessionStore(application)
     val history=HistoryStore(application){sessions.accountKey}
     init{viewModelScope.launch{history.load()}}
@@ -68,7 +71,7 @@ class AppViewModel(application:Application):AndroidViewModel(application) {
     var sessionVersion by mutableIntStateOf(0)
         private set
     val api=OlevodApi(token={sessions.token},onUnauthorized={logout()})
-    suspend fun login(username:String,password:String,captcha:String,captchaId:String){val result=api.login(username,password,captcha,captchaId);kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO){sessions.save(result.token,result.name,result.accountId)};history.load();sessionVersion++;loadHome()}
+    suspend fun login(username:String,password:String,captcha:String,captchaId:String){kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO){credentials.save(username,password)};val result=api.login(username,password,captcha,captchaId);kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO){sessions.save(result.token,result.name,result.accountId)};history.load();sessionVersion++;loadHome()}
     fun logout(){sessions.clear();history.clearView();viewModelScope.launch{history.load()};sessionVersion++;loadHome()}
     private val _home=MutableStateFlow(HomeState())
     val home=_home.asStateFlow()

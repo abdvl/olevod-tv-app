@@ -105,7 +105,7 @@ API origin：`https://api.olelive.com`。以下仅记录无凭据路径。
 API 与 CDN 使用独立 HTTP 客户端；绝不能把 API token 自动附到视频、图片或跳转后的其他域名。
 
 登录前端输入字段：`username/password/captcha/captcha_id`，验证码响应使用 `captchaId/picPath`，登录成功消费 `data.user/data.token`。
-网站有记住账号密码逻辑；Android 设计不复制明文密码持久化。保存加密会话，密码只在本次登录表单存活。
+网站有记住账号密码逻辑。按用户后续明确要求，Android现在使用独立Android Keystore/AES-GCM存储记住的用户名和密码；与登录会话分离，退出保留、可主动清除。验证码不持久化，账号密码不进入日志、Git或APK。
 未证实 token refresh 或设备码协议。首版会话失效后重新登录，不假设有 refresh token。
 
 ## 6. 历史记录的真实限制
