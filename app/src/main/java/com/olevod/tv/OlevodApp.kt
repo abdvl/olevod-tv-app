@@ -78,7 +78,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     val pageStates=rememberSaveableStateHolder()
     var screen by rememberSaveable { mutableStateOf(initialScreen) }
     var category by rememberSaveable { mutableStateOf("电影") }
-    var selected by remember { mutableStateOf(movies.first()) }
+    var selected by rememberSaveable(stateSaver=androidx.compose.runtime.saveable.Saver<Movie,String>(save={com.olevod.tv.data.MovieJson.encode(it)},restore={com.olevod.tv.data.MovieJson.decode(it)})) { mutableStateOf(movies.first()) }
     var backScreen by rememberSaveable { mutableStateOf("home") }
     var full by rememberSaveable { mutableStateOf(false) }
     val openMovie: (Movie) -> Unit = { selected=it;backScreen=screen;screen="player" }
@@ -94,7 +94,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
                 "search" -> if(preview) SearchScreen(movies,openMovie) else ConnectedSearch(vm,openMovie)
                 "player" -> if(preview) PlayerPreview(selected,movies,full,{full=!full},openMovie) else NativePlayer(selected,vm,full){full=!full}
                 "live" -> if(preview) LivePreview() else LiveScreen(vm,full){full=!full}
-                "history" -> EmptyCollection("观看历史","从上次的精彩，继续看下去","开始播放后，此设备的观看记录会出现在这里",Icons.Rounded.History){screen="home"}
+                "history" -> if(!preview) HistoryScreen(vm,openMovie) else EmptyCollection("观看历史","从上次的精彩，继续看下去","开始播放后，此设备的观看记录会出现在这里",Icons.Rounded.History){screen="home"}
                 "favorites" -> EmptyCollection("我的收藏","把喜欢的故事留在这里","登录后可同步欧乐账号的收藏",Icons.Rounded.BookmarkBorder){screen="account"}
                 "account" -> if(preview) AccountPreview() else AccountScreen(vm)
             }}

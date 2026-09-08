@@ -22,13 +22,14 @@ class SessionStore(context:Context) {
     }
     @Volatile private var cached:JSONObject?=read()
     val token:String? get()=cached?.optString("token")?.takeIf{it.isNotBlank()}
+    val accountKey:String get()=cached?.optString("account")?.takeIf{it.isNotBlank()}?:"guest"
     val name:String get()=cached?.optString("name")?:""
     private fun read():JSONObject?=try{
         val raw=prefs.getString("value",null)
         if(raw==null)null else {val parts=raw.split('.');val cipher=Cipher.getInstance("AES/GCM/NoPadding");cipher.init(Cipher.DECRYPT_MODE,key(),GCMParameterSpec(128,Base64.decode(parts[0],Base64.NO_WRAP)));JSONObject(String(cipher.doFinal(Base64.decode(parts[1],Base64.NO_WRAP)),Charsets.UTF_8))}
     }catch(e:Exception){prefs.edit().clear().apply();null}
-    fun save(token:String,name:String) {
-        val value=JSONObject().put("token",token).put("name",name)
+    fun save(token:String,name:String,account:String) {
+        val value=JSONObject().put("token",token).put("name",name).put("account",java.security.MessageDigest.getInstance("SHA-256").digest(account.trim().lowercase(java.util.Locale.ROOT).toByteArray()).joinToString(""){"%02x".format(it)})
         val c=Cipher.getInstance("AES/GCM/NoPadding").apply{init(Cipher.ENCRYPT_MODE,key())}
         val encrypted=c.doFinal(value.toString().toByteArray(Charsets.UTF_8))
         prefs.edit().putString("value",Base64.encodeToString(c.iv,Base64.NO_WRAP)+"."+Base64.encodeToString(encrypted,Base64.NO_WRAP)).apply();cached=value

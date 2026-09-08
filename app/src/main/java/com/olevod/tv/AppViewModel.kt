@@ -17,11 +17,14 @@ data class HomeState(val heroes:List<Hero> = emptyList(),val sections:List<HomeS
 
 class AppViewModel(application:Application):AndroidViewModel(application) {
     val sessions=SessionStore(application)
+    val history=HistoryStore(application){sessions.accountKey}
+    init{viewModelScope.launch{history.load()}}
+    fun record(movie:Movie,episode:Int,position:Long,duration:Long){viewModelScope.launch{history.save(movie,episode,position,duration)}}
     var sessionVersion by mutableIntStateOf(0)
         private set
     val api=OlevodApi(token={sessions.token})
-    suspend fun login(username:String,password:String,captcha:String,captchaId:String){val result=api.login(username,password,captcha,captchaId);sessions.save(result.first,result.second);sessionVersion++;loadHome()}
-    fun logout(){sessions.clear();sessionVersion++;loadHome()}
+    suspend fun login(username:String,password:String,captcha:String,captchaId:String){val result=api.login(username,password,captcha,captchaId);sessions.save(result.first,result.second,username);history.load();sessionVersion++;loadHome()}
+    fun logout(){sessions.clear();viewModelScope.launch{history.load()};sessionVersion++;loadHome()}
     private val _home=MutableStateFlow(HomeState())
     val home=_home.asStateFlow()
     private var homeJob:Job?=null
