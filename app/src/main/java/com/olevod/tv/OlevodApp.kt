@@ -100,7 +100,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
             pageStates.SaveableStateProvider(screen) {
                 val lastPoster=rememberSaveable{mutableLongStateOf(-1)}
                 CompositionLocalProvider(LocalPosterFocus provides lastPoster){ when(screen) {
-                "home" -> if(preview) HomeScreen(movies,heroes,openMovie,{category=it;screen="browse"}) else ConnectedHome(home,vm,openMovie){category=it;screen="browse"}
+                "home" -> if(preview) HomeScreen(movies,heroes,openMovie,{category=it;screen="browse"}) else ConnectedHome(home,vm,openMovie,{screen="history"}){category=it;screen="browse"}
                 "browse" -> if(preview) BrowseScreen(category,movies,openMovie) else ConnectedBrowse(category,vm,openMovie){category=it}
                 "search" -> if(preview) SearchScreen(movies,openMovie) else ConnectedSearch(vm,openMovie)
                 "player" -> if(preview) PlayerPreview(selected,movies,full,{full=!full},openMovie) else NativePlayer(selected,vm,full,{full=!full}){if(full)full=false else screen=backScreen}
@@ -224,15 +224,15 @@ internal fun SectionHeading(title:String,subtitle:String="",more:(()->Unit)?=nul
 }
 
 @Composable
-internal fun PosterCard(movie:Movie,modifier:Modifier=Modifier,posterRatio:Float=.72f,onFocused:()->Unit={},onClick:()->Unit) {
+internal fun PosterCard(movie:Movie,modifier:Modifier=Modifier,posterRatio:Float=.72f,onFocused:()->Unit={},focusIdentity:Long=movie.id,subtitle:String?=null,onClick:()->Unit) {
     val remembered=LocalPosterFocus.current
     val focus=remember{FocusRequester()}
     val bringWholePoster=remember{BringIntoViewRequester()}
     val scope=rememberCoroutineScope()
     var cardFocused by remember{mutableStateOf(false)}
-    LaunchedEffect(Unit){if(remembered?.value==movie.id)focus.requestFocus()}
+    LaunchedEffect(Unit){if(remembered?.value==focusIdentity)focus.requestFocus()}
     Column(modifier.bringIntoViewRequester(bringWholePoster),verticalArrangement=Arrangement.spacedBy(7.dp)) {
-        Card(onClick=onClick,modifier=Modifier.focusRequester(focus).onFocusChanged{cardFocused=it.isFocused;if(it.isFocused){remembered?.value=movie.id;scope.launch{withFrameNanos{};if(cardFocused)bringWholePoster.bringIntoView()};onFocused()}}.fillMaxWidth().aspectRatio(posterRatio),shape=CardDefaults.shape(RoundedCornerShape(9.dp)),scale=CardDefaults.scale(focusedScale=1.035f),border=CardDefaults.border(focusedBorder=Border(androidx.compose.foundation.BorderStroke(2.dp,Green)))) {
+        Card(onClick=onClick,modifier=Modifier.focusRequester(focus).onFocusChanged{cardFocused=it.isFocused;if(it.isFocused){remembered?.value=focusIdentity;scope.launch{withFrameNanos{};if(cardFocused)bringWholePoster.bringIntoView()};onFocused()}}.fillMaxWidth().aspectRatio(posterRatio),shape=CardDefaults.shape(RoundedCornerShape(9.dp)),scale=CardDefaults.scale(focusedScale=1.035f),border=CardDefaults.border(focusedBorder=Border(androidx.compose.foundation.BorderStroke(2.dp,Green)))) {
             Box(Modifier.fillMaxSize().background(Panel)) {
                 AsyncImage(movie.image,movie.title,Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent,Color.Transparent,Color.Black.copy(alpha=.8f)))))
@@ -244,7 +244,7 @@ internal fun PosterCard(movie:Movie,modifier:Modifier=Modifier,posterRatio:Float
             }
         }
         Text(movie.title,color=White,fontSize=14.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
-        Text(listOf(movie.year,movie.area).filter{it.isNotBlank()}.joinToString(" · "),color=Muted,fontSize=11.sp,maxLines=1)
+        Text(subtitle?:listOf(movie.year,movie.area).filter{it.isNotBlank()}.joinToString(" · "),color=Muted,fontSize=11.sp,maxLines=1)
     }
 }
 

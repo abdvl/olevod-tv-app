@@ -18,10 +18,10 @@
 | S15 | 云历史分页读取、新观看同步及真实回读通过；离线补传未实现 |
 | S16 | 焦点、后台播放、账号竞争、异常恢复及云同步顺序已修，独立复查通过 |
 | S17 | build/lint/20单元测试通过；Chromecast已配对安装、实机登录通过 |
-| S19–S28 | 账号记忆、导航展开、分类/搜索重设计、无限滚动、播放控制、底部留白、历史卡片与明确方向键焦点已实现；新增项最终实机复核中 |
+| S19–S28 | 账号记忆、导航展开、分类/搜索重设计、无限滚动、播放控制、底部留白、历史卡片与明确方向键焦点已实现；目录/搜索跨区焦点、末行可见性、历史卡片/续播与播放器控制均已独立实机复核 |
 
 - 登录依赖已解除：用户授权本次登录调试代填验证码，Android同客户端验证码登录已成功；Chrome因Mac锁定暂不可用。
-- 下一步：完成新增账号记忆、验证码数字键盘、导航与续播的实机验收。用户已明确暂缓直播稳定性排查，保留现有直播功能及问题记录。
+- 待补：记住凭据后通过实际验证码表单再次登录、多结果搜索追加，以及30分钟播放稳定性。导航、历史续播与新增首行最近播放已实机验证。用户已明确暂缓直播稳定性排查，保留现有直播功能及问题记录。
 - 用户已授权每步本地commit、使用Android Studio、独立agent验证和`.secrects`测试账号。未推送远端。
 - 恢复时保留已完成提交，先检查未提交修改和本表的“待验收”。
 
@@ -275,3 +275,11 @@
 - Fullscreen Up hides the controls immediately; repeated Up keeps them hidden. Down/OK can show them again, and manual hide also works when paused.
 - Chromecast UI tree confirmed no fullscreen/play/seek buttons after one Up, and all controls returned after Down. The sampled VIP source was buffering during this UI check; this is input/visibility verification, not a new playback-stability claim.
 - Independent code review, build, lint and 20 unit tests passed. Installed on Chromecast.
+
+### S30 - recent playback first on home
+
+- Home starts with the current account/device's latest 10 watch records in a horizontal row (five cards visible), followed by recommendations and category sections. Empty history has an explicit placeholder; View all opens history.
+- Cards show saved episode/position and pass the full record into resume. Missing movie metadata uses the same bounded loader as history.
+- Recent cards have distinct focus identities from category copies of the same movie. Independent review caught and fixed the row's 8dp width excess and absent-episode wording.
+- Chromecast confirmed recent playback above recommendations. Opening 01:01 record prepared media at 61568ms; one Back restored the same recent card after record reordering. Screenshot: chromecast-home-recent.png / chromecast-recent-return.png.
+- Build, lint and 20 unit tests passed. Latest APK includes the above fullscreen Up gesture.
