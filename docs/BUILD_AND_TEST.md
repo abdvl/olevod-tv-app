@@ -43,11 +43,11 @@ debug可用 `--es screen home|browse|search|player|live|history|favorites|accoun
 - 频道取消收藏返回code0后等待60秒仍未生效；App提示未确认，不假更新状态。影视收藏通过。
 - 独立agent确认会员授权源CCTV13、东方卫视（重试恢复）及午夜新闻回看均实际原生播放。游客/临时媒体源可能报错，可重试。
 - 模拟器无音频输出，不代替Chromecast音画同步、4K/HDR、音频格式、内存和长时间播放测试。
-- 实机型号为Google Chromecast with Google TV，4K/HD具体版本仍未确认；界面按1080p TV验证。
+- 实机已连接：Google Chromecast with Google TV，设备代号sabrina，Android 14，32位armeabi-v7a用户态；显示报告3840×2160、逻辑1920×1080。用户已确认普通点播画面和声音正常。片源4K/HDR和长时间稳定性另行验收。
 
 ## 实机验收
 
-使用Android Studio的设备配对或已配置的ADB连接实机。应用安装后检查遥控器所有入口、点播/VIP/两直播频道/回看、返回焦点、续播、待机恢复及至少30分钟连续播放。请以设备协商出来的解码能力为准，不把网站“蓝光”栏目名称当成4K/HDR保证。
+使用Android Studio的设备配对或已配置的ADB连接实机。当前重点检查遥控器所有入口、点播/VIP、返回焦点、续播与待机恢复；至少30分钟连续播放仍待完成。直播和回看进一步稳定性验收按用户要求暂缓。请以设备协商出来的解码能力为准，不把网站“蓝光”栏目名称当成4K/HDR保证。
 
 ## 暂停后继续
 

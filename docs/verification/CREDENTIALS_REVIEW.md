@@ -1,0 +1,21 @@
+# 记住登录与新导航独立审查（队列修复已复查）
+
+审查4d619d6对应实现。CredentialsStore使用单独remembered-login偏好文件及Keystore别名，用户名、密码均包含在AES-GCM密文内；与会话存储分离，退出登录保留记住的信息。凭据对象toString脱敏。
+
+发现并已报告写入顺序风险：AppViewModel.rememberCredentials每次独立launch(IO)保存，但forgetCredentials同步clear；挂起save可能在用户clear之后完成，使清除的信息重新出现，连续编辑也可能由旧save覆盖新值。需统一有序写/清除或防旧版本写入。
+
+UI阶段结果：从首页D-pad右移可聚焦顶部目录图标，确定后进入电影4123部目录。尚未收口Home图标返回、验证码布局、再次登录、隐藏全屏单Back、精确历史续播。
+
+随后实机前台切到其他蓝色目录应用，已停止发键并通知主agent，等待重新确认独占操作。只读crash buffer未见OLE崩溃，不将该变化解释为本App崩溃。
+
+主agent随后确认用户主动切参考App，设备操作继续暂停，等待新布局完成后重新协调验收。
+
+建议最小顺序修复：AppViewModel维护一个凭据操作Channel，Save/Clear调用时同步入队，唯一消费者在IO执行；login的保存同样经队列并等待完成回执。这样编辑保存、清除与提交登录不再有独立写路径。单纯给底层save/clear加synchronized只能避免同时写，不能纠正独立IO任务实际开始顺序。
+
+AccountScreen只读确认：已记住信息时显示更换/清除入口而不显示明文，退出后重新从vault读取并切紧凑表单；数字1绑定FocusRequester，loggedIn/editCredentials变化触发焦点；验证码刷新清输入，登录错误触发新图。不把代码路径视为实际焦点/验证码可见性通过，仍待新版实机补验。
+
+## 凭据队列修复复查
+
+最新代码已统一写入路径：rememberCredentials与forgetCredentials同步入credentialQueue，login的saveLoginCredentials进入同队列并等待CompletableDeferred。唯一消费者依次执行IO保存/清除，错误逐项处理，不会因单项异常终止后续写入；登录保存失败通过ack向登录协程传播。原有旧save晚于clear覆盖风险已收口。
+
+rememberedCredentials作为即时UI状态更新，退出登录读该状态，避免用户刚清除但磁盘任务尚未完成时从旧vault重新填回。复查期间主agent追加CredentialsStore.clear调用vault.clear(synchronous=true)，现再次读取确认使用checked commit，由credentialQueue在IO等待完成，先前apply边界已不适用于该凭据清除路径。
