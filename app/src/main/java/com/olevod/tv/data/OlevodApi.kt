@@ -99,6 +99,12 @@ class OlevodApi(
     }
     suspend fun hotWords():List<String> = (get("v1","pub","index","search","hot","keywords") as JSONArray).objects().filter{it.optString("type")=="vod"}.flatMap{it.optJSONArray("words").strings()}
     suspend fun suggestions(query:String):List<String> {val d=get("v1","pub","index","search","keywords",query);return when(d){is JSONArray->d.strings();else->emptyList()}}
+    suspend fun captcha():Pair<String,String>{val d=request(listOf("pub","captcha"),JSONObject()).getJSONObject("data");return d.getString("captchaId") to d.getString("picPath")}
+    suspend fun login(username:String,password:String,captcha:String,captchaId:String):Pair<String,String>{
+        val d=request(listOf("pub","user","login"),JSONObject().put("username",username).put("password",password).put("captcha",captcha).put("captcha_id",captchaId)).getJSONObject("data")
+        val user=d.getJSONObject("user")
+        return d.getString("token") to user.optString("nickname",user.optString("username","已登录"))
+    }
     suspend fun favorite(id:Long,save:Boolean){request(if(save)listOf("pub","vod","favorite")else listOf("pub","vod","favorite","cancel"),if(save)JSONObject().put("id",id)else JSONObject().put("ids",JSONArray().put(id)))}
     suspend fun favorites(page:Int):CatalogPage {val o=request(listOf("pub","vod","favorite","list"),JSONObject().put("page",page).put("pageSize",20)).getJSONObject("data");return CatalogPage(o.optJSONArray("list").objects().map(::movie),o.optInt("total"),page,20)}
     suspend fun liveGroups():List<Pair<Int,String>> { val d=get("v1","pub","live","conditions") as JSONArray;return d.objects().firstOrNull{it.optString("type")=="tv"}?.optJSONObject("data")?.optJSONArray("groups").objects().map{it.optInt("id") to it.optString("title")} }

@@ -5,7 +5,7 @@
 ## 当前检查点
 
 - 已完成：S01–S08（首页、浏览、搜索已接入）。
-- 进行中：S09 独立播放回归；S10 登录实现。
+- 进行中：S10 登录验证码待用户输入；S11–S14准备中。
 - 下一步：S06真实首页，随后浏览、搜索、播放。
 - 已有设计基线提交：`4552cc8 Add design docs`。
 - 用户目标设备：Google Chromecast with Google TV（4K/HD 待确认）。
@@ -85,3 +85,9 @@
 - 原生HLS、系统MediaSession、暂停/播放、±30秒、速度、选集、全屏、错误重试与后台暂停。
 - 模拟器普通影片实际视频画面已显示；dumpsys media_session为PLAYING且进度递增。
 - 已交给独立agent回归遥控器控制，报告待补；VIP随登录后验证。
+
+### S10 — feat: add TV login and encrypted session storage
+
+- 直接电视输入账号/密码/图片验证码，刷新验证码、登录状态与退出。
+- Android Keystore AES-GCM加密token，仅会话落盘，不保存密码/验证码；禁止Android备份。
+- assembleDebug与协议测试通过；真实账号登录待用户填写验证码，尚未验收VIP/收藏写入。

@@ -1,6 +1,7 @@
 package com.olevod.tv
 
 import android.app.Application
+import androidx.compose.runtime.*
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.olevod.tv.data.*
@@ -15,7 +16,12 @@ data class HomeSection(val category:Category,val movies:List<Movie> = emptyList(
 data class HomeState(val heroes:List<Hero> = emptyList(),val sections:List<HomeSection> = emptyList(),val loading:Boolean=true,val error:String?=null)
 
 class AppViewModel(application:Application):AndroidViewModel(application) {
-    val api=OlevodApi()
+    val sessions=SessionStore(application)
+    var sessionVersion by mutableIntStateOf(0)
+        private set
+    val api=OlevodApi(token={sessions.token})
+    suspend fun login(username:String,password:String,captcha:String,captchaId:String){val result=api.login(username,password,captcha,captchaId);sessions.save(result.first,result.second);sessionVersion++;loadHome()}
+    fun logout(){sessions.clear();sessionVersion++;loadHome()}
     private val _home=MutableStateFlow(HomeState())
     val home=_home.asStateFlow()
     private var homeJob:Job?=null
