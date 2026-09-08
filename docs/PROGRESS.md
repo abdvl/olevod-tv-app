@@ -453,3 +453,10 @@
 - Query changes reset the matching feed and scroll anchor; repeated same-value confirmations preserve them. Header and triggers stay operable during loading, empty results or errors. Last-row visibility/focus triggers cumulative loading with bounded retry behavior.
 - Independent catalog tests passed 4/4, plus Foundation/Home 6/6 in the same frozen build (10/10, zero skips). Covered year boundaries/confirmation, sort cancellation with preserved deep-grid setup, combined draft apply/cancel, and unknown total text. See `docs/verification/v2/V2-05.md` for limits.
 - Compared runtime catalog and year dialog against approved references, refined title/trigger typography and modal size, and removed a redundant loaded-count row. Latest runtime images are in `docs/verification/v2/screenshots/`; final minor visual refinements will receive the integrated UI rerun.
+
+### S52 / V2-06 - three-column search and cancellable focus intent
+
+- Replaced search with a 6×6 keyboard, separate suggestions column and two-column portrait results. Draft and confirmed queries are distinct; selecting a suggestion waits for its results and focuses the first result once. Back returns to the input without opening the IME; further typing or directional navigation cancels pending focus transfer.
+- Added explicit cross-column neighbors and remembered keyboard/result targets, cumulative result loading, independent error/empty guidance, and Unicode code-point deletion. API debouncing remains 350 ms for suggestions and 400 ms for typed results.
+- Independent Search 3 + Catalog 4 tests passed 7/7, zero skips, including MN → 魔女 → first result, Back during a pending request, and a non-cooperative old response after newer typing. See `V2-06.md`; API/IME/device integration and final runtime screenshots remain in V2-10.
+- App/test builds, JVM tests and lint also passed after subsequent player/account drafts. Those uncommitted drafts are intentionally outside this checkpoint.

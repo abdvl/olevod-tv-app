@@ -1,120 +1,144 @@
 package com.olevod.tv
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.focusProperties
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.*
+import androidx.compose.ui.input.key.*
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Text
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
+
+internal data class SearchFixture(val hot:List<String>,val suggest:suspend(String)->List<String>,val feed:(String)->CatalogFeed)
+internal fun removeLastCodePoint(value:String):String=if(value.isEmpty())value else value.substring(0,value.offsetByCodePoints(value.length,-1))
 
 @Composable
-fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit) {
-    var query by rememberSaveable{mutableStateOf("")}
+internal fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit,fixture:SearchFixture?=null) {
+    var draftQuery by rememberSaveable{mutableStateOf("")}
+    var submittedQuery by rememberSaveable{mutableStateOf<String?>(null)}
     var suggestions by remember{mutableStateOf<List<String>>(emptyList())}
-    var hot by remember{mutableStateOf<List<String>>(emptyList())}
+    var hot by remember{mutableStateOf(fixture?.hot.orEmpty())}
     var editRequest by remember{mutableIntStateOf(0)}
-    val input=remember{FocusRequester()}
-    val firstResult=remember{FocusRequester()}
+    val input=remember{FocusRequester()};val firstResult=remember{FocusRequester()}
     var inputFocused by remember{mutableStateOf(false)}
-    var selectedSuggestion by remember{mutableStateOf<String?>(null)}
-    val changeQuery:(String)->Unit={selectedSuggestion=null;query=it}
-    BackHandler(enabled=!inputFocused){selectedSuggestion=null;input.requestFocus()}
+    var focusIntent by remember{mutableStateOf<String?>(null)}
+    val changeQuery:(String)->Unit={focusIntent=null;submittedQuery=null;draftQuery=it}
+    BackHandler(enabled=!inputFocused){focusIntent=null;input.requestFocus()}
     val keys=remember{List(36){FocusRequester()}}
-    val clear=remember{FocusRequester()}
-    val delete=remember{FocusRequester()}
-    val chinese=remember{FocusRequester()}
-    val suggestionsFocus=remember{FocusRequester()}
-    val resultsFocus=remember{FocusRequester()}
-    var lastKey by remember{mutableIntStateOf(5)}
-    val home by vm.home.collectAsStateWithLifecycle()
-    val term=query.trim()
-    val feed=remember(term,vm.sessionVersion){if(term.isBlank())null else vm.searchFeed(term)}
+    val clear=remember{FocusRequester()};val delete=remember{FocusRequester()};val chinese=remember{FocusRequester()}
+    val suggestionsFocus=remember{FocusRequester()};val resultsFocus=remember{FocusRequester()}
+    var lastKey by rememberSaveable{mutableIntStateOf(5)}
+    var lastWord by rememberSaveable{mutableStateOf<String?>(null)}
+    var lastResult by rememberSaveable{mutableLongStateOf(-1)}
+    val page=LocalPageFocus.current
+    val memory=LocalContentFocusMemory.current
+    val scope=rememberCoroutineScope()
+    val term=draftQuery.trim()
+    val feed=remember(term,vm.sessionVersion,fixture){if(term.isBlank())null else fixture?.feed?.invoke(term)?:vm.searchFeed(term)}
     DisposableEffect(feed){onDispose{feed?.cancel()}}
-    val result=feed?.state?:CatalogFeedState()
-    val movies=if(term.isBlank())home.sections.firstOrNull{it.category.id==1}?.movies.orEmpty()else result.items
-    val words=if(term.isBlank())(vm.searchHistory+hot).distinct().take(20)else(suggestions+movies.map{it.title}).distinct().take(20)
-    val listState=rememberSaveable(term,saver=LazyListState.Saver){LazyListState()}
-    LaunchedEffect(term,selectedSuggestion,result.items.firstOrNull()?.id,result.loading,result.error,result.nextPage){
-        if(selectedSuggestion!=term)return@LaunchedEffect
+    val result=feed?.state?:CatalogFeedState(nextPage=2,endReached=true)
+    val movies=result.items
+    val words=if(term.isBlank())(vm.searchHistory+hot).distinct().take(20)else suggestions.distinct().take(20)
+    val list=rememberSaveable(term,saver=LazyListState.Saver){LazyListState()}
+    val wordRefs=remember(words){words.associateWith{FocusRequester()}}
+    val resultRefs=remember(movies.map{it.id}){movies.associate{it.id to FocusRequester()}}
+    fun enterWords(){wordRefs[lastWord]?.requestFocus()?:wordRefs[words.firstOrNull()]?.requestFocus()}
+    val enterResults:()->Unit={if(movies.isNotEmpty())scope.launch{
+        val index=movies.indexOfFirst{it.id==lastResult}.coerceAtLeast(0)
+        list.scrollToItem(index/2);withFrameNanos{};resultRefs[movies[index].id]?.requestFocus()
+    }}
+    DisposableEffect(page){page?.enter={input.requestFocus()};onDispose{page?.enter=null}}
+    LaunchedEffect(Unit){if(memory?.anchor?.value==null){withFrameNanos{};input.requestFocus()}}
+    LaunchedEffect(term,focusIntent,result.items.firstOrNull()?.id,result.loading,result.error,result.nextPage){
+        if(focusIntent!=term)return@LaunchedEffect
         if(result.items.isNotEmpty()){
-            listState.scrollToItem(0)
-            withFrameNanos { }
-            firstResult.requestFocus()
-            selectedSuggestion=null
-        }else if(result.error!=null||(!result.loading&&result.nextPage>1)){
-            selectedSuggestion=null
-            input.requestFocus()
-        }
+            list.scrollToItem(0);withFrameNanos{}
+            if(focusIntent==term){firstResult.requestFocus();focusIntent=null}
+        }else if(result.error!=null){focusIntent=null}
+        else if(!result.loading&&result.nextPage>1){focusIntent=null;input.requestFocus()}
     }
-    LaunchedEffect(Unit){try{hot=vm.api.hotWords()}catch(e:Exception){if(e is CancellationException)throw e}}
-    LaunchedEffect(term){suggestions=emptyList();if(term.isNotBlank())try{delay(350);suggestions=vm.api.suggestions(term)}catch(e:Exception){if(e is CancellationException)throw e}}
-    LaunchedEffect(feed){if(feed!=null&&feed.state.items.isEmpty()&&feed.state.error==null){delay(400);feed.loadNext()}}
-    LaunchedEffect(feed,listState){
-        snapshotFlow {
-            val layout=listState.layoutInfo;val state=feed?.state
-            state!=null && state.items.isNotEmpty() && layout.totalItemsCount>=(state.items.size+1)/2+1 &&
-                (layout.visibleItemsInfo.lastOrNull()?.index?:-1)>=layout.totalItemsCount-2 &&
-                !state.loading && !state.endReached && state.error==null
-        }.distinctUntilChanged().collect{nearEnd->if(nearEnd)feed?.loadNext()}
+    LaunchedEffect(fixture){if(fixture==null)try{hot=vm.api.hotWords()}catch(e:Exception){if(e is CancellationException)throw e}}
+    LaunchedEffect(term,fixture){
+        // Keep the confirmed suggestion visible while its full query is loading.
+        if(submittedQuery!=term)suggestions=emptyList()
+        if(term.isNotBlank())try{delay(350);suggestions=(fixture?.suggest?.invoke(term)?:vm.api.suggestions(term)).let{if(submittedQuery==term)(listOf(term)+it).distinct()else it}}
+        catch(e:Exception){if(e is CancellationException)throw e}
     }
-    Row(Modifier.fillMaxSize().padding(36.dp,18.dp,36.dp,20.dp),horizontalArrangement=Arrangement.spacedBy(22.dp)){
-        Column(Modifier.width(254.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
-            InputBox(query,changeQuery,"输入片名 / 演员",Modifier.focusRequester(input).onFocusChanged{inputFocused=it.isFocused}.semantics{contentDescription="搜索输入框"}.focusProperties{down=clear},editRequest=editRequest)
-            Row{TvAction("清空",Icons.Rounded.Close,modifier=Modifier.focusRequester(clear).focusProperties{up=input;down=keys[0];right=delete}){changeQuery("")};Spacer(Modifier.weight(1f));TvAction("退格",Icons.Rounded.Backspace,modifier=Modifier.focusRequester(delete).focusProperties{up=input;down=keys[5];left=clear}){changeQuery(query.dropLast(1))}}
-            Column(verticalArrangement=Arrangement.spacedBy(10.dp)){"ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".chunked(6).forEachIndexed{row,line->
-                Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){line.forEachIndexed{column,c->
+    LaunchedEffect(feed){if(feed!=null&&feed.state.nextPage==1&&feed.state.error==null){delay(if(focusIntent==term)0 else 400);feed.loadNext()}}
+    val latestResult by rememberUpdatedState(result);val latestFeed by rememberUpdatedState(feed)
+    LaunchedEffect(list,term){snapshotFlow{
+        val state=latestResult;val rows=(state.items.size+1)/2
+        rows>0&&(list.layoutInfo.visibleItemsInfo.lastOrNull()?.index?:-1)>=rows-1&&!state.loading&&!state.endReached&&state.error==null
+    }.distinctUntilChanged().collect{if(it)latestFeed?.loadNext()}}
+    Row(Modifier.fillMaxSize().padding(36.dp,12.dp,36.dp,0.dp).testTag("search-page").onPreviewKeyEvent{event->
+        if(focusIntent!=null&&event.type==KeyEventType.KeyDown&&event.key in listOf(Key.DirectionLeft,Key.DirectionRight,Key.DirectionUp,Key.DirectionDown))focusIntent=null
+        false
+    },horizontalArrangement=Arrangement.spacedBy(18.dp)){
+        Column(Modifier.width(254.dp).verticalScroll(rememberScrollState()).padding(bottom=24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
+            InputBox(draftQuery,changeQuery,"输入片名 / 演员",Modifier.focusRequester(input).restoreContentFocus("input").testTag("search-input")
+                .onFocusChanged{inputFocused=it.isFocused}.semantics{contentDescription="搜索输入框"}
+                .focusProperties{down=clear;up=page?.header?:FocusRequester.Default},editRequest=editRequest,onEditingFinished={input.requestFocus()})
+            Row{TvAction("清空",Icons.Rounded.Close,modifier=Modifier.focusRequester(clear).restoreContentFocus("clear").focusProperties{up=input;down=keys[0];right=delete;left=FocusRequester.Cancel}){changeQuery("")}
+                Spacer(Modifier.weight(1f));TvAction("退格",Icons.Rounded.Backspace,modifier=Modifier.focusRequester(delete).restoreContentFocus("delete").focusProperties{up=input;down=keys[5];left=clear}){changeQuery(removeLastCodePoint(draftQuery))}}
+            Column(verticalArrangement=Arrangement.spacedBy(8.dp)){"ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".chunked(6).forEachIndexed{row,line->
+                Row(horizontalArrangement=Arrangement.spacedBy(7.dp)){line.forEachIndexed{column,c->
                     val index=row*6+column
-                    KeyButton(c.toString(),Modifier.weight(1f).focusRequester(keys[index]).onFocusChanged{if(it.isFocused)lastKey=index}.focusProperties{
+                    KeyButton(c.toString(),Modifier.weight(1f).focusRequester(keys[index]).restoreContentFocus("key:$c").testTag("search-key:$c").onFocusChanged{if(it.isFocused)lastKey=index}.focusProperties{
                         up=if(row>0)keys[index-6]else if(column<3)clear else delete
                         down=if(row<5)keys[index+6]else chinese
                         left=if(column>0)keys[index-1]else FocusRequester.Cancel
-                        right=if(column<5)keys[index+1]else if(words.isNotEmpty())suggestionsFocus else if(movies.isNotEmpty())resultsFocus else FocusRequester.Cancel
-                    }){changeQuery(query+c)}
+                        right=if(column<5)keys[index+1]else FocusRequester.Cancel
+                    }.onPreviewKeyEvent{event->if(column==5&&event.key==Key.DirectionRight){if(event.type==KeyEventType.KeyDown){if(words.isNotEmpty())enterWords()else enterResults()};true}else false}){changeQuery(draftQuery+c)}
                 }}
             }}
-            TvAction("中文 / 语音输入",Icons.Rounded.Keyboard,modifier=Modifier.focusRequester(chinese).focusProperties{up=keys[30]}){selectedSuggestion=null;editRequest++}
-            Text("支持系统输入法与手机遥控输入",color=Muted,fontSize=11.sp)
+            TvAction("中文 / 语音输入",Icons.Rounded.Keyboard,modifier=Modifier.focusRequester(chinese).restoreContentFocus("ime").focusProperties{up=keys[30+(lastKey%6)];down=FocusRequester.Cancel}){focusIntent=null;editRequest++}
+            Text("支持系统输入法与手机遥控输入",color=Muted,fontSize=13.sp,lineHeight=18.sp)
         }
-        Box(Modifier.width(1.dp).fillMaxHeight().background(White.copy(alpha=.08f)))
-        Column(Modifier.width(170.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){
-            Text(if(term.isBlank())"热门与最近搜索"else"猜你想搜",color=White,fontSize=18.sp)
-            LazyColumn(Modifier.weight(1f).focusRequester(suggestionsFocus).focusGroup(),verticalArrangement=Arrangement.spacedBy(5.dp)){
-                items(words,key={it}){word->TvAction(word,modifier=Modifier.fillMaxWidth().focusProperties{left=keys[lastKey];right=if(movies.isNotEmpty())resultsFocus else FocusRequester.Cancel}){vm.saveQuery(word);selectedSuggestion=word.trim();query=word}}
+        Box(Modifier.width(1.dp).fillMaxHeight().background(TvDesign.border))
+        Column(Modifier.width(170.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
+            Text(if(term.isBlank())"热门与最近搜索"else"猜你想搜",color=White,fontSize=18.sp,lineHeight=24.sp)
+            LazyColumn(Modifier.weight(1f).focusRequester(suggestionsFocus).focusGroup(),contentPadding=PaddingValues(bottom=64.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){
+                itemsIndexed(words,key={_,word->word}){index,word->TvAction(word,selected=submittedQuery==word,modifier=Modifier.fillMaxWidth().focusRequester(wordRefs.getValue(word))
+                    .restoreContentFocus("suggestion:$word").testTag("suggestion:$word").onFocusChanged{if(it.isFocused)lastWord=word}
+                    .focusProperties{left=keys[lastKey];right=FocusRequester.Cancel;if(index==0)up=page?.header?:FocusRequester.Default;if(index==words.lastIndex)down=FocusRequester.Cancel}
+                    .onPreviewKeyEvent{event->if(event.key==Key.DirectionRight){if(event.type==KeyEventType.KeyDown)enterResults();true}else false}){
+                        vm.saveQuery(word);submittedQuery=word.trim();focusIntent=word.trim();draftQuery=word
+                    }}
+                if(term.isBlank()&&vm.searchHistory.isNotEmpty())item{TvAction("清除搜索记录"){vm.clearSearchHistory()}}
             }
-            if(term.isBlank()&&vm.searchHistory.isNotEmpty())TvAction("清除搜索记录"){vm.clearSearchHistory()}
         }
         Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(12.dp)){
-            Text(if(term.isBlank())"最近更新"else"包含「$term」的影片"+if(result.total>=0)" · ${result.total} 部"else"",color=White,fontSize=17.sp)
-            PosterFocusGroup(term){LazyColumn(Modifier.weight(1f).focusRequester(resultsFocus).focusGroup(),state=listState,verticalArrangement=Arrangement.spacedBy(18.dp),contentPadding=PaddingValues(4.dp,5.dp,4.dp,64.dp)){
-                items(movies.chunked(2),key={it.first().id}){row->Row(horizontalArrangement=Arrangement.spacedBy(14.dp)){
-                    row.forEachIndexed{column,m->PosterCard(m,Modifier.weight(1f).then(if(m.id==movies.firstOrNull()?.id)Modifier.focusRequester(firstResult)else Modifier).focusProperties{if(column==0)left=if(words.isNotEmpty())suggestionsFocus else keys[lastKey]},posterRatio=.74f){if(term.isNotBlank())vm.saveQuery(term);open(m)}}
+            Text(if(term.isBlank())"发现想看的故事"else(if(submittedQuery==term)"「$term」搜索结果"else"包含「$term」的影片")+(if(result.total>=0)" · ${result.total} 部"else""),color=White,fontSize=17.sp,lineHeight=24.sp)
+            PosterFocusGroup("search:$term") {LazyColumn(Modifier.weight(1f).focusRequester(resultsFocus).focusGroup().testTag("search-results"),state=list,verticalArrangement=Arrangement.spacedBy(16.dp),contentPadding=PaddingValues(4.dp,4.dp,4.dp,64.dp)){
+                itemsIndexed(movies.chunked(2),key={_,row->row.first().id}){rowIndex,row->Row(horizontalArrangement=Arrangement.spacedBy(14.dp)){
+                    row.forEachIndexed{column,m->PosterCard(m,Modifier.weight(1f).focusRequester(resultRefs.getValue(m.id))
+                        .then(if(rowIndex==0&&column==0)Modifier.focusRequester(firstResult)else Modifier)
+                        .focusProperties{if(column==0)left=FocusRequester.Cancel;else right=FocusRequester.Cancel;if(rowIndex==0)up=page?.header?:FocusRequester.Default}
+                        .onPreviewKeyEvent{event->if(column==0&&event.key==Key.DirectionLeft){if(event.type==KeyEventType.KeyDown){if(words.isNotEmpty())enterWords()else keys[lastKey].requestFocus()};true}else false},
+                        onFocused={lastResult=m.id;if(rowIndex==(movies.size-1)/2&&!result.loading&&!result.endReached&&result.error==null)feed?.loadNext()}){vm.saveQuery(term);open(m)}}
                     repeat(2-row.size){Spacer(Modifier.weight(1f))}
                 }}
-                item(key="load-more"){
+                item(key="state"){
                     when {
+                        term.isBlank()->Text("输入片名，或选择中间的词条",color=Muted,fontSize=14.sp,lineHeight=22.sp)
                         result.error!=null->ErrorNotice(result.error){feed?.loadNext()}
-                        term.isNotBlank()&&(result.loading||result.nextPage==1)->Text("正在搜索…",color=Muted)
-                        term.isNotBlank()&&movies.isEmpty()->Text("没有找到相关影片",color=Muted)
-                        result.endReached&&movies.isNotEmpty()->Text("已显示全部结果",color=Muted,fontSize=12.sp)
+                        result.loading||result.nextPage==1->Text("正在搜索…",color=Muted)
+                        movies.isEmpty()->Text(if(submittedQuery!=term&&words.isNotEmpty())"选择联想词，查找完整片名"else"没有找到相关影片",color=Muted,fontSize=14.sp,lineHeight=22.sp)
+                        result.endReached->Text("已显示全部结果",color=Muted,fontSize=13.sp)
                     }
                 }
             }}
