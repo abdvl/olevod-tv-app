@@ -157,3 +157,12 @@ type      <- "vod" 或 "tv"
 - [直播样本](https://www.olevod.com/player/live/tv-CCTV13HD-58.html)
 
 脚本文件随网站升级可能失效；这里记录的是本次观察版本，不是永久契约。
+
+## 10. 实施期补证（2026-09-07）
+
+使用与前端一致的 `_vv` 时间签名，未登录独立 HTTP 请求成功：全局配置、点播类型、横幅、电影列表、中文搜索、普通点播详情、直播详情。
+筛选位置现已由 Navs 源码确认：`true / membership / initial / area / category / type / year / sort / page / pageSize`；membership=1会员、2免费、3全部。
+搜索响应不是通用 list，而是 `data: {total, data:[影片]}`。热门词为按媒体类型分组的 `[{type:"vod",words:[...]}]`。
+节目单 start/end 带 `+08:00`，原生以 Asia/Shanghai 日期查询。节目 hasVod 和 liveType 应按节目处理。
+普通点播样本 83927 的详情在 guest 状态直接返回 HTTPS HLS。直播 guest 的 detail.hls 为低清入口，不能直接取 urls 中会员高清候选绕过账户权益。
+部分响应体需处理 gzip；适配器只在内容魔数确认为 gzip 时解包，错误提示不回显 URL/服务器私密消息。
