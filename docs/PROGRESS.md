@@ -5,7 +5,7 @@
 ## 当前检查点
 
 - 已完成：S01–S08（首页、浏览、搜索已接入）。
-- 进行中：S09 Media3播放接入。
+- 进行中：S09 独立播放回归；S10 登录实现。
 - 下一步：S06真实首页，随后浏览、搜索、播放。
 - 已有设计基线提交：`4552cc8 Add design docs`。
 - 用户目标设备：Google Chromecast with Google TV（4K/HD 待确认）。
@@ -79,3 +79,9 @@
 - 实测发现data.data是按type分组，已按vod.list/total读取。
 - 独立agent新增真实分组回归，12项协议单元测试全部通过；空结果和热门词加载已模拟器检查。
 - 登录验证码已显示给用户，等待输入；其他工作继续。
+
+### S09 — feat: play on-demand video with Media3
+
+- 原生HLS、系统MediaSession、暂停/播放、±30秒、速度、选集、全屏、错误重试与后台暂停。
+- 模拟器普通影片实际视频画面已显示；dumpsys media_session为PLAYING且进度递增。
+- 已交给独立agent回归遥控器控制，报告待补；VIP随登录后验证。
