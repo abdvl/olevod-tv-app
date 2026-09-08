@@ -132,11 +132,11 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
                 if(note.isNotBlank())Text(note,color=Gold,fontSize=11.sp)
             }
         }
-        if(!full)Column(Modifier.width(260.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(13.dp)) {
-            Text(detail?.movie?.title?:movie.title,color=White,fontSize=24.sp)
+        if(!full)Column(Modifier.width(260.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+            Text(detail?.movie?.title?:movie.title,color=White,fontSize=24.sp,maxLines=2,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             Text(listOf(detail?.movie?.score?:movie.score,detail?.movie?.year?:movie.year,detail?.movie?.area?:movie.area).filter{it.isNotBlank()}.joinToString(" · "),color=Green,fontSize=14.sp)
-            Text(detail?.description?:"正在加载影片信息…",color=Muted,fontSize=13.sp,lineHeight=21.sp)
-            detail?.let{d->Text("导演：${d.director}\n主演：${d.actor}",color=Muted,fontSize=12.sp,lineHeight=20.sp)}
+            Text(detail?.description?:"正在加载影片信息…",color=Muted,fontSize=13.sp,lineHeight=21.sp,maxLines=4,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,modifier=Modifier.heightIn(max=90.dp))
+            detail?.let{d->Text("导演：${d.director}\n主演：${d.actor}",color=Muted,fontSize=12.sp,lineHeight=20.sp,maxLines=2,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)}
             Text("选集",color=White,fontSize=18.sp)
             detail?.episodes?.chunked(4)?.forEach{row->Row(horizontalArrangement=Arrangement.spacedBy(4.dp)){row.forEach{ep->TvAction(if((detail?.episodes?.size?:0)>1)ep.index.toString() else ep.title,selected=detail?.episodes?.getOrNull(episode)?.index==ep.index){saveProgress();episode=detail!!.episodes.indexOf(ep)}}}}
         }

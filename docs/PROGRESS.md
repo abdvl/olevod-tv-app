@@ -232,3 +232,8 @@
 - Middle: vertical suggestions, popular and recent searches. Right: two portrait poster columns with continuous results.
 - Query-specific cache, scroll and focus avoid applying old search-card focus to a different query. Search requests remain debounced.
 - Build/lint/19 tests passed; emulator rendered the three-column layout. Physical focus verification is ongoing.
+
+### S23 - keep episode selection visible
+
+- Playback synopsis is capped to four lines / 90dp, title to two lines and cast/director to two lines.
+- Reduced right-panel spacing so episode selection remains accessible on the first screen. Installed for physical confirmation.
