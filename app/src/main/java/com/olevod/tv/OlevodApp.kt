@@ -85,6 +85,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     var selected by rememberSaveable(stateSaver=androidx.compose.runtime.saveable.Saver<Movie,String>(save={com.olevod.tv.data.MovieJson.encode(it)},restore={com.olevod.tv.data.MovieJson.decode(it)})) { mutableStateOf(initialMovieId?.let{Movie(it,"正在加载影片…","")}?:movies.first()) }
     var backScreen by rememberSaveable { mutableStateOf("home") }
     var browseBack by rememberSaveable{mutableStateOf("home")}
+    var browseOriginCategory by rememberSaveable{mutableStateOf("电影")}
     var confirmExit by rememberSaveable{mutableStateOf(false)}
     var full by rememberSaveable { mutableStateOf(false) }
     var routeEpochs by rememberSaveable { mutableStateOf(mapOf<String,Int>()) }
@@ -96,8 +97,14 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     val pageFocus=remember(screen,category){PageFocusController(headerFocus,contentFocus)}
     val recentFocus=remember{FocusRequester()}
     LaunchedEffect(Unit){if(initialScreen=="home"){withFrameNanos{};headerTargets.getValue("home").requestFocus()}}
+    val openCatalog:(String,String)->Unit={origin,targetCategory->
+        browseBack=origin;browseOriginCategory=category;category=targetCategory
+        val key="browse:$targetCategory";routeEpochs=routeEpochs+(key to ((routeEpochs[key]?:0)+1))
+        val id=home.sections.firstOrNull{it.category.name==targetCategory||categoryLabel(it.category.id)==targetCategory}?.category?.id?:selectedCategoryId
+        vm.catalogFeed(com.olevod.tv.data.Filter(category=id)).reset();screen="browse"
+    }
     val openMovie: (Movie) -> Unit = { selected=it;backScreen=screen;screen="player" }
-    BackHandler { if(full)full=false else when(screen){"home"->confirmExit=true;"player"->screen=backScreen;"browse"->screen=browseBack;else->screen="home"} }
+    BackHandler { if(full)full=false else when(screen){"home"->confirmExit=true;"player"->screen=backScreen;"browse"->{screen=browseBack;if(browseBack=="category")category=browseOriginCategory};else->screen="home"} }
     CompositionLocalProvider(LocalBringIntoViewSpec provides EdgeBringIntoViewSpec) {
     MaterialTheme(colorScheme=darkColorScheme(primary=Green,onPrimary=Bg,surface=Panel,onSurface=White,background=Bg)) {
         Column(Modifier.fillMaxSize().background(Bg)) {
@@ -118,10 +125,10 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
                 val lastPoster=rememberSaveable{mutableLongStateOf(-1)}
                 CompositionLocalProvider(LocalPosterFocus provides lastPoster){ when(screen) {
                 "home" -> ConnectedHome(if(preview)previewHome(movies,heroes)else home,vm,openMovie,{routeEpochs=routeEpochs+("history" to ((routeEpochs["history"]?:0)+1));screen="history"},headerTargets.getValue("home"),recentFocus,{pageFocus.enter=it},
-                    fixtureRecords=if(preview)previewWatchRecords(movies)else null){category=it;browseBack="home";screen="browse"}
+                    fixtureRecords=if(preview)previewWatchRecords(movies)else null){openCatalog("home",it)}
                 "category" -> {
                     val selectedCategory=(if(preview)previewHome(movies,heroes)else home).sections.firstOrNull{it.category.name==category||it.category.id==selectedCategoryId}?.category
-                    if(selectedCategory!=null)key(selectedCategory.id){MiniCategoryHome(selectedCategory,vm,openMovie,{browseBack="category";screen="browse"},headerFocus,{pageFocus.enter=it})}
+                    if(selectedCategory!=null)key(selectedCategory.id){MiniCategoryHome(selectedCategory,vm,openMovie,{openCatalog("category",category)},headerFocus,{pageFocus.enter=it},fixture=if(preview)movies.take(10) to movies.takeLast(10)else null)}
                     else if(home.error!=null)ErrorNotice(home.error!!){vm.loadHome()}
                     else Text("正在加载分类…",color=Muted)
                 }
@@ -157,7 +164,7 @@ internal fun TvAction(label: String, icon: ImageVector? = null, selected: Boolea
     val color by animateColorAsState(if(focused)Green else if(selected)Color(0xFF263E31) else Color.Transparent,label="focus")
     Row(modifier.clip(RoundedCornerShape(50)).background(color).border(if(selected&&!focused)1.dp else 0.dp,if(selected&&!focused)Green.copy(alpha=.35f) else Color.Transparent,RoundedCornerShape(50)).clickable(interactionSource=interaction,indication=null,onClick=onClick).padding(horizontal=14.dp,vertical=9.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
         if(icon!=null)Icon(icon,null,Modifier.size(17.dp),tint=if(focused)Bg else if(selected)Green else White)
-        Text(label,color=if(focused)Bg else if(selected)Green else White,fontSize=14.sp,fontWeight=if(focused||selected)FontWeight.Bold else FontWeight.Normal)
+        Text(label,color=if(focused)Bg else if(selected)Green else White,fontSize=14.sp,fontWeight=if(focused||selected)FontWeight.Bold else FontWeight.Normal,maxLines=1,overflow=TextOverflow.Ellipsis)
     }
 }
 

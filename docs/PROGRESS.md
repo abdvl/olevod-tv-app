@@ -437,3 +437,11 @@
 - Reused the actual ConnectedHome in explicit preview mode with public poster/banner fixtures and synthetic progress, without inserting fixture records into history. Saved emulator default/focus screenshots under `docs/verification/v2/screenshots/`; compared each against the approved matching reference. Removed theme-colored banner letterboxing and duplicate selected-card title.
 - Independent V2HomeUiTest passed 3/3, zero skips: header/recent/history and same-side recommendation navigation, expansion geometry, exact source/resume restoration and no fixture persistence. Initial run found a Header subcomposition timing race; production cold-start and fixture now await a layout frame before requesting Home.
 - Latest app/test build, JVM suite and lint passed in `.tools/v2-03-06-build.log`. Full large-font/Chromecast acceptance remains V2-10. Subsequent page drafts may be uncommitted; retain them when resuming.
+
+### S50 / V2-04 - category mini homes
+
+- Added two current-year rankings per category, using the API hot/score filters. Each ranking has two wide cards with complete portrait artwork and adjacent rank/title/metadata, followed by the remaining eight items in four columns. Empty/short lists preserve their true counts and the all-years browse action.
+- Category entry prioritizes hot, score, then browse-all. The browse action has its own saved source identity. Public-image preview uses the same implementation and a fixed fixture, documented separately from API ranking results.
+- Independent review found stale catalog filters on reentry and origin-category loss after changing catalog category. Added openCatalog with a fresh destination epoch/default feed and saved source category, keeping the originating mini state intact.
+- Independent Mini tests passed 2/2, zero skips: both long rankings and browse-all return, sparse/empty ranking entry. First empty-fixture test raced recomposition; synchronized the test and reran the original app. Actual root route fixes independently reviewed; full real-route execution remains integration work.
+- Details and screenshot: `docs/verification/v2/V2-04.md`, `screenshots/mini-movie.png`.
