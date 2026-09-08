@@ -428,3 +428,12 @@
 - App/test builds, unit tests and lint passed. Independent Android regression: 4/4 passed, zero skips; new duplicate-section restoration test plus the three foundation tests. PagedFeed unit cases passed 3/3 for repeat pages, non-cooperative late responses and canceled-request preservation.
 - Independent review caught unknown totals leaking into text and active feed keys missing sessionVersion. Both corrected; final build/unit/lint log is `.tools/v2-02-fixes-build.log`. See `docs/verification/v2/V2-02.md` for frozen artifacts and exact verification boundaries.
 - Next: V2-03 home layout. Its ConnectedHome draft is intentionally outside this checkpoint commit.
+
+### S49 / V2-03 - home recent viewing and recommendations
+
+- Replaced the connected home with current-account latest five records plus a final all-history card. Progress is always overlaid at the bottom of full Fit artwork. Focus expands only the active card horizontally, preserves every other poster width and recommendation Y, and collapses/reset scroll after leaving the row.
+- Expanded cards show title, real metadata, episode/time, progress and a single continuation action. Rows reserve scaled text height; normal default uses six equal slots. Down chooses the recommendation on the same visible side; Up returns to the unified Home item.
+- Homepage all-history creates a fresh device-history entry, avoiding restoration into a formerly selected cloud tab. Recommendations use two equally weighted real banners with overlaid large titles; section order is movie, series, variety, VIP, short drama.
+- Reused the actual ConnectedHome in explicit preview mode with public poster/banner fixtures and synthetic progress, without inserting fixture records into history. Saved emulator default/focus screenshots under `docs/verification/v2/screenshots/`; compared each against the approved matching reference. Removed theme-colored banner letterboxing and duplicate selected-card title.
+- Independent V2HomeUiTest passed 3/3, zero skips: header/recent/history and same-side recommendation navigation, expansion geometry, exact source/resume restoration and no fixture persistence. Initial run found a Header subcomposition timing race; production cold-start and fixture now await a layout frame before requesting Home.
+- Latest app/test build, JVM suite and lint passed in `.tools/v2-03-06-build.log`. Full large-font/Chromecast acceptance remains V2-10. Subsequent page drafts may be uncommitted; retain them when resuming.

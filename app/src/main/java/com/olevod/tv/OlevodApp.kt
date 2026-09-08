@@ -95,7 +95,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     val contentFocus=remember(screen,category){FocusRequester()}
     val pageFocus=remember(screen,category){PageFocusController(headerFocus,contentFocus)}
     val recentFocus=remember{FocusRequester()}
-    LaunchedEffect(Unit){if(initialScreen=="home")headerTargets.getValue("home").requestFocus()}
+    LaunchedEffect(Unit){if(initialScreen=="home"){withFrameNanos{};headerTargets.getValue("home").requestFocus()}}
     val openMovie: (Movie) -> Unit = { selected=it;backScreen=screen;screen="player" }
     BackHandler { if(full)full=false else when(screen){"home"->confirmExit=true;"player"->screen=backScreen;"browse"->screen=browseBack;else->screen="home"} }
     CompositionLocalProvider(LocalBringIntoViewSpec provides EdgeBringIntoViewSpec) {
@@ -104,7 +104,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
             if(!full) UnifiedHeader(selectedNavigation,headerTargets,{pageFocus.enterContent()}) { target ->
                 pageFocus.restoreBody=null
                 val id=navigationCategoryId(target)
-                if(id!=null){category=when(id){2->"连续剧";6->"VIP蓝光影院";else->categoryLabel(id)};screen="category"}
+                if(id!=null){category=home.sections.firstOrNull{it.category.id==id}?.category?.name ?: when(id){2->"连续剧";6->"VIP蓝光影院";else->categoryLabel(id)};screen="category"}
                 else if(target=="browse"){category="电影";browseBack="home";screen="browse"}
                 else screen=target
                 val destination=if(screen in listOf("category","browse"))"$screen:$category"else screen
@@ -113,13 +113,14 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
             Box(Modifier.weight(1f).fillMaxWidth().focusRequester(contentFocus).focusGroup()) {
             CompositionLocalProvider(LocalPageFocus provides pageFocus) {
             val routeKey=when(screen){"category","browse"->"$screen:$category";"player"->"player:${selected.id}";else->screen}
-            pageStates.SaveableStateProvider("$routeKey:${routeEpochs[routeKey]?:0}:${if(screen in listOf("history","favorites","account"))vm.sessionVersion else 0}") {
+            pageStates.SaveableStateProvider("$routeKey:${routeEpochs[routeKey]?:0}:${if(screen in listOf("home","history","favorites","account"))vm.sessionVersion else 0}") {
                 ContentFocusScope {
                 val lastPoster=rememberSaveable{mutableLongStateOf(-1)}
                 CompositionLocalProvider(LocalPosterFocus provides lastPoster){ when(screen) {
-                "home" -> if(preview) HomeScreen(movies,heroes,openMovie,{category=it;browseBack="home";screen="browse"}) else ConnectedHome(home,vm,openMovie,{screen="history"},headerTargets.getValue("home"),recentFocus,{pageFocus.enter=it}){category=it;browseBack="home";screen="browse"}
+                "home" -> ConnectedHome(if(preview)previewHome(movies,heroes)else home,vm,openMovie,{routeEpochs=routeEpochs+("history" to ((routeEpochs["history"]?:0)+1));screen="history"},headerTargets.getValue("home"),recentFocus,{pageFocus.enter=it},
+                    fixtureRecords=if(preview)previewWatchRecords(movies)else null){category=it;browseBack="home";screen="browse"}
                 "category" -> {
-                    val selectedCategory=home.sections.firstOrNull{it.category.name==category||(category=="VIP蓝光"&&it.category.id==6)}?.category
+                    val selectedCategory=(if(preview)previewHome(movies,heroes)else home).sections.firstOrNull{it.category.name==category||it.category.id==selectedCategoryId}?.category
                     if(selectedCategory!=null)key(selectedCategory.id){MiniCategoryHome(selectedCategory,vm,openMovie,{browseBack="category";screen="browse"},headerFocus,{pageFocus.enter=it})}
                     else if(home.error!=null)ErrorNotice(home.error!!){vm.loadHome()}
                     else Text("正在加载分类…",color=Muted)
@@ -194,13 +195,12 @@ internal fun HomeMovieGroup(movies:List<Movie>,open:(Movie)->Unit,title:String="
 @Composable
 internal fun HeroCard(hero:Hero,modifier:Modifier,onClick:()->Unit) {
     Card(onClick=onClick,modifier=modifier.restoreContentFocus("hero:${hero.id}").height(138.dp),shape=CardDefaults.shape(RoundedCornerShape(12.dp)),scale=CardDefaults.scale(focusedScale=1f),border=CardDefaults.border(focusedBorder=Border(androidx.compose.foundation.BorderStroke(2.dp,Green)))) {
-        Box(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().background(Panel)) {
             AsyncImage(hero.image,hero.title,Modifier.fillMaxSize(),contentScale=ContentScale.Fit)
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent,Color.Black.copy(alpha=.8f)))))
             Column(Modifier.align(Alignment.BottomStart).padding(18.dp),verticalArrangement=Arrangement.spacedBy(5.dp)) {
-                Text("精选推荐",color=Green,fontSize=10.sp,fontWeight=FontWeight.Bold,letterSpacing=2.sp)
                 Text(hero.title,color=White,fontSize=28.sp,lineHeight=34.sp,maxLines=2,overflow=TextOverflow.Ellipsis,fontWeight=FontWeight.Bold)
-                Text(hero.note+"   ·   进入观看  ›",color=White.copy(alpha=.8f),fontSize=12.sp)
+                Text(hero.note,color=White.copy(alpha=.85f),fontSize=13.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
             }
         }
     }
@@ -210,8 +210,8 @@ internal fun HeroCard(hero:Hero,modifier:Modifier,onClick:()->Unit) {
 internal fun SectionHeading(title:String,subtitle:String="",more:(()->Unit)?=null,moreModifier:Modifier=Modifier) {
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
         Box(Modifier.size(4.dp,21.dp).clip(RoundedCornerShape(4.dp)).background(Green))
-        Spacer(Modifier.width(10.dp));Text(title,color=White,fontSize=21.sp,fontWeight=FontWeight.Bold)
-        Spacer(Modifier.width(12.dp));Text(subtitle,color=Muted,fontSize=13.sp)
+        Spacer(Modifier.width(10.dp));Text(title,color=White,fontSize=22.sp,lineHeight=28.sp,fontWeight=FontWeight.Bold)
+        Spacer(Modifier.width(12.dp));Text(subtitle,color=Muted,fontSize=13.sp,lineHeight=18.sp)
         Spacer(Modifier.weight(1f));if(more!=null)TvAction("查看全部",Icons.Rounded.ChevronRight,modifier=moreModifier,onClick=more)
     }
 }

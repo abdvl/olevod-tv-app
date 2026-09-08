@@ -84,13 +84,16 @@ internal val LocalPageFocus = compositionLocalOf<PageFocusController?> { null }
 @Composable
 internal fun UnifiedHeader(selected: String, requesters: Map<String, FocusRequester>,
                            onDown: () -> Unit, onSelect: (String) -> Unit) {
-    Row(Modifier.fillMaxWidth().height(TvDesign.headerHeight)
-        .padding(start=TvDesign.safeHorizontal, end=TvDesign.safeHorizontal, top=12.dp)
-        .testTag("unified-header").horizontalScroll(rememberScrollState()),
-        verticalAlignment=Alignment.CenterVertically, horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+    BoxWithConstraints(Modifier.fillMaxWidth().height(TvDesign.headerHeight)
+        .padding(start=TvDesign.safeHorizontal,end=TvDesign.safeHorizontal,top=12.dp).testTag("unified-header")) {
+    val availableWidth=maxWidth
+    Row(Modifier.horizontalScroll(rememberScrollState())) {
+    Row(Modifier.width(maxOf(availableWidth, 785.dp * androidx.compose.ui.platform.LocalDensity.current.fontScale + 40.dp)).height(52.dp),
+        verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
         OfficialOlevodLogo(Modifier.width(120.dp).aspectRatio(364f / 64f))
         Spacer(Modifier.width(8.dp))
         navigationItems.forEachIndexed { index, item ->
+            if(item.key=="browse")Spacer(Modifier.weight(1f))
             val interaction = remember { MutableInteractionSource() }
             val focused by interaction.collectIsFocusedAsState()
             val width by animateDpAsState(if(item.icon != null && focused) 76.dp else 36.dp, tween(120), label="header-width")
@@ -119,6 +122,8 @@ internal fun UnifiedHeader(selected: String, requesters: Map<String, FocusReques
             }
         }
     }
+}
+}
 }
 
 @Composable

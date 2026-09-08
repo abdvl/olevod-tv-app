@@ -35,7 +35,7 @@ class V2FoundationUiTest {
         compose.setContent {
             val refs=remember { navigationItems.associate { it.key to FocusRequester() } }
             MaterialTheme { UnifiedHeader("home",refs,{}) {selected=it} }
-            LaunchedEffect(Unit) { refs.getValue("home").requestFocus() }
+            LaunchedEffect(Unit) { withFrameNanos{};refs.getValue("home").requestFocus() }
         }
         compose.onNodeWithTag("nav:home").assertIsFocused()
         key(KeyEvent.KEYCODE_DPAD_LEFT)
