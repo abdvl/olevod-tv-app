@@ -10,7 +10,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { OlevodApp(if (BuildConfig.DEBUG) intent.getStringExtra("screen") ?: "home" else "home") }
+        setContent { OlevodApp(if (BuildConfig.DEBUG) intent.getStringExtra("screen") ?: "home" else "home", BuildConfig.DEBUG && intent.getBooleanExtra("preview",false)) }
         WindowCompat.getInsetsController(window, window.decorView).apply {
             hide(WindowInsetsCompat.Type.systemBars())
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE

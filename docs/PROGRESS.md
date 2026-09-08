@@ -4,8 +4,8 @@
 
 ## 当前检查点
 
-- 已完成：S01–S05（S04为预览界面验收，真实功能另验）。
-- 进行中：S06 真实首页接入。
+- 已完成：S01–S06（真实首页已接入）。
+- 进行中：S07 分类浏览接入。
 - 下一步：S06真实首页，随后浏览、搜索、播放。
 - 已有设计基线提交：`4552cc8 Add design docs`。
 - 用户目标设备：Google Chromecast with Google TV（4K/HD 待确认）。
@@ -58,3 +58,10 @@
 - 独立agent完成模拟器 D-pad UI 检查并记录报告。
 - 修复搜索裁切、输入框吞上下键、全屏控制焦点边距。首页采用边缘滚动与分类组定位，并增加组底部安全间距。
 - 构建与lint通过；真实API/播放、返回焦点恢复另由后续步骤验收。
+
+### S06 — feat: load real home recommendations and categories
+
+- 首页加载真实推荐、网站分类和每类最近更新10部，分区独立失败/重试。
+- 预览入口仅debug可用；正常启动直接请求API。
+- 模拟器在线实测推荐与短剧等分类加载，截图 artifacts/screenshots/05-live-home.png。
+- assembleDebug通过；暂无Chromecast实机连接。

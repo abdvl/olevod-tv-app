@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.*
 import coil.compose.AsyncImage
 import org.json.JSONArray
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 internal val Bg = Color(0xFF101718)
 internal val Panel = Color(0xFF1B2526)
@@ -66,7 +68,9 @@ data class Movie(val id: Long, val title: String, val image: String, val note: S
 data class Hero(val id: Long, val title: String, val image: String, val note: String)
 
 @Composable
-fun OlevodApp(initialScreen: String = "home") {
+fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppViewModel = viewModel()) {
+    val home by vm.home.collectAsStateWithLifecycle()
+    LaunchedEffect(preview){ if(!preview)vm.loadHome() }
     val context = LocalContext.current
     val movies = remember { val a = JSONArray(context.assets.open("preview_movies.json").bufferedReader().readText()); (0 until a.length()).map { i -> val m=a.getJSONObject(i); Movie(m.getLong("id"),m.getString("name"),m.getString("image"),m.optString("remarks"),m.optString("score"),m.optInt("typeId1",1),m.optString("year"),m.optString("area"),m.optBoolean("vip")) } }
     val heroes = remember { val a = JSONArray(context.assets.open("preview_banners.json").bufferedReader().readText()); (0 until a.length()).map { i -> val m=a.getJSONObject(i);Hero(m.getLong("id"),m.getString("title"),m.getString("image"),m.getString("desc")) } }
@@ -80,10 +84,10 @@ fun OlevodApp(initialScreen: String = "home") {
     CompositionLocalProvider(LocalBringIntoViewSpec provides EdgeBringIntoViewSpec) {
     MaterialTheme(colorScheme=darkColorScheme(primary=Green,onPrimary=Bg,surface=Panel,onSurface=White,background=Bg)) {
         Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF192425),Bg)))) {
-            if(!full) Header(screen,"界面预览",{screen=it})
+            if(!full) Header(screen,if(preview || screen!="home")"界面预览" else "实时内容",{screen=it})
             if(screen in listOf("home","browse","live")) Navigation(category=if(screen=="home")"首页" else if(screen=="live")"直播" else category) { label -> if(label=="首页") screen="home" else if(label=="直播") screen="live" else {category=label;screen="browse"} }
             when(screen) {
-                "home" -> HomeScreen(movies,heroes,openMovie,{category=it;screen="browse"})
+                "home" -> if(preview) HomeScreen(movies,heroes,openMovie,{category=it;screen="browse"}) else ConnectedHome(home,vm,openMovie){category=it;screen="browse"}
                 "browse" -> BrowseScreen(category,movies,openMovie)
                 "search" -> SearchScreen(movies,openMovie)
                 "player" -> PlayerPreview(selected,movies,full,{full=!full},openMovie)
