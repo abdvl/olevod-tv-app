@@ -376,3 +376,9 @@
 - Release build, 23 unit tests, lint and signature verification passed; fresh TV emulator install and real guest playback succeeded. Existing Chromecast debug install and data retained.
 - Added ten actual release screenshots, detailed README features/remote navigation, installation and debug-to-release migration instructions, signing/build instructions, release notes and verification report. Independent agent reviewed documentation and release validation.
 - GitHub publication follows this commit; APK and checksum are under ignored artifacts/releases/v0.1.
+
+### S42 - v0.1 published
+
+- Published https://github.com/abdvl/olevod-tv-app/releases/tag/v0.1 after explicit authorization to publish source, documentation and history. Tag points to 3853dd7d6da4a825c6220e7575ece87d0ef8a6e2.
+- Public release is neither draft nor prerelease; APK (14,210,642 bytes) and SHA256SUMS.txt are downloadable. Downloaded both public assets and verified exact checksum/file equality with local release artifacts. APK SHA256: 72291aa02800eb599f9d9261e94a39586eb77880be88b15373772f1c5d845e3d.
+- Source, README with ten screenshots and installation instructions are available at the release tag. Signing keys and test credentials remain local and excluded. Existing Chromecast debug app/data retained.
