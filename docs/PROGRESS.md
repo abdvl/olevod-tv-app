@@ -322,3 +322,9 @@
 - Physical QA exposed that a preview-key listener placed after focusable misses keys when the hidden fullscreen root itself owns focus. Extracted PlayerKeyInput with the listener before the focus target.
 - Root stays disabled in normal playback; controls Up targets video, video can continue Up to navigation, and navigation Down can return to a visible focus target.
 - Added an Android regression asserting root focus, Down wake to controls, Up hide back to root, then Down wake again. All3 player Android UI regressions and23 unit tests/build/lint passed.
+
+### S36 physical verification completion
+
+- Chromecast confirmed video/header/control navigation, fullscreen group21–30, Up hide/Down wake and identical1920×1080 video bounds with overlay shown/hidden.
+- Current stream1280×720 and peak2.58Mbps displayed correctly; original logo visible. Same film/episode resumed and retained.
+- Final evidence and capture limitations: verification/PLAYER_FINAL_DEVICE_CHECK.md.
