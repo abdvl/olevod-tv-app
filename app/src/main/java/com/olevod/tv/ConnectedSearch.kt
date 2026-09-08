@@ -1,5 +1,8 @@
 package com.olevod.tv
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -30,6 +33,11 @@ fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit) {
     var hot by remember{mutableStateOf<List<String>>(emptyList())}
     var editRequest by remember{mutableIntStateOf(0)}
     val input=remember{FocusRequester()}
+    val firstResult=remember{FocusRequester()}
+    var inputFocused by remember{mutableStateOf(false)}
+    var selectedSuggestion by remember{mutableStateOf<String?>(null)}
+    val changeQuery:(String)->Unit={selectedSuggestion=null;query=it}
+    BackHandler(enabled=!inputFocused){selectedSuggestion=null;input.requestFocus()}
     val keys=remember{List(36){FocusRequester()}}
     val clear=remember{FocusRequester()}
     val delete=remember{FocusRequester()}
@@ -44,6 +52,18 @@ fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit) {
     val movies=if(term.isBlank())home.sections.firstOrNull{it.category.id==1}?.movies.orEmpty()else result.items
     val words=if(term.isBlank())(vm.searchHistory+hot).distinct().take(20)else(suggestions+movies.map{it.title}).distinct().take(20)
     val listState=rememberSaveable(term,saver=LazyListState.Saver){LazyListState()}
+    LaunchedEffect(term,selectedSuggestion,result.items.firstOrNull()?.id,result.loading,result.error,result.nextPage){
+        if(selectedSuggestion!=term)return@LaunchedEffect
+        if(result.items.isNotEmpty()){
+            listState.scrollToItem(0)
+            withFrameNanos { }
+            firstResult.requestFocus()
+            selectedSuggestion=null
+        }else if(result.error!=null||(!result.loading&&result.nextPage>1)){
+            selectedSuggestion=null
+            input.requestFocus()
+        }
+    }
     LaunchedEffect(Unit){try{hot=vm.api.hotWords()}catch(e:Exception){if(e is CancellationException)throw e}}
     LaunchedEffect(term){suggestions=emptyList();if(term.isNotBlank())try{delay(350);suggestions=vm.api.suggestions(term)}catch(e:Exception){if(e is CancellationException)throw e}}
     LaunchedEffect(feed){if(feed!=null&&feed.state.items.isEmpty()&&feed.state.error==null){delay(400);feed.loadNext()}}
@@ -57,8 +77,8 @@ fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit) {
     }
     Row(Modifier.fillMaxSize().padding(36.dp,18.dp,36.dp,20.dp),horizontalArrangement=Arrangement.spacedBy(22.dp)){
         Column(Modifier.width(254.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
-            InputBox(query,{query=it},"输入片名 / 演员",Modifier.focusRequester(input).focusProperties{down=clear},editRequest=editRequest)
-            Row{TvAction("清空",Icons.Rounded.Close,modifier=Modifier.focusRequester(clear).focusProperties{up=input;down=keys[0];right=delete}){query=""};Spacer(Modifier.weight(1f));TvAction("退格",Icons.Rounded.Backspace,modifier=Modifier.focusRequester(delete).focusProperties{up=input;down=keys[5];left=clear}){query=query.dropLast(1)}}
+            InputBox(query,changeQuery,"输入片名 / 演员",Modifier.focusRequester(input).onFocusChanged{inputFocused=it.isFocused}.semantics{contentDescription="搜索输入框"}.focusProperties{down=clear},editRequest=editRequest)
+            Row{TvAction("清空",Icons.Rounded.Close,modifier=Modifier.focusRequester(clear).focusProperties{up=input;down=keys[0];right=delete}){changeQuery("")};Spacer(Modifier.weight(1f));TvAction("退格",Icons.Rounded.Backspace,modifier=Modifier.focusRequester(delete).focusProperties{up=input;down=keys[5];left=clear}){changeQuery(query.dropLast(1))}}
             Column(verticalArrangement=Arrangement.spacedBy(10.dp)){"ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".chunked(6).forEachIndexed{row,line->
                 Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){line.forEachIndexed{column,c->
                     val index=row*6+column
@@ -67,17 +87,17 @@ fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit) {
                         down=if(row<5)keys[index+6]else chinese
                         left=if(column>0)keys[index-1]else FocusRequester.Cancel
                         right=if(column<5)keys[index+1]else if(words.isNotEmpty())suggestionsFocus else if(movies.isNotEmpty())resultsFocus else FocusRequester.Cancel
-                    }){query+=c}
+                    }){changeQuery(query+c)}
                 }}
             }}
-            TvAction("中文 / 语音输入",Icons.Rounded.Keyboard,modifier=Modifier.focusRequester(chinese).focusProperties{up=keys[30]}){editRequest++}
+            TvAction("中文 / 语音输入",Icons.Rounded.Keyboard,modifier=Modifier.focusRequester(chinese).focusProperties{up=keys[30]}){selectedSuggestion=null;editRequest++}
             Text("支持系统输入法与手机遥控输入",color=Muted,fontSize=11.sp)
         }
         Box(Modifier.width(1.dp).fillMaxHeight().background(White.copy(alpha=.08f)))
         Column(Modifier.width(170.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){
             Text(if(term.isBlank())"热门与最近搜索"else"猜你想搜",color=White,fontSize=18.sp)
             LazyColumn(Modifier.weight(1f).focusRequester(suggestionsFocus).focusGroup(),verticalArrangement=Arrangement.spacedBy(5.dp)){
-                items(words,key={it}){word->TvAction(word,modifier=Modifier.fillMaxWidth().focusProperties{left=keys[lastKey];right=if(movies.isNotEmpty())resultsFocus else FocusRequester.Cancel}){vm.saveQuery(word);query=word}}
+                items(words,key={it}){word->TvAction(word,modifier=Modifier.fillMaxWidth().focusProperties{left=keys[lastKey];right=if(movies.isNotEmpty())resultsFocus else FocusRequester.Cancel}){vm.saveQuery(word);selectedSuggestion=word.trim();query=word}}
             }
             if(term.isBlank()&&vm.searchHistory.isNotEmpty())TvAction("清除搜索记录"){vm.clearSearchHistory()}
         }
@@ -85,7 +105,7 @@ fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit) {
             Text(if(term.isBlank())"最近更新"else"包含「$term」的影片 · ${result.total} 部",color=White,fontSize=17.sp)
             PosterFocusGroup(term){LazyColumn(Modifier.weight(1f).focusRequester(resultsFocus).focusGroup(),state=listState,verticalArrangement=Arrangement.spacedBy(18.dp),contentPadding=PaddingValues(4.dp,5.dp,4.dp,64.dp)){
                 items(movies.chunked(2),key={it.first().id}){row->Row(horizontalArrangement=Arrangement.spacedBy(14.dp)){
-                    row.forEachIndexed{column,m->PosterCard(m,Modifier.weight(1f).focusProperties{if(column==0)left=if(words.isNotEmpty())suggestionsFocus else keys[lastKey]},posterRatio=.74f){if(term.isNotBlank())vm.saveQuery(term);open(m)}}
+                    row.forEachIndexed{column,m->PosterCard(m,Modifier.weight(1f).then(if(m.id==movies.firstOrNull()?.id)Modifier.focusRequester(firstResult)else Modifier).focusProperties{if(column==0)left=if(words.isNotEmpty())suggestionsFocus else keys[lastKey]},posterRatio=.74f){if(term.isNotBlank())vm.saveQuery(term);open(m)}}
                     repeat(2-row.size){Spacer(Modifier.weight(1f))}
                 }}
                 item(key="load-more"){

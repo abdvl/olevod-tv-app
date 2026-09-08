@@ -344,3 +344,11 @@
 - Added a separate category Home focus anchor. Recent cards/View all Up target category Home; category Home Up reaches top Home, and top Home Down returns to category Home. Category Home Down retains safe asynchronous recent-row remount/restoration.
 - Build/lint, independent source review and HomeNavigationUiTest passed. The test now asserts both navigation levels, Right to Live/Left to Home, and the deeply scrolled leave/return path.
 - Installed on Chromecast. Fresh physical UI dumps confirmed top Home bounds[76,30][231,126], category Home[76,132][191,226], Down to recent film, Up back to category Home, Right Live and Left Home. Device left on category Home. Screenshot: verification/screenshots/chromecast-home-category-focus.png.
+
+### S39 - search suggestion focus and Back to query
+
+- Selecting a suggestion now records its keyword as a pending focus request. On matching results, the right list scrolls to index0, waits for composition, and focuses its first movie. Cached repeated selection also works; clearing pending after completion prevents pagination from stealing focus.
+- Back while outside the query box cancels pending transfer and focuses the query box. Back again uses the existing page return. Letter input, edits, clear/delete and opening Chinese/voice input also cancel pending transfer. Empty/error completion focuses the query box.
+- Build/lint and independent source review passed. SearchFocusUiTest passed on emulator against actual API responses: remote M/N input, Right to suggestion column, select魔女, first result focus, Back to input, cached same-query repeat, and second Back exits search.
+- Test keyboard activation uses native Android DPAD_CENTER; touch-clicking TV key buttons did not enter letters in the initial test harness. Real MN suggestions confirmed魔女 as first entry.
+- Installed debug APK on Chromecast successfully. Physical follow-through was interrupted when the foreground changed to system UI; no new app crash was found in the crash buffer. Do not claim full physical search-path verification. No further device navigation was sent after that mismatch.
