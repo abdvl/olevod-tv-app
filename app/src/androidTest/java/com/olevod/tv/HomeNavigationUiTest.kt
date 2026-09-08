@@ -16,31 +16,41 @@ class HomeNavigationUiTest {
     @get:Rule val compose=createAndroidComposeRule<MainActivity>()
     @Test fun homeDownRemountsRecentAndUpReturnsToHome(){
         assumeTrue(InstrumentationRegistry.getArguments().getString("liveHomeUi")=="true")
-        val home=compose.onNodeWithContentDescription("首页")
+        val header=compose.onNodeWithContentDescription("首页")
+        val navigation=compose.onNode(hasText("首页") and !hasContentDescription("首页"))
+        fun key(code:Int)=InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(code)
+        fun focused(node:SemanticsNodeInteraction){
+            compose.waitUntil(5_000){node.fetchSemanticsNode().config[SemanticsProperties.Focused]}
+            node.assertIsFocused()
+        }
+        fun recentRoundTrip(){
+            key(KeyEvent.KEYCODE_DPAD_DOWN)
+            compose.waitUntil(5_000){!navigation.fetchSemanticsNode().config[SemanticsProperties.Focused]}
+            compose.onNodeWithText("最近播放").assertIsDisplayed()
+            header.assertIsNotFocused()
+            key(KeyEvent.KEYCODE_DPAD_UP)
+            focused(navigation)
+            header.assertIsNotFocused()
+            key(KeyEvent.KEYCODE_DPAD_RIGHT)
+            focused(compose.onNodeWithText("直播"))
+            key(KeyEvent.KEYCODE_DPAD_LEFT)
+            focused(navigation)
+        }
         compose.waitUntil(30_000){compose.onAllNodesWithText("最近播放").fetchSemanticsNodes().isNotEmpty()}
-        home.performSemanticsAction(SemanticsActions.RequestFocus){it()}
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN)
-        compose.waitForIdle()
-        compose.waitUntil(5_000){home.fetchSemanticsNode().config[SemanticsProperties.Focused]==false}
-        home.assertIsNotFocused()
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP)
-        compose.waitForIdle()
-        compose.waitUntil(5_000){home.fetchSemanticsNode().config[SemanticsProperties.Focused]}
-        home.assertIsFocused()
-        // Remove the first lazy item, leave home, and restore its saved deep scroll.
+        header.performSemanticsAction(SemanticsActions.RequestFocus){it()}
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        focused(navigation)
+        recentRoundTrip()
+        key(KeyEvent.KEYCODE_DPAD_UP)
+        focused(header)
+        // Restore deeply scrolled home, then traverse header -> category row -> recent.
         compose.waitUntil(30_000){compose.onAllNodesWithText("正在为你寻找好故事…").fetchSemanticsNodes().isEmpty()}
         compose.onNode(hasScrollToIndexAction()).performScrollToIndex(5)
         compose.onNodeWithContentDescription("电影目录").performClick()
-        home.performClick()
-        home.performSemanticsAction(SemanticsActions.RequestFocus){it()}
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN)
-        compose.onNodeWithText("最近播放").assertIsDisplayed()
-        compose.waitForIdle()
-        compose.waitUntil(5_000){home.fetchSemanticsNode().config[SemanticsProperties.Focused]==false}
-        home.assertIsNotFocused()
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP)
-        compose.waitForIdle()
-        compose.waitUntil(5_000){home.fetchSemanticsNode().config[SemanticsProperties.Focused]}
-        home.assertIsFocused()
+        header.performClick()
+        header.performSemanticsAction(SemanticsActions.RequestFocus){it()}
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        focused(navigation)
+        recentRoundTrip()
     }
 }

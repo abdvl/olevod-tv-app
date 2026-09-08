@@ -288,5 +288,5 @@ Google 官方建议 TV 播放接入 MediaSession；Media3 支持 HLS，但实际
 - 全屏控制栏右侧显示当前视频轨道分辨率与可用码率。平均码率优先，仅有峰值则标明；缺失值如实显示，不能拿下载带宽代替。
 - 品牌使用官网当前原始Logo及favicon，本地随APK打包；来源和哈希见BRAND_ASSETS.md。
 - Homepage order: 最近播放 → 精选推荐 → 电影 → 电视剧 → 综艺 → VIP → 短剧. Home-only ordering uses API category IDs; directory retains complete categories and original API names.
-- Recent-playback Up targets the header Home icon. Home Down remounts the recent row before restoring its last card, including after returning from a deeply scrolled page. Empty history uses View all as the entry target.
+- Recent-playback Up targets Home in the category navigation row (首页、直播、短剧、电影…), not the top icon bar. Category Home Up reaches the top Home icon; top Home Down returns to category Home. Category Home Down remounts the recent row before restoring its last card, including after returning from a deeply scrolled page. Empty history uses View all as the entry target.
 - Episode selection appears below the player controls in normal and fullscreen modes: choose a ten-episode range, then select an episode. Browsing a range alone does not switch playback.

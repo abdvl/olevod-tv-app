@@ -337,3 +337,10 @@
 - Build/lint passed. Independent agent reviewed source and found the outer-lazy-item lifecycle issue, resolved before delivery.
 - Chromecast installed and verified Home→牧神记→Home, horizontal end/View all→Home→last recent movie. Screenshot: verification/screenshots/chromecast-home-focus-fixed.png.
 - Emulator rendered headings in exact requested order. HomeNavigationUiTest passed using real Android D-pad events and waiting for asynchronous focus completion: normal round trip plus deep scroll→directory→Home→Down remount→Up return. Initial test assertions ran before async focus settled; the final test waits for actual focus state.
+
+### S38 - corrected meaning of Home navigation
+
+- User clarified that recent-playback Up must return to the second category row (首页、直播、短剧、电影…), not the top icon bar. This supersedes the S37 focus target.
+- Added a separate category Home focus anchor. Recent cards/View all Up target category Home; category Home Up reaches top Home, and top Home Down returns to category Home. Category Home Down retains safe asynchronous recent-row remount/restoration.
+- Build/lint, independent source review and HomeNavigationUiTest passed. The test now asserts both navigation levels, Right to Live/Left to Home, and the deeply scrolled leave/return path.
+- Installed on Chromecast. Fresh physical UI dumps confirmed top Home bounds[76,30][231,126], category Home[76,132][191,226], Down to recent film, Up back to category Home, Right Live and Left Home. Device left on category Home. Screenshot: verification/screenshots/chromecast-home-category-focus.png.

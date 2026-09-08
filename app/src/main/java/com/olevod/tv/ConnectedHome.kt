@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 
 @Composable
-fun ConnectedHome(state:HomeState,vm:AppViewModel,open:(Movie)->Unit,history:()->Unit,homeFocus:FocusRequester,recentFocus:FocusRequester,setRecentEntry:((()->Unit)?)->Unit,browse:(String)->Unit) {
+fun ConnectedHome(state:HomeState,vm:AppViewModel,open:(Movie)->Unit,history:()->Unit,navigationHomeFocus:FocusRequester,recentFocus:FocusRequester,setRecentEntry:((()->Unit)?)->Unit,browse:(String)->Unit) {
     val listState=rememberLazyListState()
     val scope=rememberCoroutineScope()
     DisposableEffect(listState,recentFocus){
@@ -42,7 +42,7 @@ fun ConnectedHome(state:HomeState,vm:AppViewModel,open:(Movie)->Unit,history:()-
             Column(verticalArrangement=Arrangement.spacedBy(12.dp)){
                 SectionHeading("最近播放","接着上次看",history,Modifier.focusRequester(allFocus)
                     .then(if(recent.isEmpty())Modifier.focusRequester(recentFocus)else Modifier)
-                    .focusProperties{up=homeFocus;if(recent.isNotEmpty()){down=recentFocus;left=recentFocus}})
+                    .focusProperties{up=navigationHomeFocus;if(recent.isNotEmpty()){down=recentFocus;left=recentFocus}})
                 if(recent.isEmpty())Text("播放影片后会显示在这里",color=Muted,fontSize=13.sp)
                 else BoxWithConstraints(Modifier.fillMaxWidth()){
                     val cardWidth=(maxWidth-72.dp)/5
@@ -53,7 +53,7 @@ fun ConnectedHome(state:HomeState,vm:AppViewModel,open:(Movie)->Unit,history:()-
                             // A different focus ID distinguishes this copy from the same movie in a category below.
                             PosterCard(movie,Modifier.width(cardWidth)
                                 .then(if(record.movie.id==entryId)Modifier.focusRequester(recentFocus)else Modifier)
-                                .focusProperties{up=homeFocus;if(record==recent.last())right=allFocus},posterRatio=1.5f,focusIdentity=-movie.id,
+                                .focusProperties{up=navigationHomeFocus;if(record==recent.last())right=allFocus},posterRatio=1.5f,focusIdentity=-movie.id,
                                 subtitle=(if(record.episode>0)"第 ${record.episode} 集 · "else "")+"已看 ${clock(record.positionMs)}"){
                                 vm.pendingResume=record.copy(movie=movie);open(movie)
                             }}
