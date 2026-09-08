@@ -35,7 +35,15 @@ debug可用 `--es screen home|browse|search|player|live|history|favorites|accoun
 
 登录集成测试是可选测试：在用户提供当前验证码或授权本次识别后，把本地`.secrects`账号通过`run-as`标准输入注入应用私有临时文件。测试先删除临时文件，再请求登录并验证Keystore加密保存。测试需显式 liveLogin=true；原生验证码测试会等待输入，缺输入或未完成登录不能当作通过。密码不进入APK、Git、命令行参数或测试输出。
 
-## 已验证与限制
+## UI v2 回归与运行截图
+
+当前 `codex/ui-v2` 的构建、45项UI/状态、30项JVM、真实API/普通首帧证据与未覆盖分支见 [V2-10](verification/v2/V2-10.md)。模拟器与目标Chromecast分开记录；当前目标设备连接超时，不能把下面的旧版结果当作新版通过。
+
+新版UI采用 `V2*` 测试类作为回归入口，精确类清单与结果见V2-10。`V2AccountReadTest` / `V2LivePlaybackTest` 分别需要显式 `liveLogin=true` / `liveV2=true`，不包含在45项夹具回归中。仓库保留旧版的UI测试和服务测试供历史参照，本轮没有执行整个未筛选的 instrumentation 包，也没有将其声明为全部通过。
+
+[新版24张截图](verification/v2/screenshots/README.md) 通过 `--ez preview true` 运行正式页面组件，使用公开素材和虚拟状态。Android Studio运行默认入口使用真实服务；preview不是媒体播放成功的证据。
+
+## v0.1 历史验证与限制
 
 - 真实普通点播、搜索、美国筛选、精确±30秒、1.5倍速、全屏返回、后台暂停：有独立agent报告。
 - 25条历史、数据库重开、账号隔离：模拟器测试通过。

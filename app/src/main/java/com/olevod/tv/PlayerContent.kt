@@ -96,7 +96,7 @@ internal fun PlayerContent(state:PlayerUiState,full:Boolean,actions:PlayerAction
                 }
                 Column(Modifier.fillMaxWidth().height(24.dp),verticalArrangement=Arrangement.spacedBy(2.dp)){
                     Box(Modifier.fillMaxWidth().height(3.dp).background(TvDesign.border)){Box(Modifier.fillMaxWidth(if(state.duration>0)(state.position.toFloat()/state.duration).coerceIn(0f,1f)else 0f).fillMaxHeight().background(Green))}
-                    Row(Modifier.fillMaxWidth()){Text(clock(state.position),color=Muted,fontSize=13.sp,lineHeight=18.sp);Spacer(Modifier.weight(1f));Text(if(state.duration>0)clock(state.duration)else"--:--",color=Muted,fontSize=13.sp,lineHeight=18.sp)}
+                    Row(Modifier.fillMaxWidth()){Text(clock(state.position),modifier=Modifier.testTag("player-position"),color=Muted,fontSize=13.sp,lineHeight=18.sp);Spacer(Modifier.weight(1f));Text(if(state.duration>0)clock(state.duration)else"--:--",color=Muted,fontSize=13.sp,lineHeight=18.sp)}
                 }
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
                     val labels=listOf(if(full)"退出全屏"else"全屏",if(state.playRequested)"暂停"else"播放","−30秒","+30秒","−5分钟","+5分钟","速度",if(state.favoriteBusy)"处理中"else if(state.favorite)"已收藏"else"收藏")

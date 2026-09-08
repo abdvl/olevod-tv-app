@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.input.key.*
@@ -24,7 +25,8 @@ import kotlinx.coroutines.launch
 private data class HistoryDelete(val id:Long?,val title:String,val account:String)
 @Composable
 fun HistoryScreen(vm:AppViewModel,open:(Movie)->Unit,browse:()->Unit={},initialCloud:Boolean=false,
-                  fixtureRecords:List<WatchRecord>?=null,fixtureDelete:(suspend (Long?)->Unit)?=null,login:()->Unit) {
+                  fixtureRecords:List<WatchRecord>?=null,fixtureDelete:(suspend (Long?)->Unit)?=null,
+                  fixtureCloudRecords:List<WatchRecord>?=null,login:()->Unit) {
     val savedRecords by vm.history.records.collectAsStateWithLifecycle()
     val records=fixtureRecords?:savedRecords
     var cloud by rememberSaveable{mutableStateOf(initialCloud)}
@@ -36,10 +38,11 @@ fun HistoryScreen(vm:AppViewModel,open:(Movie)->Unit,browse:()->Unit={},initialC
     val metadata=if(fixtureRecords==null)rememberHistoryMetadata(vm)else null
     val tabs=remember{List(2){FocusRequester()}};val clear=remember{FocusRequester()}
     val entry=remember{FocusRequester()}
+    val sourceStates=rememberSaveableStateHolder()
     val page=LocalPageFocus.current
     LaunchedEffect(vm.sessionVersion){removal=null;restoreId=null}
     DisposableEffect(page,cloud,records.isNotEmpty()){
-        page?.enter={if(!cloud&&records.isNotEmpty())entry.requestFocus()else tabs[if(cloud)1 else 0].requestFocus()}
+        page?.enter={if(!cloud||!fixtureCloudRecords.isNullOrEmpty())scope.launch{entry.requestWhenAttached()}else tabs[1].requestFocus()}
         onDispose{page?.enter=null}
     }
     Column(Modifier.fillMaxSize().padding(horizontal=36.dp).testTag("history-page"),verticalArrangement=Arrangement.spacedBy(12.dp)){
@@ -50,13 +53,17 @@ fun HistoryScreen(vm:AppViewModel,open:(Movie)->Unit,browse:()->Unit={},initialC
         }
         Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
             listOf("此设备","网站账号").forEachIndexed{index,label->TvAction(label,selected=cloud==(index==1),modifier=Modifier.focusRequester(tabs[index]).restoreContentFocus("history-source:$index").testTag("history-source:$index")
-                .focusProperties{up=page?.header?:FocusRequester.Default;left=if(index==1)tabs[0]else FocusRequester.Cancel;right=if(index==0)tabs[1]else if(!cloud&&records.isNotEmpty())clear else FocusRequester.Cancel}){cloud=index==1} }
+                .focusProperties{up=page?.header?:FocusRequester.Default;left=if(index==1)tabs[0]else FocusRequester.Cancel;right=if(index==0)tabs[1]else if(!cloud&&records.isNotEmpty())clear else FocusRequester.Cancel}
+                .onPreviewKeyEvent{event->if(event.key==Key.DirectionDown){if(event.type==KeyEventType.KeyDown)page?.enter?.invoke();true}else false}){cloud=index==1} }
         }
         error?.let{Text(it,color=TvDesign.error,fontSize=13.sp)}
-        if(cloud)CloudHistoryPanel(vm,open,login,tabs[1])else {
-            if(records.isEmpty())Column(verticalArrangement=Arrangement.spacedBy(12.dp)){Text("还没有观看记录",color=Muted);TvAction("开始浏览",onClick=browse)}
+        sourceStates.SaveableStateProvider("${vm.sessionVersion}:$cloud") {
+        if(cloud&&fixtureCloudRecords!=null)HistoryGrid(fixtureCloudRecords,null,"cloud:${vm.sessionVersion}",entry,tabs[1],open={record,movie->vm.pendingResume=record.copy(movie=movie);open(movie)})
+        else if(cloud)CloudHistoryPanel(vm,open,login,tabs[1])else {
+            if(records.isEmpty())Column(verticalArrangement=Arrangement.spacedBy(12.dp)){Text("还没有观看记录",color=Muted);TvAction("开始浏览",modifier=Modifier.focusRequester(entry),onClick=browse)}
             else HistoryGrid(records,metadata,"device:${vm.sessionVersion}",entry,tabs[0],open={record,movie->vm.pendingResume=record.copy(movie=movie);open(movie)},
                 remove={removal=HistoryDelete(it.movie.id,it.movie.title,vm.sessions.accountKey)},restoreId=restoreId,restoreDelete=restoreDelete,onRestored={restoreId=null;restoreDelete=false})
+        }
         }
     }
     removal?.let{target->TvConfirmDialog(if(target.id==null)"清空观看历史？"else"删除《${target.title}》的记录？",
@@ -79,7 +86,16 @@ internal fun HistoryGrid(records:List<WatchRecord>,metadata:HistoryMetadataLoade
                          loading:Boolean=false,endReached:Boolean=true,error:String?=null,loadMore:()->Unit={}){
     val list=rememberSaveable(identity,saver=LazyListState.Saver){LazyListState()}
     val scope=rememberCoroutineScope()
-    val refs=remember(records.map{it.movie.id}){records.associate{it.movie.id to List(2){FocusRequester()}}}
+    val refs=remember(identity){mutableMapOf<Long,List<FocusRequester>>()}
+    records.forEach{refs.getOrPut(it.movie.id){List(2){FocusRequester()}}}
+    var lastId by rememberSaveable(identity){mutableStateOf(records.firstOrNull()?.movie?.id)}
+    var lastRole by rememberSaveable(identity){mutableIntStateOf(0)}
+    val entryId=lastId?.takeIf{refs.containsKey(it)&&records.any{record->record.movie.id==it}}?:records.firstOrNull()?.movie?.id
+    val retry=remember{FocusRequester()}
+    suspend fun returnFromRetry(){
+        val index=records.indexOfFirst{it.movie.id==lastId}.takeIf{it>=0}?:records.lastIndex
+        if(index>=0){list.scrollToItem(index/2);refs[records[index].movie.id]?.get(if(remove==null)0 else lastRole)?.requestWhenAttached()}
+    }
     val currentRecords by rememberUpdatedState(records);val currentLoad by rememberUpdatedState(loadMore)
     val canLoad by rememberUpdatedState(!loading&&!endReached&&error==null)
     LaunchedEffect(list){snapshotFlow{val rows=(currentRecords.size+1)/2;rows>0&&(list.layoutInfo.visibleItemsInfo.lastOrNull()?.index?:-1)>=rows-1&&canLoad}.distinctUntilChanged().collect{if(it)currentLoad()}}
@@ -87,7 +103,9 @@ internal fun HistoryGrid(records:List<WatchRecord>,metadata:HistoryMetadataLoade
     PosterFocusGroup(identity){LazyColumn(Modifier.fillMaxSize().testTag("history-grid"),state=list,contentPadding=PaddingValues(4.dp,4.dp,4.dp,64.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
         itemsIndexed(records.chunked(2),key={_,row->row.first().movie.id}){rowIndex,row->Row(horizontalArrangement=Arrangement.spacedBy(16.dp)){
             row.forEachIndexed{column,record->val i=rowIndex*2+column
-                fun navigation(role:Int):Modifier = Modifier.focusRequester(refs.getValue(record.movie.id)[role]).focusProperties{
+                fun navigation(role:Int):Modifier = Modifier.focusRequester(refs.getValue(record.movie.id)[role])
+                    .then(if(record.movie.id==entryId&&role==(if(remove==null)0 else lastRole))Modifier.focusRequester(entry)else Modifier)
+                    .onFocusChanged{if(it.isFocused){lastId=record.movie.id;lastRole=role}}.focusProperties{
                     if(rowIndex==0)this.up=up
                     left=when{role==1->refs.getValue(record.movie.id)[0];column==1->refs.getValue(row[0].movie.id)[if(remove!=null)1 else 0];else->FocusRequester.Cancel}
                     right=when{role==0&&remove!=null->refs.getValue(record.movie.id)[1];column==0&&row.size==2->refs.getValue(row[1].movie.id)[0];else->FocusRequester.Cancel}
@@ -95,14 +113,20 @@ internal fun HistoryGrid(records:List<WatchRecord>,metadata:HistoryMetadataLoade
                     val delta=when(event.key){Key.DirectionDown->2;Key.DirectionUp->-2;else->0}
                     if(delta==0)false else if(event.type==KeyEventType.KeyUp)true else{
                         val index=if(delta>0&&i+delta>=records.size&&rowIndex<(records.size-1)/2)records.lastIndex else i+delta
-                        if(index<0)up.requestFocus()else if(index<records.size)scope.launch{list.scrollToItem(index/2);withFrameNanos{};refs[records[index].movie.id]?.get(role)?.requestFocus()}
+                        if(index<0)up.requestFocus()else if(index<records.size)scope.launch{list.scrollToItem(index/2);refs[records[index].movie.id]?.get(role)?.requestWhenAttached()}
+                        else if(error!=null)scope.launch{list.scrollToItem((records.size+1)/2);retry.requestWhenAttached()}
                         true
                     }
                 }
-                HistoryRecordCard(record,metadata,Modifier.weight(1f),resumeModifier=navigation(0).then(if(i==0)Modifier.focusRequester(entry)else Modifier),
+                HistoryRecordCard(record,metadata,Modifier.weight(1f),resumeModifier=navigation(0),
                     deleteModifier=navigation(1),onDelete=remove?.let{{it(record)}},showUpdated=remove!=null){open(record,it)}
             };repeat(2-row.size){Spacer(Modifier.weight(1f))}
         }}
-        item("state"){when{error!=null->ErrorNotice(error,loadMore);loading->Text("正在加载更多…",color=Muted);endReached&&records.isNotEmpty()->Text("已显示全部记录",color=Muted,fontSize=13.sp)}}
+        item("state"){when{error!=null->Column(verticalArrangement=Arrangement.spacedBy(10.dp)){
+            Text(error,color=TvDesign.error,fontSize=15.sp)
+            TvAction("重试",modifier=Modifier.focusRequester(retry).testTag("history-tail-retry").onPreviewKeyEvent{event->
+                if(event.key==Key.DirectionUp){if(event.type==KeyEventType.KeyDown)scope.launch{returnFromRetry()};true}else false
+            }){scope.launch{returnFromRetry();currentLoad()}}
+        };loading->Text("正在加载更多…",color=Muted);endReached&&records.isNotEmpty()->Text("已显示全部记录",color=Muted,fontSize=13.sp)}}
     }}
 }

@@ -98,6 +98,63 @@ class V2SearchUiTest {
         }
     }
 
+    @Test fun suggestionFailureRetriesFromKeyboardWithoutClearingQueryOrLiteralResults() {
+        var mnAttempts=0
+        val retryResult=CompletableDeferred<Unit>()
+        val literal=Movie(701,"MN 字面匹配","",year="2026")
+        val fixture=SearchFixture(hot=emptyList(),initialQuery="MN",suggest={query->
+            if(query=="MN") {
+                mnAttempts++
+                if(mnAttempts==1)throw java.io.IOException("Fixture suggestion failure")
+                retryResult.await()
+            }
+            listOf("魔女")
+        },feed={query->feeds.getOrPut(query){CatalogFeed(jobs){page->
+            val items=if(query=="魔女")listOf(witch)else listOf(literal)
+            CatalogPage(items,items.size,page,20)
+        }}})
+        showSearchFixture(fixture)
+        focused("search-input")
+        compose.waitUntil(5_000){compose.onAllNodesWithTag("suggestion-retry").fetchSemanticsNodes().isNotEmpty()}
+        compose.waitUntil(5_000){compose.onAllNodesWithTag("poster:701").fetchSemanticsNodes().isNotEmpty()}
+        focused("search-input") // A suggestion failure must not steal focus.
+        press(KeyEvent.KEYCODE_DPAD_DOWN)
+        press(KeyEvent.KEYCODE_DPAD_DOWN)
+        focused("search-key:A")
+        press(KeyEvent.KEYCODE_DPAD_DOWN)
+        focused("search-key:G")
+        press(KeyEvent.KEYCODE_DPAD_DOWN)
+        focused("search-key:M")
+        listOf("N","O","P","Q","R").forEach {
+            press(KeyEvent.KEYCODE_DPAD_RIGHT)
+            focused("search-key:$it")
+        }
+        press(KeyEvent.KEYCODE_DPAD_RIGHT)
+        focused("suggestion-retry")
+        compose.runOnIdle { assertEquals("Focus alone never retries",1,mnAttempts) }
+        press(KeyEvent.KEYCODE_DPAD_CENTER)
+        focused("search-key:R")
+        compose.waitUntil(5_000){mnAttempts==2}
+        compose.onNodeWithTag("search-input").assertTextContains("MN")
+        compose.onNodeWithTag("poster:701").assertExists().assertIsNotFocused()
+        compose.runOnIdle {
+            assertEquals(listOf(701L),feeds.getValue("MN").state.items.map{it.id})
+            assertTrue(opened.isEmpty())
+            retryResult.complete(Unit)
+        }
+        compose.waitUntil(5_000){compose.onAllNodesWithTag("suggestion:魔女").fetchSemanticsNodes().isNotEmpty()}
+        focused("search-key:R")
+        compose.runOnIdle { assertEquals("One explicit retry produces one request",2,mnAttempts) }
+        press(KeyEvent.KEYCODE_DPAD_RIGHT)
+        focused("suggestion:魔女")
+        press(KeyEvent.KEYCODE_DPAD_CENTER)
+        focused("poster:501")
+        compose.onNodeWithTag("poster:701").assertDoesNotExist()
+        press(KeyEvent.KEYCODE_BACK)
+        focused("search-input")
+        compose.runOnIdle { assertTrue(opened.isEmpty()) }
+    }
+
     private fun enterMnAndConfirmWitch() {
         focused("search-input")
         press(KeyEvent.KEYCODE_DPAD_DOWN) // Clear
@@ -138,6 +195,10 @@ class V2SearchUiTest {
                 CatalogPage(items, items.size, page, 20)
             }
         } })
+        showSearchFixture(fixture)
+    }
+
+    private fun showSearchFixture(fixture:SearchFixture) {
         compose.setContent {
             MaterialTheme {
                 CompositionLocalProvider(LocalBringIntoViewSpec provides EdgeBringIntoViewSpec) {

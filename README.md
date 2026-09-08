@@ -15,7 +15,15 @@
 | 包名 | `com.olevod.tv` |
 | 发布形式 | 独立签名 APK，侧载安装；不通过 Play 商店发布 |
 
-## 功能与界面
+## UI v2 开发预览
+
+`codex/ui-v2` 分支已按认可的设计规范实现新版原生 TV 界面：单行导航、完整竖版海报、最近五部聚焦展开、分类双榜、紧凑筛选浮层、三栏搜索、八按钮播放器与全屏覆盖层、两列历史和数字验证码登录。直播暂不纳入。
+
+查看 **[新版运行截图集](docs/verification/v2/screenshots/README.md)**、[设计对照检查](design-qa.md) 和 [集成验证与待验收项](docs/verification/v2/V2-10.md)。截图运行的是正式页面组件，使用公开影片素材和虚拟观看记录；播放器布局图不代表真实媒体解码证据。新版尚未发布，顶部 v0.1 下载链接和下面的发布版截图仍对应 v0.1。
+
+![UI v2 首页运行预览](docs/verification/v2/screenshots/home-default.png)
+
+## v0.1 功能与界面
 
 以下十张图片均为应用运行时的真实界面截图，均来自 v0.1 正式签名 APK 在干净 TV 模拟器中的实际运行，并非设计稿。网站内容会持续更新，实际片单可能与截图不同。
 
@@ -154,7 +162,7 @@ source scripts/android-env.sh
 ./gradlew assembleDebug testDebugUnitTest lintDebug
 ```
 
-当前 23 项 JVM 单元测试覆盖 API 参数及解析、目录加载、播放跳转和视频信息格式。Android 测试另覆盖首页导航、目录排序、搜索焦点、分类小首页、退出确认、分组选集、全屏覆盖布局和遥控器按键。真实登录、会员内容、收藏及云同步集成测试需要额外账号环境和显式参数，不能将跳过的测试视为通过。
+当前 30 项 JVM 单元测试覆盖 API 参数及解析、累计加载、迟到响应、播放跳转／续播、Unicode 输入和视频信息格式。新版 Android 测试另外覆盖遥控焦点、搜索竞态、分组／全屏、历史删除／来源恢复、收藏和账号隔离；精确运行范围及结果见 [V2-10](docs/verification/v2/V2-10.md)。真实登录、会员内容、收藏及云同步集成测试需要额外账号环境和显式参数，不能将跳过的测试视为通过。
 
 | 文档 | 内容 |
 | --- | --- |
@@ -162,7 +170,8 @@ source scripts/android-env.sh
 | [构建与调试](docs/BUILD_AND_TEST.md) | Android Studio、命令行与测试运行方式 |
 | [当前进度](docs/PROGRESS.md) | 每一步完成内容、提交检查点和验证情况 |
 | [实施步骤](docs/IMPLEMENTATION_STEPS.md) | 分步开发与恢复入口 |
-| [UI v2 完整设计规范](docs/design-v2/DESIGN_SPEC.md) | 已认可的新版布局、组件参数、焦点与状态、API 边界；尚未实现 |
+| [UI v2 完整设计规范](docs/design-v2/DESIGN_SPEC.md) | 已认可的新版布局、组件参数、焦点与状态、API 边界 |
+| [UI v2 实施检查点](docs/verification/v2/IMPLEMENTATION_STATUS.md) | 分阶段提交、当前验证结果和实机待验收范围 |
 | [UI v2 设计稿与验收](docs/design-v2/README.md) | 十张参考图、设计 tokens、验收矩阵和后续开发检查点 |
 | [早期产品与代码设计](docs/DESIGN.md) | v1 历史方案；新版 UI 以 v2 规范为准 |
 | [API 调查](docs/API_RESEARCH.md) | 网站接口及已确认的数据契约 |
@@ -179,7 +188,7 @@ source scripts/android-env.sh
 | Release / 里程碑 | 模型 | 输入 token（含缓存） | 其中缓存输入 | 输出 token（含推理） | 总 token | 标准 API 估值（USD） |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | [v0.1](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.1) | GPT-6 Astra（主任务 + 2 个子 agent） | 157,985,669 | 155,394,048 | 413,809 | 158,399,478 | **$202.00** |
-| [UI v2 设计定稿](docs/design-v2/DESIGN_SPEC.md)（尚未实现） | GPT-6 Astra（主任务 + 设计审阅 agent） | 15,226,201 | 14,570,880 | 92,184 | 15,318,385 | **$25.73**，图片生成额外费用未统计 |
+| [UI v2 设计定稿](docs/design-v2/DESIGN_SPEC.md)（仅设计阶段） | GPT-6 Astra（主任务 + 设计审阅 agent） | 15,226,201 | 14,570,880 | 92,184 | 15,318,385 | **$25.73**，图片生成额外费用未统计 |
 
 以上已记录阶段合计 **173,717,863 token，约 $227.73**；不含下述未统计费用与范围外任务。
 

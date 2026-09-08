@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -178,7 +179,115 @@ class V2HistoryUiTest {
         focused("cloud-source")
     }
 
-    private fun showDeviceHistory(initial: List<WatchRecord>) {
+    @Test fun cloudTailErrorCanEnterRetryAndReturnToTheExactLastCard() {
+        val cloudRecords=(1L..20L).map { id ->
+            WatchRecord(Movie(id,"云历史样本$id",""),id.toInt(),id*1_000L,0,0)
+        }
+        var retryCalls=0
+        compose.setContent {
+            val header=remember{FocusRequester()};val entry=remember{FocusRequester()}
+            MaterialTheme {
+                CompositionLocalProvider(LocalBringIntoViewSpec provides EdgeBringIntoViewSpec) {
+                    Column(Modifier.fillMaxSize().background(Bg)) {
+                        TvAction("网站历史",modifier=Modifier.focusRequester(header).testTag("cloud-source")){}
+                        Box(Modifier.weight(1f)) {
+                            ContentFocusScope {
+                                HistoryGrid(cloudRecords,metadata=null,identity="cloud-tail-error",entry=entry,up=header,
+                                    open={_,movie->opened+=movie.id},endReached=false,error="下一页暂时无法加载",
+                                    loadMore={retryCalls++})
+                            }
+                        }
+                    }
+                }
+            }
+            LaunchedEffect(Unit){withFrameNanos{};entry.requestFocus()}
+        }
+        focused("history-resume:1")
+        (3L..19L step 2).forEach { id ->
+            press(KeyEvent.KEYCODE_DPAD_DOWN)
+            focused("history-resume:$id")
+        }
+        press(KeyEvent.KEYCODE_DPAD_RIGHT)
+        focused("history-resume:20")
+        press(KeyEvent.KEYCODE_DPAD_DOWN)
+        compose.onNodeWithText("重试").assertIsFocused().assertIsDisplayed()
+        compose.onNodeWithText("下一页暂时无法加载").assertIsDisplayed()
+        compose.runOnIdle { assertEquals("Focus movement must not retry automatically",0,retryCalls) }
+        press(KeyEvent.KEYCODE_DPAD_UP)
+        focused("history-resume:20")
+        compose.onNodeWithTag("history-resume:20").assertIsDisplayed()
+        press(KeyEvent.KEYCODE_DPAD_DOWN)
+        compose.onNodeWithText("重试").assertIsFocused()
+        press(KeyEvent.KEYCODE_DPAD_CENTER)
+        compose.runOnIdle { assertEquals(1,retryCalls);assertTrue(opened.isEmpty()) }
+        // Confirmation returns to a stable card before error -> loading can remove the retry button.
+        focused("history-resume:20")
+    }
+
+    @Test fun deviceAndCloudSourcesKeepIndependentDeepScrollAndActionRole() {
+        val device=(1L..20L).map { id ->
+            WatchRecord(Movie(id,"此设备样本$id",""),id.toInt(),id*1_000L,90_000L,1_600_000_000_000L)
+        }
+        val cloud=(101L..120L).map { id ->
+            WatchRecord(Movie(id,"网站历史样本$id",""),id.toInt(),id*1_000L,0,0)
+        }
+        showDeviceHistory(device,cloud)
+        enterHistory()
+        listOf(3L,5L,7L,9L).forEach { id ->
+            press(KeyEvent.KEYCODE_DPAD_DOWN)
+            focused("history-resume:$id")
+        }
+        press(KeyEvent.KEYCODE_DPAD_RIGHT)
+        focused("history-delete:9")
+        val deviceY=compose.onNodeWithTag("history-delete:9").getUnclippedBoundsInRoot().top.value
+
+        // Controlled precondition: place focus on the source tab without walking back through rows,
+        // which would legitimately replace the remembered deep card. The source selection and
+        // subsequent content restoration themselves use D-pad and Confirm only.
+        focusSourceForSwitch(0)
+        press(KeyEvent.KEYCODE_DPAD_RIGHT)
+        focused("history-source:1")
+        press(KeyEvent.KEYCODE_DPAD_CENTER)
+        compose.onNodeWithTag("history-source:1").assertIsSelected()
+        press(KeyEvent.KEYCODE_DPAD_DOWN)
+        focused("history-resume:101")
+        press(KeyEvent.KEYCODE_DPAD_DOWN)
+        focused("history-resume:103")
+        press(KeyEvent.KEYCODE_DPAD_DOWN)
+        focused("history-resume:105")
+        press(KeyEvent.KEYCODE_DPAD_RIGHT)
+        focused("history-resume:106")
+        val cloudY=compose.onNodeWithTag("history-resume:106").getUnclippedBoundsInRoot().top.value
+        compose.onNodeWithTag("history-delete:106").assertDoesNotExist()
+
+        focusSourceForSwitch(1)
+        press(KeyEvent.KEYCODE_DPAD_LEFT)
+        focused("history-source:0")
+        press(KeyEvent.KEYCODE_DPAD_CENTER)
+        compose.onNodeWithTag("history-source:0").assertIsSelected()
+        press(KeyEvent.KEYCODE_DPAD_DOWN)
+        focused("history-delete:9")
+        assertEquals("Device source restores exact card, delete role and scroll",deviceY,
+            compose.onNodeWithTag("history-delete:9").getUnclippedBoundsInRoot().top.value,1f)
+
+        focusSourceForSwitch(0)
+        press(KeyEvent.KEYCODE_DPAD_RIGHT)
+        press(KeyEvent.KEYCODE_DPAD_CENTER)
+        compose.onNodeWithTag("history-source:1").assertIsSelected()
+        press(KeyEvent.KEYCODE_DPAD_DOWN)
+        focused("history-resume:106")
+        assertEquals("Cloud source keeps its own card and scroll",cloudY,
+            compose.onNodeWithTag("history-resume:106").getUnclippedBoundsInRoot().top.value,1f)
+        compose.runOnIdle { assertTrue(deletions.isEmpty());assertTrue(opened.isEmpty()) }
+    }
+
+    private fun focusSourceForSwitch(index:Int) {
+        compose.onNodeWithTag("history-source:$index").performSemanticsAction(SemanticsActions.RequestFocus) { it() }
+        compose.waitForIdle()
+        focused("history-source:$index")
+    }
+
+    private fun showDeviceHistory(initial: List<WatchRecord>,cloud:List<WatchRecord>?=null) {
         records=mutableStateOf(initial)
         compose.setContent {
             val header=remember{navigationItems.associate{it.key to FocusRequester()}}
@@ -192,7 +301,7 @@ class V2HistoryUiTest {
                             CompositionLocalProvider(LocalPageFocus provides page) {
                                 ContentFocusScope {
                                     HistoryScreen(isolated.vm,open={opened+=it.id},browse={browseOpens++},
-                                        fixtureRecords=records.value,fixtureDelete={id->
+                                        fixtureRecords=records.value,fixtureCloudRecords=cloud,fixtureDelete={id->
                                             deletions+=id;records.value=if(id==null)emptyList()else records.value.filterNot{it.movie.id==id}
                                         },login={})
                                 }

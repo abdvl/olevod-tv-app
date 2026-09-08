@@ -16,7 +16,8 @@ internal fun SearchPreviewFixture(vm:AppViewModel,movies:List<Movie>,open:(Movie
 @Composable
 internal fun HistoryPreviewFixture(vm:AppViewModel,movies:List<Movie>,open:(Movie)->Unit,browse:()->Unit,login:()->Unit){
     var records by remember{mutableStateOf(previewWatchRecords(movies).take(8))}
-    HistoryScreen(vm,open,browse,fixtureRecords=records,fixtureDelete={id->records=if(id==null)emptyList()else records.filter{it.movie.id!=id}},login=login)
+    HistoryScreen(vm,open,browse,fixtureRecords=records,fixtureDelete={id->records=if(id==null)emptyList()else records.filter{it.movie.id!=id}},
+        fixtureCloudRecords=previewWatchRecords(movies).map{it.copy(updatedAt=0L)},login=login)
 }
 
 @Composable

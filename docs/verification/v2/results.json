@@ -1,0 +1,475 @@
+{
+  "date": "2026-09-08",
+  "branch": "codex/ui-v2",
+  "app_sha256": "d6391ff01d218c78fd6becbaef9f9d3ecf086c9129806264da888b119bec2f36",
+  "test_apk_sha256": "6e1eb0ea9ad0215d6a9d08daef4df3da0712b9b6778c794cb71eea1e6b712915",
+  "android_ui": {
+    "tests": 45,
+    "failures": 0,
+    "skipped": 0,
+    "seconds": 85.355
+  },
+  "jvm": {
+    "tests": 30,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "device": "emulator-5554 Android 14 API 34",
+  "chromecast": "not verified; connection timeout",
+  "design_gate": "partial; hardware and remaining requirement branches pending",
+  "requirements": [
+    {
+      "id": "NAV-01",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Foundation/Home：单行与冷启动首页焦点。"
+    },
+    {
+      "id": "NAV-02",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Foundation：所有导航方向遍历，仅确认导航。"
+    },
+    {
+      "id": "NAV-03",
+      "priority": "P1",
+      "status": "通过",
+      "evidence": "Foundation：工具展开及文字分类保持可达。"
+    },
+    {
+      "id": "NAV-04",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "页面组件与Root：主要Header/正文往返已覆盖；全设备组合待验收。"
+    },
+    {
+      "id": "NAV-05",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "FocusRestoration与Root3：节身份/来源恢复；真实重复片单组合未穷尽。"
+    },
+    {
+      "id": "IMG-01",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Foundation：2:3、其他比例/极长图四角完整。"
+    },
+    {
+      "id": "IMG-02",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "Foundation与末行运行图：默认字体边界通过；所有放大字体列表待验收。"
+    },
+    {
+      "id": "IMG-03",
+      "priority": "P1",
+      "status": "待验收",
+      "evidence": "缺图→加载成功的真实转换未执行。"
+    },
+    {
+      "id": "IMG-04",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "官网原始Logo资源与Header/启动品牌已检查。"
+    },
+    {
+      "id": "HOME-01",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Home3与运行图：五部+历史入口、默认进度。"
+    },
+    {
+      "id": "HOME-02",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Home3：同高横向展开与最后历史入口可达。"
+    },
+    {
+      "id": "HOME-03",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Home3与Root：反复Up/Down回程，无旧导航目标。"
+    },
+    {
+      "id": "HOME-04",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Home3：默认/展开推荐y保持。"
+    },
+    {
+      "id": "HOME-05",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Home布局/代码与真实API更新十部；分类序列已检查。"
+    },
+    {
+      "id": "HOME-06",
+      "priority": "P1",
+      "status": "部分覆盖",
+      "evidence": "空态代码存在；0/1/4记录与单节失败组合未全部运行。"
+    },
+    {
+      "id": "MINI-01",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "Root验证电影小首页；其他类别路由代码已检查，未逐类端到端。"
+    },
+    {
+      "id": "MINI-02",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Mini2：两榜各十个，前二与后八不重复。"
+    },
+    {
+      "id": "MINI-03",
+      "priority": "P1",
+      "status": "部分覆盖",
+      "evidence": "Mini2验证稀疏/空榜；跨年未实测。"
+    },
+    {
+      "id": "MINI-04",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Root：浏览全部、切目录分类、回电影原按钮与y。"
+    },
+    {
+      "id": "CAT-01",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Catalog4与运行图：分类标题+五入口。"
+    },
+    {
+      "id": "CAT-02",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "真实CatalogIntegration四排序均有两页有效结果。"
+    },
+    {
+      "id": "CAT-03",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Catalog4：四列年份及短末行上下可达。"
+    },
+    {
+      "id": "CAT-04",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Catalog4：仅确认应用，取消保留原值。"
+    },
+    {
+      "id": "CAT-05",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Catalog4：取消筛选保留深网格位置。"
+    },
+    {
+      "id": "CAT-06",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Catalog4：会员/字母草稿、取消、单次应用/重置。"
+    },
+    {
+      "id": "CAT-07",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "分类清参数有实现，Root只覆盖电影→电视剧；多类组合待验收。"
+    },
+    {
+      "id": "CAT-08",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Catalog4：筛选/结果跨区方向与回程。"
+    },
+    {
+      "id": "PAGE-01",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "CatalogFeed/PagedFeed与UI深列表：末行累计加载。"
+    },
+    {
+      "id": "PAGE-02",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Feed、Favorites4、History7：保页重试与原焦点。"
+    },
+    {
+      "id": "PAGE-03",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "Feed/Search4：旧查询迟到不混入/抢焦点；真实切账号另见ACCOUNT-07。"
+    },
+    {
+      "id": "PAGE-04",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "PagedFeed：重复ID异常页有界处理与同页重试。"
+    },
+    {
+      "id": "SEARCH-01",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "键盘组件按键覆盖；系统IME完成/取消仍待实机。"
+    },
+    {
+      "id": "SEARCH-02",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Search4：MN→魔女→确认结果首项一次。"
+    },
+    {
+      "id": "SEARCH-03",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Search4和Root：Back先输入，再离页。"
+    },
+    {
+      "id": "SEARCH-04",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Search4：Back/继续输入取消迟到焦点意图。"
+    },
+    {
+      "id": "SEARCH-05",
+      "priority": "P1",
+      "status": "通过",
+      "evidence": "Search4与运行图：字面结果与联想各自区分。"
+    },
+    {
+      "id": "SEARCH-06",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "联想异常/重试、空/有结果已运行；所有真实网络错误组合未穷尽。"
+    },
+    {
+      "id": "PLAY-01",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Player4：默认全屏，八按钮边界与顺序。"
+    },
+    {
+      "id": "PLAY-02",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Player4：按钮→视频→Header→视频→全屏。"
+    },
+    {
+      "id": "PLAY-03",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "四行限高及选集可见已测；简介全文浮层长文遥控未完整执行。"
+    },
+    {
+      "id": "PLAY-04",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "JVM clamp、UI四个seek回调已测；真实片头/片尾seek未测。"
+    },
+    {
+      "id": "PLAY-05",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "Player4：速度取消/确认/切集/全屏；退出新会话默认未跑。"
+    },
+    {
+      "id": "PLAY-06",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "实际媒体Back离开保存已测；Header离开/后台/释放边界未完整执行。"
+    },
+    {
+      "id": "EP-01",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "Player4覆盖32条短末组，JVM非连续index；100/1000集未跑。"
+    },
+    {
+      "id": "EP-02",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Player4：确认21–30组不切播。"
+    },
+    {
+      "id": "EP-03",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "Player4：明确点22/32才切播；自动下一集和服务重试未跑。"
+    },
+    {
+      "id": "EP-04",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Player4：普通/全屏保组、层级Up与短末组边界。"
+    },
+    {
+      "id": "FULL-01",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Player4：虚拟视频和外框三次显隐，四边±0.5dp内不变。"
+    },
+    {
+      "id": "FULL-02",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Player4及真实普通媒体：Up隐藏/Down唤醒/Back可达。"
+    },
+    {
+      "id": "FULL-03",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "Player4覆盖分组Up层级；超过5秒计时未完整跑。"
+    },
+    {
+      "id": "FULL-04",
+      "priority": "P1",
+      "status": "待验收",
+      "evidence": "自动隐藏与各禁止状态仅代码复核，未定时运行验收。"
+    },
+    {
+      "id": "FULL-05",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "JVM平均/峰值/缺失与真实正宽高通过；动态格式变化未跑。"
+    },
+    {
+      "id": "FULL-06",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "Root来源回程+真实媒体全屏返回；精确位置连续性未断言。"
+    },
+    {
+      "id": "HISTORY-01",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "History7+运行图：五部，两列/四条，进度与元信息。"
+    },
+    {
+      "id": "HISTORY-02",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "History7双来源深id/action/y恢复及尾错误；真实云端>20条未测。"
+    },
+    {
+      "id": "HISTORY-03",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "History7云式无日期+真实updatedAt=0；未知时长不造进度比例。"
+    },
+    {
+      "id": "HISTORY-04",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "History7确认/取消/末项/清空及真实scope DB；首页即时联动未完整跑。"
+    },
+    {
+      "id": "HISTORY-05",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "JVM显式记录优先级+adapter单位；真实指定云端记录精确续播未测。"
+    },
+    {
+      "id": "ACCOUNT-01",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "Account6/State4首次表单与保存时序通过；重启后真实vault流程未完整跑。"
+    },
+    {
+      "id": "ACCOUNT-02",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Account6：记住态默认数字1，只有验证码需要输入。"
+    },
+    {
+      "id": "ACCOUNT-03",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Account6：3列键盘、清空/退格、刷新原子pair。"
+    },
+    {
+      "id": "ACCOUNT-04",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Account6+Unicode JVM：第四位不提交、第五位保留、空禁用。"
+    },
+    {
+      "id": "ACCOUNT-05",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Account6/State4：失败刷新/回数字1、存储失败不假称记住；真实登录另已通过。"
+    },
+    {
+      "id": "ACCOUNT-06",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "清除确认夹具通过；真实logout保留凭据/清除组合未跑。"
+    },
+    {
+      "id": "ACCOUNT-07",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "真实DB scope隔离+Feed代次取消；真实A→B网络并发未测。"
+    },
+    {
+      "id": "ACCOUNT-08",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "一次性期望状态与撤销代码复核；三个真实服务入口成功/取消全旅程未跑。"
+    },
+    {
+      "id": "FAVORITE-01",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "Favorites4：空/深分页/尾失败；真实页1只读，未登录入口未完整跑。"
+    },
+    {
+      "id": "FAVORITE-02",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "Favorites4移除邻项/深返回+缓存复核；真实写入与失败回读未跑。"
+    },
+    {
+      "id": "EXIT-01",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Root：默认继续与Back取消，不触发onExit。"
+    },
+    {
+      "id": "EXIT-02",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "Root：仅明确退出一次onExit；真实Activity finish待实机。"
+    },
+    {
+      "id": "A11Y-01",
+      "priority": "P1",
+      "status": "部分覆盖",
+      "evidence": "1.0/1.3代表页面运行图；完整大字体遥控路线未测。"
+    },
+    {
+      "id": "A11Y-02",
+      "priority": "P1",
+      "status": "待验收",
+      "evidence": "Selected等语义已补；屏幕阅读器/减少动效未运行验收。"
+    },
+    {
+      "id": "STATE-01",
+      "priority": "P0",
+      "status": "部分覆盖",
+      "evidence": "Root Compose保存恢复通过；真实Activity/后台/进程重启未跑。"
+    },
+    {
+      "id": "LIVE-01",
+      "priority": "P0",
+      "status": "通过",
+      "evidence": "Header无直播入口，未新增频道任务，旧存储未删除。"
+    }
+  ],
+  "final_app_sha256": "e14387a733c072d46a78b7af722336893115dd7409ba8deaf549cbed725587ce",
+  "post_polish_catalog": {
+    "tests": 4,
+    "failures": 0,
+    "skipped": 0,
+    "seconds": 9.634,
+    "change": "Compact initial filter padding and check icon only; no text size reduction"
+  }
+}

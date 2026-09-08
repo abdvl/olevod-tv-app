@@ -82,7 +82,7 @@ internal fun MoreFiltersPopover(membership:Int,initial:String,onDismiss:()->Unit
                             down=if((row+1)*7<letterRefs.size)letterRefs[minOf(i+7,letterRefs.lastIndex)]else actions[minOf(col/3,2)]
                             left=if(col>0)letterRefs[i-1]else FocusRequester.Cancel
                             right=if(col<values.lastIndex)letterRefs[i+1]else FocusRequester.Cancel
-                        }){draftInitial=opt.value}
+                        },compact=true){draftInitial=opt.value}
                     };repeat(7-values.size){Spacer(Modifier.weight(1f))}
                 }}
             }
@@ -97,13 +97,13 @@ internal fun MoreFiltersPopover(membership:Int,initial:String,onDismiss:()->Unit
 }
 
 @Composable
-internal fun OptionChip(label:String,selected:Boolean,modifier:Modifier=Modifier,onClick:()->Unit){
+internal fun OptionChip(label:String,selected:Boolean,modifier:Modifier=Modifier,compact:Boolean=false,onClick:()->Unit){
     val source=remember{MutableInteractionSource()};val focused by source.collectIsFocusedAsState()
     Row(modifier.heightIn(min=36.dp).background(if(focused)Green else if(selected)Green.copy(alpha=.12f)else Color.Transparent,RoundedCornerShape(8.dp))
-        .semantics{this.selected=selected}.clickable(interactionSource=source,indication=null,onClick=onClick).padding(horizontal=8.dp,vertical=7.dp),
+        .semantics{this.selected=selected}.clickable(interactionSource=source,indication=null,onClick=onClick).padding(horizontal=if(compact)4.dp else 8.dp,vertical=7.dp),
         verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)){
-        Text(label,color=if(focused)Bg else if(selected)Green else White,fontSize=14.sp,lineHeight=19.sp,modifier=Modifier.weight(1f),maxLines=2)
-        if(selected)Icon(Icons.Rounded.Check,null,Modifier.size(16.dp),tint=if(focused)Bg else Green)
+        Text(label,color=if(focused)Bg else if(selected)Green else White,fontSize=14.sp,lineHeight=19.sp,modifier=Modifier.weight(1f),maxLines=if(compact)1 else 2)
+        if(selected)Icon(Icons.Rounded.Check,null,Modifier.size(if(compact)12.dp else 16.dp),tint=if(focused)Bg else Green)
     }
 }
 

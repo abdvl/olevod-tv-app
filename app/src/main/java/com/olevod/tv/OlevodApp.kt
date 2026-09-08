@@ -48,6 +48,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -175,7 +177,7 @@ internal fun TvAction(label: String, icon: ImageVector? = null, selected: Boolea
     val interaction=remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     val color by animateColorAsState(if(focused)Green else if(selected)Color(0xFF263E31) else Color.Transparent,label="focus")
-    Row(modifier.clip(RoundedCornerShape(50)).background(color).border(if(selected&&!focused)1.dp else 0.dp,if(selected&&!focused)Green.copy(alpha=.35f) else Color.Transparent,RoundedCornerShape(50)).clickable(enabled=enabled,interactionSource=interaction,indication=null,onClick=onClick).padding(horizontal=14.dp,vertical=9.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+    Row(modifier.semantics{this.selected=selected}.clip(RoundedCornerShape(50)).background(color).border(if(selected&&!focused)1.dp else 0.dp,if(selected&&!focused)Green.copy(alpha=.35f) else Color.Transparent,RoundedCornerShape(50)).clickable(enabled=enabled,interactionSource=interaction,indication=null,onClick=onClick).padding(horizontal=14.dp,vertical=9.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
         val tint=if(!enabled)Muted.copy(alpha=.55f)else if(focused)Bg else if(selected)Green else White
         if(icon!=null)Icon(icon,null,Modifier.size(17.dp),tint=tint)
         Text(label,color=tint,fontSize=14.sp,fontWeight=if(focused||selected)FontWeight.Bold else FontWeight.Normal,maxLines=1,overflow=TextOverflow.Ellipsis)
