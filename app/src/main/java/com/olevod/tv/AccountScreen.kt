@@ -45,7 +45,7 @@ fun AccountScreen(vm:AppViewModel) {
             if(error!=null)Text(error!!,color=Gold,fontSize=12.sp)
             TvAction(if(busy)"登录中…"else"登录",selected=true){if(!busy){
                 if(username.isBlank()||password.isBlank()||captcha.isBlank()){error="请输入账号、密码和验证码"}
-                else scope.launch{busy=true;error=null;try{vm.login(username,password,captcha,captchaId);password="";captcha=""}catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e);refresh++}finally{busy=false}}
+                else scope.launch{busy=true;error=null;try{vm.login(username,password,captcha,captchaId);password="";captcha=""}catch(e:Exception){if(e is CancellationException)throw e;error=if(e is com.olevod.tv.data.ApiException&&e.code==7)"登录未成功，请检查账号、密码和验证码"else safeError(e);refresh++}finally{busy=false}}
             }}
         }
     }

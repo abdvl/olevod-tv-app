@@ -17,7 +17,8 @@ class LoginIntegrationTest {
     @Test fun loginAndPersistEncryptedSession()=runBlocking {
         val context=InstrumentationRegistry.getInstrumentation().targetContext
         val file=File(context.filesDir,".login-test.json")
-        assumeTrue("Requires user supplied live CAPTCHA",file.exists())
+        assumeTrue("Live login is opt-in",InstrumentationRegistry.getArguments().getString("liveLogin")=="true")
+        assertTrue("Requires user supplied live CAPTCHA",file.exists())
         val input=try{JSONObject(file.readText())}finally{file.delete()}
         val api=OlevodApi()
         val username=input.getString("username")
@@ -25,6 +26,7 @@ class LoginIntegrationTest {
         val session=SessionStore(context)
         session.save(result.token,result.name,result.accountId)
         assertNotNull(SessionStore(context).token)
+        File(context.filesDir,"login-confirmed.txt").writeText("API login succeeded and encrypted session saved")
         val prefs=context.getSharedPreferences("session",0).getString("value","")!!
         assertFalse("Session must be encrypted",prefs.contains(result.token))
     }

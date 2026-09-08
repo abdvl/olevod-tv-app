@@ -21,6 +21,7 @@ class AppViewModel(application:Application):AndroidViewModel(application) {
         private set
     fun saveQuery(query:String){if(query.isBlank())return;searchHistory=(listOf(query.trim())+searchHistory).distinct().take(20);searchPrefs.edit().putString("words",org.json.JSONArray(searchHistory).toString()).apply()}
     fun clearSearchHistory(){searchHistory=emptyList();searchPrefs.edit().remove("words").apply()}
+    var pendingResume:WatchRecord?=null
     var pendingChannel by mutableStateOf<Channel?>(null)
     val sessions=SessionStore(application)
     val history=HistoryStore(application){sessions.accountKey}
@@ -29,7 +30,7 @@ class AppViewModel(application:Application):AndroidViewModel(application) {
     var sessionVersion by mutableIntStateOf(0)
         private set
     val api=OlevodApi(token={sessions.token},onUnauthorized={logout()})
-    suspend fun login(username:String,password:String,captcha:String,captchaId:String){val result=api.login(username,password,captcha,captchaId);sessions.save(result.token,result.name,result.accountId);history.load();sessionVersion++;loadHome()}
+    suspend fun login(username:String,password:String,captcha:String,captchaId:String){val result=api.login(username,password,captcha,captchaId);kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO){sessions.save(result.token,result.name,result.accountId)};history.load();sessionVersion++;loadHome()}
     fun logout(){sessions.clear();history.clearView();viewModelScope.launch{history.load()};sessionVersion++;loadHome()}
     private val _home=MutableStateFlow(HomeState())
     val home=_home.asStateFlow()

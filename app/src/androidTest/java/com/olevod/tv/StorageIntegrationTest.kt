@@ -10,6 +10,15 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class StorageIntegrationTest {
+    @Test fun encryptedSessionIsCommittedToDisk() {
+        val context=InstrumentationRegistry.getInstrumentation().targetContext
+        val store=SessionStore(context,"session-test")
+        store.save("synthetic.test.token","测试","42")
+        assertNotNull(SessionStore(context,"session-test").token)
+        val disk=java.io.File(context.applicationInfo.dataDir,"shared_prefs/session-test.xml").readText()
+        assertTrue(disk.contains("value"));assertFalse(disk.contains("synthetic.test.token"))
+        store.clear()
+    }
     @Test fun historyExceedsWebLimitAndSurvivesReopenWithAccountIsolation()=runBlocking {
         val context=InstrumentationRegistry.getInstrumentation().targetContext
         var account="instrumentation-test-a"
