@@ -94,13 +94,14 @@ class OlevodApi(
     }
     suspend fun search(query:String,category:Int=0,page:Int=1,size:Int=20):CatalogPage {
         val o=get("v1","pub","index","search",query,"vod",category.toString(),page.toString(),size.toString()) as JSONObject
-        return CatalogPage(o.optJSONArray("data").objects().map(::movie),o.optInt("total"),page,size)
+        val group=o.optJSONArray("data").objects().firstOrNull{it.optString("type")=="vod"}
+        return CatalogPage(group?.optJSONArray("list").objects().map(::movie),group?.optInt("total")?:0,page,size)
     }
     suspend fun hotWords():List<String> = (get("v1","pub","index","search","hot","keywords") as JSONArray).objects().filter{it.optString("type")=="vod"}.flatMap{it.optJSONArray("words").strings()}
     suspend fun suggestions(query:String):List<String> {val d=get("v1","pub","index","search","keywords",query);return when(d){is JSONArray->d.strings();else->emptyList()}}
     suspend fun favorite(id:Long,save:Boolean){request(if(save)listOf("pub","vod","favorite")else listOf("pub","vod","favorite","cancel"),if(save)JSONObject().put("id",id)else JSONObject().put("ids",JSONArray().put(id)))}
     suspend fun favorites(page:Int):CatalogPage {val o=request(listOf("pub","vod","favorite","list"),JSONObject().put("page",page).put("pageSize",20)).getJSONObject("data");return CatalogPage(o.optJSONArray("list").objects().map(::movie),o.optInt("total"),page,20)}
-    suspend fun liveGroups():List<Pair<Int,String>> { val d=get("v1","pub","live","conditions") as JSONArray;return d.objects().firstOrNull{it.optString("type")=="tv"}?.optJSONObject("data")?.optJSONArray("groups").objects().map{it.optInt("id") to it.optString("name")} }
+    suspend fun liveGroups():List<Pair<Int,String>> { val d=get("v1","pub","live","conditions") as JSONArray;return d.objects().firstOrNull{it.optString("type")=="tv"}?.optJSONObject("data")?.optJSONArray("groups").objects().map{it.optInt("id") to it.optString("title")} }
     fun channel(o:JSONObject)=Channel(o.optLong("id"),o.optString("streamId"),o.optString("title"),image(o.optString("currentImg",o.optString("icon"))),o.optString("currentTitle"))
     suspend fun channels(group:Int=0,order:Int=3,page:Int=1):Pair<List<Channel>,Int>{val o=get("v1","pub","live","list","tv","0","0",order.toString(),group.toString(),page.toString(),"36") as JSONObject;return o.optJSONArray("list").objects().map(::channel) to o.optInt("total")}
     suspend fun liveDetail(channel:Channel,date:String):LiveDetail {val o=get("v1","pub","live","info","tv",channel.id.toString(),channel.streamId,date) as JSONObject;val d=o.getJSONObject("detail");return LiveDetail(channel,d.optString("hls"),o.optJSONArray("programs").objects().map{Programme(it.getLong("id"),it.optString("title"),it.optString("showTime"),it.optString("start"),it.optString("end"),it.optBoolean("hasVod"),it.optInt("liveType"))},d.optBoolean("favorite"))}
