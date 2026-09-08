@@ -328,3 +328,12 @@
 - Chromecast confirmed video/header/control navigation, fullscreen group21–30, Up hide/Down wake and identical1920×1080 video bounds with overlay shown/hidden.
 - Current stream1280×720 and peak2.58Mbps displayed correctly; original logo visible. Same film/episode resumed and retained.
 - Final evidence and capture limitations: verification/PLAYER_FINAL_DEVICE_CHECK.md.
+
+### S37 - home focus return and requested category order
+
+- Recent-playback cards Up explicitly returns to the header Home icon. Header Home and navigation Home Down return to the last focused recent card (first card initially); empty history targets View all.
+- Recent cards and navigation use fully composed horizontal rows. Home Down first scrolls the outer lazy list to item0, waits for a frame, then requests focus. Page disposal clears the callback and cancels pending work, avoiding unloaded targets after deep scrolling.
+- Recommendation content is followed by category IDs1,2,3,6,14: 电影、电视剧、综艺、VIP、短剧. Display aliases retain original API names for directory navigation; anime remains available in navigation/directory.
+- Build/lint passed. Independent agent reviewed source and found the outer-lazy-item lifecycle issue, resolved before delivery.
+- Chromecast installed and verified Home→牧神记→Home, horizontal end/View all→Home→last recent movie. Screenshot: verification/screenshots/chromecast-home-focus-fixed.png.
+- Emulator rendered headings in exact requested order. HomeNavigationUiTest passed using real Android D-pad events and waiting for asynchronous focus completion: normal round trip plus deep scroll→directory→Home→Down remount→Up return. Initial test assertions ran before async focus settled; the final test waits for actual focus state.

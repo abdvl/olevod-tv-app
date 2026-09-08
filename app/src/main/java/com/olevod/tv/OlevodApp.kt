@@ -30,6 +30,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.input.key.*
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
@@ -59,7 +61,7 @@ import org.json.JSONArray
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-private val LocalPosterFocus=compositionLocalOf<MutableState<Long>?>{null}
+internal val LocalPosterFocus=compositionLocalOf<MutableState<Long>?>{null}
 
 @Composable
 internal fun PosterFocusGroup(identity:String,content:@Composable ()->Unit){
@@ -90,17 +92,26 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     var selected by rememberSaveable(stateSaver=androidx.compose.runtime.saveable.Saver<Movie,String>(save={com.olevod.tv.data.MovieJson.encode(it)},restore={com.olevod.tv.data.MovieJson.decode(it)})) { mutableStateOf(initialMovieId?.let{Movie(it,"正在加载影片…","")}?:movies.first()) }
     var backScreen by rememberSaveable { mutableStateOf("home") }
     var full by rememberSaveable { mutableStateOf(false) }
+    val homeFocus=remember{FocusRequester()}
+    val recentFocus=remember{FocusRequester()}
+    var enterRecent by remember{mutableStateOf<(() -> Unit)?>(null)}
+    val homeDown=Modifier.onPreviewKeyEvent{event->
+        if(screen=="home"&&!preview&&event.key==Key.DirectionDown&&enterRecent!=null){
+            if(event.type==KeyEventType.KeyDown)enterRecent?.invoke()
+            true
+        }else false
+    }
     val openMovie: (Movie) -> Unit = { selected=it;backScreen=screen;screen="player" }
     BackHandler(screen!="home" || full) { if(full)full=false else screen=if(screen=="player")backScreen else "home" }
     CompositionLocalProvider(LocalBringIntoViewSpec provides EdgeBringIntoViewSpec) {
     MaterialTheme(colorScheme=darkColorScheme(primary=Green,onPrimary=Bg,surface=Panel,onSurface=White,background=Bg)) {
         Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF192425),Bg)))) {
-            if(!full) Header(screen,if(preview)"界面预览" else "实时内容",{if(it=="directory"){category="电影";screen="browse"}else screen=it},vm.sessionVersion.let{if(vm.sessions.token!=null)"账号"else"登录"})
-            if(!full && screen in listOf("home","live")) Navigation(category=if(screen=="home")"首页" else if(screen=="live")"直播" else category) { label -> if(label=="首页") screen="home" else if(label=="直播") screen="live" else {category=label;screen="browse"} }
+            if(!full) Header(screen,if(preview)"界面预览" else "实时内容",{if(it=="directory"){category="电影";screen="browse"}else screen=it},vm.sessionVersion.let{if(vm.sessions.token!=null)"账号"else"登录"},Modifier.focusRequester(homeFocus).then(homeDown))
+            if(!full && screen in listOf("home","live")) Navigation(homeModifier=Modifier.focusProperties{up=homeFocus}.then(homeDown),category=if(screen=="home")"首页" else if(screen=="live")"直播" else category) { label -> if(label=="首页") screen="home" else if(label=="直播") screen="live" else {category=label;screen="browse"} }
             pageStates.SaveableStateProvider(screen) {
                 val lastPoster=rememberSaveable{mutableLongStateOf(-1)}
                 CompositionLocalProvider(LocalPosterFocus provides lastPoster){ when(screen) {
-                "home" -> if(preview) HomeScreen(movies,heroes,openMovie,{category=it;screen="browse"}) else ConnectedHome(home,vm,openMovie,{screen="history"}){category=it;screen="browse"}
+                "home" -> if(preview) HomeScreen(movies,heroes,openMovie,{category=it;screen="browse"}) else ConnectedHome(home,vm,openMovie,{screen="history"},homeFocus,recentFocus,{enterRecent=it}){category=it;screen="browse"}
                 "browse" -> if(preview) BrowseScreen(category,movies,openMovie) else ConnectedBrowse(category,vm,openMovie){category=it}
                 "search" -> if(preview) SearchScreen(movies,openMovie) else ConnectedSearch(vm,openMovie)
                 "player" -> if(preview) PlayerPreview(selected,movies,full,{full=!full},openMovie) else NativePlayer(selected,vm,full,{full=!full}){if(full)full=false else screen=backScreen}
@@ -135,10 +146,10 @@ internal fun TvAction(label: String, icon: ImageVector? = null, selected: Boolea
 }
 
 @Composable
-private fun HeaderIcon(label:String,icon:ImageVector,selected:Boolean,onClick:()->Unit){
+private fun HeaderIcon(label:String,icon:ImageVector,selected:Boolean,modifier:Modifier=Modifier,onClick:()->Unit){
     val interaction=remember{MutableInteractionSource()}
     val focused by interaction.collectIsFocusedAsState()
-    Row(Modifier.padding(end=6.dp).height(40.dp).clip(RoundedCornerShape(50))
+    Row(modifier.padding(end=6.dp).height(40.dp).clip(RoundedCornerShape(50))
         .background(if(focused)Green else if(selected)Color(0xFF263E31)else Color.Transparent)
         .clickable(interactionSource=interaction,indication=null,onClick=onClick)
         .animateContentSize().padding(horizontal=10.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)){
@@ -155,9 +166,9 @@ private fun OfficialOlevodLogo(modifier:Modifier=Modifier) {
 }
 
 @Composable
-private fun Header(screen:String,status:String,go:(String)->Unit,accountLabel:String="登录") {
+private fun Header(screen:String,status:String,go:(String)->Unit,accountLabel:String="登录",homeModifier:Modifier=Modifier) {
     Row(Modifier.fillMaxWidth().padding(start=38.dp,end=38.dp,top=19.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically) {
-        HeaderIcon("首页",Icons.Rounded.Home,screen=="home"){go("home")}
+        HeaderIcon("首页",Icons.Rounded.Home,screen=="home",homeModifier){go("home")}
         HeaderIcon("电影目录",Icons.Rounded.GridView,screen=="browse"){go("directory")}
         HeaderIcon("搜索",Icons.Rounded.Search,screen=="search"){go("search")}
         HeaderIcon("历史",Icons.Rounded.History,screen=="history"){go("history")}
@@ -172,9 +183,9 @@ private fun Header(screen:String,status:String,go:(String)->Unit,accountLabel:St
 }
 
 @Composable
-private fun Navigation(category:String,onSelect:(String)->Unit) {
-    LazyRow(Modifier.fillMaxWidth().padding(horizontal=38.dp,vertical=4.dp),horizontalArrangement=Arrangement.spacedBy(7.dp)) {
-        items(listOf("首页","直播","短剧","电影","连续剧","综艺","动漫","VIP蓝光")) { tab -> TvAction(tab,selected=tab==category){onSelect(tab)} }
+private fun Navigation(category:String,homeModifier:Modifier=Modifier,onSelect:(String)->Unit) {
+    Row(Modifier.fillMaxWidth().padding(horizontal=38.dp,vertical=4.dp).horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(7.dp)) {
+        listOf("首页","直播","短剧","电影","连续剧","综艺","动漫","VIP蓝光").forEach { tab -> TvAction(tab,selected=tab==category,modifier=if(tab=="首页")homeModifier else Modifier){onSelect(tab)} }
     }
 }
 
@@ -220,12 +231,12 @@ internal fun HeroCard(hero:Hero,modifier:Modifier,onClick:()->Unit) {
 }
 
 @Composable
-internal fun SectionHeading(title:String,subtitle:String="",more:(()->Unit)?=null) {
+internal fun SectionHeading(title:String,subtitle:String="",more:(()->Unit)?=null,moreModifier:Modifier=Modifier) {
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
         Box(Modifier.size(4.dp,21.dp).clip(RoundedCornerShape(4.dp)).background(Green))
         Spacer(Modifier.width(10.dp));Text(title,color=White,fontSize=21.sp,fontWeight=FontWeight.Bold)
         Spacer(Modifier.width(12.dp));Text(subtitle,color=Muted,fontSize=12.sp)
-        Spacer(Modifier.weight(1f));if(more!=null)TvAction("查看全部",Icons.Rounded.ChevronRight,onClick=more)
+        Spacer(Modifier.weight(1f));if(more!=null)TvAction("查看全部",Icons.Rounded.ChevronRight,modifier=moreModifier,onClick=more)
     }
 }
 
