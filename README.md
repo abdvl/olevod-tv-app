@@ -169,3 +169,7 @@ source scripts/android-env.sh
 | [播放器实机检查](docs/verification/PLAYER_FINAL_DEVICE_CHECK.md) | 视频焦点、选集、全屏按键与截图限制 |
 
 每个实施检查点通过 Git 提交和进度文档保留，便于暂停后继续。开发用凭据、签名私钥和本机工具目录不应提交到仓库或加入发布附件。
+
+## 许可证
+
+项目源码采用 [MIT License](LICENSE)。第三方依赖、欧乐影院标识及网站提供的影片、海报等素材仍受各自权利和许可约束。

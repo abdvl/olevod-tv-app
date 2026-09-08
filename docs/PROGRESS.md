@@ -382,3 +382,8 @@
 - Published https://github.com/abdvl/olevod-tv-app/releases/tag/v0.1 after explicit authorization to publish source, documentation and history. Tag points to 3853dd7d6da4a825c6220e7575ece87d0ef8a6e2.
 - Public release is neither draft nor prerelease; APK (14,210,642 bytes) and SHA256SUMS.txt are downloadable. Downloaded both public assets and verified exact checksum/file equality with local release artifacts. APK SHA256: 72291aa02800eb599f9d9261e94a39586eb77880be88b15373772f1c5d845e3d.
 - Source, README with ten screenshots and installation instructions are available at the release tag. Signing keys and test credentials remain local and excluded. Existing Chromecast debug app/data retained.
+
+### S43 - MIT license
+
+- Added the standard MIT License with copyright 2026 Aikepaer Abuduweili and linked it from README. Clarified that third-party dependencies, branding and website media retain their respective rights/licenses.
+- Documentation-only change; checked formatting and license link before committing and pushing.
