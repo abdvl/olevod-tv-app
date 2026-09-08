@@ -91,3 +91,9 @@
 - 直接电视输入账号/密码/图片验证码，刷新验证码、登录状态与退出。
 - Android Keystore AES-GCM加密token，仅会话落盘，不保存密码/验证码；禁止Android备份。
 - assembleDebug与协议测试通过；真实账号登录待用户填写验证码，尚未验收VIP/收藏写入。
+
+### S11 — feat: add native live channels and programme guide
+
+- 央视/地方分类、频道分页、北京时间日期与节目单、独立MediaSession直播播放器。
+- 采用服务端返回的detail.hls，不擅自选择会员候选地址。
+- assembleDebug通过；等待模拟器交还后验证两频道播放。
