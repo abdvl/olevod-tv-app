@@ -69,13 +69,6 @@ internal fun PosterFocusGroup(identity:String,content:@Composable ()->Unit){
     CompositionLocalProvider(LocalPosterFocus provides lastPoster){content()}
 }
 
-internal val Bg = Color(0xFF101718)
-internal val Panel = Color(0xFF1B2526)
-internal val Green = Color(0xFF66E681)
-internal val Muted = Color(0xFF99A7A8)
-internal val White = Color(0xFFF3F6F5)
-internal val Gold = Color(0xFFE2C593)
-
 data class Movie(val id: Long, val title: String, val image: String, val note: String = "", val score: String = "", val category: Int = 1, val year: String = "", val area: String = "", val vip: Boolean = false)
 data class Hero(val id: Long, val title: String, val image: String, val note: String)
 
@@ -94,38 +87,34 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     var browseBack by rememberSaveable{mutableStateOf("home")}
     var confirmExit by rememberSaveable{mutableStateOf(false)}
     var full by rememberSaveable { mutableStateOf(false) }
-    val homeFocus=remember{FocusRequester()}
-    val navigationHomeFocus=remember{FocusRequester()}
-    val categoryNavigationFocus=remember{FocusRequester()}
-    var enterCategory by remember{mutableStateOf<(() -> Unit)?>(null)}
-    val categoryDown=Modifier.onPreviewKeyEvent{event->
-        if(screen=="category"&&event.key==Key.DirectionDown&&enterCategory!=null){
-            if(event.type==KeyEventType.KeyDown)enterCategory?.invoke()
-            true
-        }else false
-    }
+    val headerTargets=remember { navigationItems.associate { it.key to FocusRequester() } }
+    val selectedCategoryId=when(category){"连续剧","电视剧"->2;"综艺"->3;"动漫"->4;"VIP蓝光","VIP蓝光影院","VIP"->6;"短剧"->14;else->1}
+    val selectedNavigation=if(screen=="category")categoryNavigationKey(selectedCategoryId)else screen
+    val headerFocus=headerTargets[selectedNavigation]?:headerTargets.getValue("home")
+    val contentFocus=remember(screen,category){FocusRequester()}
+    val pageFocus=remember(screen,category){PageFocusController(headerFocus,contentFocus)}
     val recentFocus=remember{FocusRequester()}
-    var enterRecent by remember{mutableStateOf<(() -> Unit)?>(null)}
-    val homeDown=Modifier.onPreviewKeyEvent{event->
-        if(screen=="home"&&!preview&&event.key==Key.DirectionDown&&enterRecent!=null){
-            if(event.type==KeyEventType.KeyDown)enterRecent?.invoke()
-            true
-        }else false
-    }
+    LaunchedEffect(Unit){if(initialScreen=="home")headerTargets.getValue("home").requestFocus()}
     val openMovie: (Movie) -> Unit = { selected=it;backScreen=screen;screen="player" }
     BackHandler { if(full)full=false else when(screen){"home"->confirmExit=true;"player"->screen=backScreen;"browse"->screen=browseBack;else->screen="home"} }
     CompositionLocalProvider(LocalBringIntoViewSpec provides EdgeBringIntoViewSpec) {
     MaterialTheme(colorScheme=darkColorScheme(primary=Green,onPrimary=Bg,surface=Panel,onSurface=White,background=Bg)) {
-        Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF192425),Bg)))) {
-            if(!full) Header(screen,if(preview)"界面预览" else "实时内容",{if(it=="directory"){category="电影";browseBack="home";screen="browse"}else screen=it},vm.sessionVersion.let{if(vm.sessions.token!=null)"账号"else"登录"},Modifier.focusRequester(homeFocus).focusProperties{if(screen=="category")down=categoryNavigationFocus else if(screen in listOf("home","live"))down=navigationHomeFocus})
-            if(!full && screen in listOf("home","live","category")) Navigation(selectedModifier=Modifier.focusRequester(categoryNavigationFocus).focusProperties{up=homeFocus}.then(categoryDown),homeModifier=Modifier.focusRequester(navigationHomeFocus).focusProperties{up=homeFocus}.then(homeDown),category=if(screen=="home")"首页" else if(screen=="live")"直播" else if(category=="VIP蓝光影院")"VIP蓝光"else category) { label -> if(label=="首页") screen="home" else if(label=="直播") screen="live" else {category=label;screen=if(preview)"browse"else"category"} }
+        Column(Modifier.fillMaxSize().background(Bg)) {
+            if(!full) UnifiedHeader(selectedNavigation,headerTargets,{pageFocus.enterContent()}) { target ->
+                val id=navigationCategoryId(target)
+                if(id!=null){category=when(id){2->"连续剧";6->"VIP蓝光影院";else->categoryLabel(id)};screen="category"}
+                else if(target=="browse"){category="电影";browseBack="home";screen="browse"}
+                else screen=target
+            }
+            Box(Modifier.weight(1f).fillMaxWidth().focusRequester(contentFocus).focusProperties{up=headerFocus}.focusGroup()) {
+            CompositionLocalProvider(LocalPageFocus provides pageFocus) {
             pageStates.SaveableStateProvider(screen) {
                 val lastPoster=rememberSaveable{mutableLongStateOf(-1)}
                 CompositionLocalProvider(LocalPosterFocus provides lastPoster){ when(screen) {
-                "home" -> if(preview) HomeScreen(movies,heroes,openMovie,{category=it;browseBack="home";screen="browse"}) else ConnectedHome(home,vm,openMovie,{screen="history"},navigationHomeFocus,recentFocus,{enterRecent=it}){category=it;browseBack="home";screen="browse"}
+                "home" -> if(preview) HomeScreen(movies,heroes,openMovie,{category=it;browseBack="home";screen="browse"}) else ConnectedHome(home,vm,openMovie,{screen="history"},headerTargets.getValue("home"),recentFocus,{pageFocus.enter=it}){category=it;browseBack="home";screen="browse"}
                 "category" -> {
                     val selectedCategory=home.sections.firstOrNull{it.category.name==category||(category=="VIP蓝光"&&it.category.id==6)}?.category
-                    if(selectedCategory!=null)key(selectedCategory.id){MiniCategoryHome(selectedCategory,vm,openMovie,{browseBack="category";screen="browse"},categoryNavigationFocus,{enterCategory=it})}
+                    if(selectedCategory!=null)key(selectedCategory.id){MiniCategoryHome(selectedCategory,vm,openMovie,{browseBack="category";screen="browse"},headerFocus,{pageFocus.enter=it})}
                     else if(home.error!=null)ErrorNotice(home.error!!){vm.loadHome()}
                     else Text("正在加载分类…",color=Muted)
                 }
@@ -137,6 +126,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
                 "favorites" -> if(!preview) FavoritesScreen(vm,openMovie,{screen="account"}){vm.pendingChannel=it;screen="live"} else EmptyCollection("我的收藏","把喜欢的故事留在这里","登录后可同步欧乐账号的收藏",Icons.Rounded.BookmarkBorder){screen="account"}
                 "account" -> if(preview) AccountPreview() else AccountScreen(vm)
             }}}
+            }}
         }
         if(confirmExit)ExitConfirmationDialog(onDismiss={confirmExit=false},onConfirm={confirmExit=false;onExit()})
     }
@@ -164,47 +154,10 @@ internal fun TvAction(label: String, icon: ImageVector? = null, selected: Boolea
 }
 
 @Composable
-private fun HeaderIcon(label:String,icon:ImageVector,selected:Boolean,modifier:Modifier=Modifier,onClick:()->Unit){
-    val interaction=remember{MutableInteractionSource()}
-    val focused by interaction.collectIsFocusedAsState()
-    Row(modifier.padding(end=6.dp).height(40.dp).clip(RoundedCornerShape(50))
-        .background(if(focused)Green else if(selected)Color(0xFF263E31)else Color.Transparent)
-        .clickable(interactionSource=interaction,indication=null,onClick=onClick)
-        .animateContentSize().padding(horizontal=10.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)){
-        Icon(icon,contentDescription=label,tint=if(focused)Bg else if(selected)Green else White,modifier=Modifier.size(22.dp))
-        if(focused)Text(label,color=Bg,fontSize=14.sp,fontWeight=FontWeight.Bold,maxLines=1)
-    }
-}
-
-@Composable
-private fun OfficialOlevodLogo(modifier:Modifier=Modifier) {
+internal fun OfficialOlevodLogo(modifier:Modifier=Modifier) {
     androidx.compose.foundation.Image(
         painter=androidx.compose.ui.res.painterResource(R.drawable.official_olevod_logo),
         contentDescription="欧乐影院",modifier=modifier,contentScale=ContentScale.Fit)
-}
-
-@Composable
-private fun Header(screen:String,status:String,go:(String)->Unit,accountLabel:String="登录",homeModifier:Modifier=Modifier) {
-    Row(Modifier.fillMaxWidth().padding(start=38.dp,end=38.dp,top=19.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically) {
-        HeaderIcon("首页",Icons.Rounded.Home,screen=="home",homeModifier){go("home")}
-        HeaderIcon("电影目录",Icons.Rounded.GridView,screen=="browse"){go("directory")}
-        HeaderIcon("搜索",Icons.Rounded.Search,screen=="search"){go("search")}
-        HeaderIcon("历史",Icons.Rounded.History,screen=="history"){go("history")}
-        HeaderIcon("收藏",Icons.Rounded.BookmarkBorder,screen=="favorites"){go("favorites")}
-        Spacer(Modifier.weight(1f))
-        Text(status,fontSize=10.sp,color=Muted,modifier=Modifier.border(1.dp,Muted.copy(alpha=.3f),RoundedCornerShape(4.dp)).padding(horizontal=6.dp,vertical=3.dp))
-        Spacer(Modifier.width(18.dp))
-        OfficialOlevodLogo(Modifier.width(142.dp).height(25.dp))
-        Spacer(Modifier.width(18.dp))
-        HeaderIcon(accountLabel,Icons.Rounded.AccountCircle,screen=="account"){go("account")}
-    }
-}
-
-@Composable
-private fun Navigation(category:String,homeModifier:Modifier=Modifier,selectedModifier:Modifier=Modifier,onSelect:(String)->Unit) {
-    Row(Modifier.fillMaxWidth().padding(horizontal=38.dp,vertical=4.dp).horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(7.dp)) {
-        listOf("首页","直播","电影","连续剧","综艺","动漫","VIP蓝光","短剧").forEach { tab -> TvAction(tab,selected=tab==category,modifier=if(tab=="首页")homeModifier else if(tab==category)selectedModifier else Modifier){onSelect(tab)} }
-    }
 }
 
 @Composable
@@ -220,13 +173,11 @@ private fun HomeScreen(movies:List<Movie>,heroes:List<Hero>,open:(Movie)->Unit,m
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun HomeMovieGroup(movies:List<Movie>,open:(Movie)->Unit,title:String="电影",more:()->Unit) {
-    val requester=remember { BringIntoViewRequester() }
-    val scope=rememberCoroutineScope()
-    Column(Modifier.bringIntoViewRequester(requester).onFocusChanged { if(it.hasFocus)scope.launch{requester.bringIntoView()} }.focusGroup().padding(bottom=20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.focusGroup().padding(bottom=20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         SectionHeading(title,"最近更新 · ${movies.size} 部",more)
         movies.chunked(5).forEach { row ->
             Row(horizontalArrangement=Arrangement.spacedBy(16.dp)) {
-                row.forEach { movie ->PosterCard(movie,Modifier.weight(1f),posterRatio=1.5f,onFocused={scope.launch{kotlinx.coroutines.delay(200);requester.bringIntoView()}}){open(movie)} }
+                row.forEach { movie ->PosterCard(movie,Modifier.weight(1f),posterRatio=TvDesign.posterRatio){open(movie)} }
                 repeat(5-row.size){Spacer(Modifier.weight(1f))}
             }
         }
@@ -235,13 +186,13 @@ internal fun HomeMovieGroup(movies:List<Movie>,open:(Movie)->Unit,title:String="
 
 @Composable
 internal fun HeroCard(hero:Hero,modifier:Modifier,onClick:()->Unit) {
-    Card(onClick=onClick,modifier=modifier.height(190.dp),shape=CardDefaults.shape(RoundedCornerShape(12.dp)),scale=CardDefaults.scale(focusedScale=1.015f),border=CardDefaults.border(focusedBorder=Border(androidx.compose.foundation.BorderStroke(2.dp,Green)))) {
+    Card(onClick=onClick,modifier=modifier.height(138.dp),shape=CardDefaults.shape(RoundedCornerShape(12.dp)),scale=CardDefaults.scale(focusedScale=1f),border=CardDefaults.border(focusedBorder=Border(androidx.compose.foundation.BorderStroke(2.dp,Green)))) {
         Box(Modifier.fillMaxSize()) {
-            AsyncImage(hero.image,hero.title,Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
+            AsyncImage(hero.image,hero.title,Modifier.fillMaxSize(),contentScale=ContentScale.Fit)
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent,Color.Black.copy(alpha=.8f)))))
             Column(Modifier.align(Alignment.BottomStart).padding(18.dp),verticalArrangement=Arrangement.spacedBy(5.dp)) {
                 Text("精选推荐",color=Green,fontSize=10.sp,fontWeight=FontWeight.Bold,letterSpacing=2.sp)
-                Text(hero.title,color=White,fontSize=27.sp,fontWeight=FontWeight.Bold)
+                Text(hero.title,color=White,fontSize=28.sp,lineHeight=34.sp,maxLines=2,overflow=TextOverflow.Ellipsis,fontWeight=FontWeight.Bold)
                 Text(hero.note+"   ·   进入观看  ›",color=White.copy(alpha=.8f),fontSize=12.sp)
             }
         }
@@ -253,34 +204,15 @@ internal fun SectionHeading(title:String,subtitle:String="",more:(()->Unit)?=nul
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
         Box(Modifier.size(4.dp,21.dp).clip(RoundedCornerShape(4.dp)).background(Green))
         Spacer(Modifier.width(10.dp));Text(title,color=White,fontSize=21.sp,fontWeight=FontWeight.Bold)
-        Spacer(Modifier.width(12.dp));Text(subtitle,color=Muted,fontSize=12.sp)
+        Spacer(Modifier.width(12.dp));Text(subtitle,color=Muted,fontSize=13.sp)
         Spacer(Modifier.weight(1f));if(more!=null)TvAction("查看全部",Icons.Rounded.ChevronRight,modifier=moreModifier,onClick=more)
     }
 }
 
 @Composable
-internal fun PosterCard(movie:Movie,modifier:Modifier=Modifier,posterRatio:Float=.72f,onFocused:()->Unit={},focusIdentity:Long=movie.id,subtitle:String?=null,onClick:()->Unit) {
-    val remembered=LocalPosterFocus.current
-    val focus=remember{FocusRequester()}
-    val bringWholePoster=remember{BringIntoViewRequester()}
-    val scope=rememberCoroutineScope()
-    var cardFocused by remember{mutableStateOf(false)}
-    LaunchedEffect(Unit){if(remembered?.value==focusIdentity)focus.requestFocus()}
-    Column(modifier.bringIntoViewRequester(bringWholePoster),verticalArrangement=Arrangement.spacedBy(7.dp)) {
-        Card(onClick=onClick,modifier=Modifier.focusRequester(focus).onFocusChanged{cardFocused=it.isFocused;if(it.isFocused){remembered?.value=focusIdentity;scope.launch{withFrameNanos{};if(cardFocused)bringWholePoster.bringIntoView()};onFocused()}}.fillMaxWidth().aspectRatio(posterRatio),shape=CardDefaults.shape(RoundedCornerShape(9.dp)),scale=CardDefaults.scale(focusedScale=1.035f),border=CardDefaults.border(focusedBorder=Border(androidx.compose.foundation.BorderStroke(2.dp,Green)))) {
-            Box(Modifier.fillMaxSize().background(Panel)) {
-                AsyncImage(movie.image,movie.title,Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
-                Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent,Color.Transparent,Color.Black.copy(alpha=.8f)))))
-                if(movie.vip)Text("VIP",fontSize=10.sp,color=Bg,fontWeight=FontWeight.Bold,modifier=Modifier.align(Alignment.TopEnd).padding(7.dp).clip(RoundedCornerShape(3.dp)).background(Gold).padding(horizontal=5.dp,vertical=2.dp))
-                Row(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(9.dp),verticalAlignment=Alignment.Bottom) {
-                    Text(movie.note,color=White,fontSize=11.sp,maxLines=1,modifier=Modifier.weight(1f),overflow=TextOverflow.Ellipsis)
-                    if(movie.score.isNotBlank())Text(movie.score,color=Green,fontWeight=FontWeight.Bold,fontSize=15.sp)
-                }
-            }
-        }
-        Text(movie.title,color=White,fontSize=14.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
-        Text(subtitle?:listOf(movie.year,movie.area).filter{it.isNotBlank()}.joinToString(" · "),color=Muted,fontSize=11.sp,maxLines=1)
-    }
+internal fun PosterCard(movie:Movie,modifier:Modifier=Modifier,posterRatio:Float=TvDesign.posterRatio,onFocused:()->Unit={},focusIdentity:Long=movie.id,subtitle:String?=null,onClick:()->Unit) {
+    // Legacy call sites keep compiling while pages migrate; artwork always uses the v2 portrait ratio.
+    PosterTile(movie,modifier,onFocused,focusIdentity,subtitle,onClick)
 }
 
 @Composable
@@ -295,7 +227,7 @@ private fun BrowseScreen(category:String,movies:List<Movie>,open:(Movie)->Unit) 
             FilterLine(listOf("全部年份","2026","2025","2024","2023","2022","更早"),year){year=it}
             FilterLine(listOf("全部类型","动作","喜剧","爱情","科幻","悬疑","纪录片"),type){type=it}
         } }
-        item { Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) { Text(category,color=White,fontSize=22.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.width(12.dp));Text("筛选布局预览",color=Muted,fontSize=12.sp);Spacer(Modifier.weight(1f));listOf("最近更新","最热","评分").forEach { s ->TvAction(s,selected=s==sort){sort=s} } } }
+        item { Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) { Text(category,color=White,fontSize=22.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.width(12.dp));Text("筛选布局预览",color=Muted,fontSize=13.sp);Spacer(Modifier.weight(1f));listOf("最近更新","最热","评分").forEach { s ->TvAction(s,selected=s==sort){sort=s} } } }
         items(movies.take(10).chunked(5)){row ->Row(horizontalArrangement=Arrangement.spacedBy(16.dp)){row.forEach{m->PosterCard(m,Modifier.weight(1f)){open(m)}};repeat(5-row.size){Spacer(Modifier.weight(1f))}}}
     }
 }
@@ -331,7 +263,7 @@ private fun SearchScreen(movies:List<Movie>,open:(Movie)->Unit) {
         }
     }
 }
-@Composable internal fun KeyButton(label:String,modifier:Modifier,onClick:()->Unit) { Button(onClick=onClick,modifier=modifier.height(30.dp),contentPadding=PaddingValues(0.dp),colors=ButtonDefaults.colors(containerColor=Panel,contentColor=White,focusedContainerColor=Green,focusedContentColor=Bg),shape=ButtonDefaults.shape(RoundedCornerShape(7.dp))){Text(label,fontSize=16.sp)} }
+@Composable internal fun KeyButton(label:String,modifier:Modifier,onClick:()->Unit) { Button(onClick=onClick,modifier=modifier.height(36.dp),contentPadding=PaddingValues(0.dp),colors=ButtonDefaults.colors(containerColor=Panel,contentColor=White,focusedContainerColor=Green,focusedContentColor=Bg),shape=ButtonDefaults.shape(RoundedCornerShape(7.dp))){Text(label,fontSize=16.sp)} }
 @Composable internal fun InputBox(value:String,change:(String)->Unit,hint:String,modifier:Modifier=Modifier,password:Boolean=false,editRequest:Int=0,onEditingFinished:()->Unit={}) {
     val interaction=remember{MutableInteractionSource()}
     val focused by interaction.collectIsFocusedAsState()
@@ -384,7 +316,7 @@ private fun PlayerPreview(movie:Movie,movies:List<Movie>,full:Boolean,toggleFull
         }
         if(!full)Column(Modifier.width(260.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(14.dp)) {
             Text(movie.title,color=White,fontSize=25.sp,fontWeight=FontWeight.Bold)
-            Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){Text(movie.score.ifBlank{"精选"},color=Green,fontSize=19.sp,fontWeight=FontWeight.Bold);Text("${movie.year} · ${movie.area}",color=Muted,fontSize=12.sp)}
+            Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){Text(movie.score.ifBlank{"精选"},color=Green,fontSize=19.sp,fontWeight=FontWeight.Bold);Text("${movie.year} · ${movie.area}",color=Muted,fontSize=13.sp)}
             Text("${movie.note}  ·  ${if(movie.vip)"VIP 蓝光" else "电影"}",color=Gold,fontSize=12.sp)
             Text("放慢脚步，沉浸在好故事里。影片简介、演职员与播放线路将在详情接口接入后显示。",color=Muted,fontSize=13.sp,lineHeight=22.sp)
             Text("选集",color=White,fontSize=17.sp,fontWeight=FontWeight.Bold)
@@ -397,7 +329,7 @@ private fun PlayerPreview(movie:Movie,movies:List<Movie>,full:Boolean,toggleFull
 
 @Composable private fun EmptyCollection(title:String,headline:String,subtitle:String,icon:ImageVector,go:()->Unit){Column(Modifier.fillMaxSize().padding(40.dp,25.dp)){SectionHeading(title);Column(Modifier.fillMaxSize(),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){Icon(icon,null,Modifier.size(60.dp),tint=Green.copy(alpha=.6f));Spacer(Modifier.height(20.dp));Text(headline,fontSize=24.sp,color=White);Spacer(Modifier.height(9.dp));Text(subtitle,fontSize=14.sp,color=Muted);Spacer(Modifier.height(25.dp));TvAction("去发现精彩",Icons.Rounded.ArrowForward,selected=true,onClick=go)}}}
 
-@Composable private fun AccountPreview(){var user by remember{mutableStateOf("")};var pwd by remember{mutableStateOf("")};var captcha by remember{mutableStateOf("")};var message by remember{mutableStateOf("")};Row(Modifier.fillMaxSize().padding(65.dp,25.dp),horizontalArrangement=Arrangement.spacedBy(90.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(17.dp)){Text("欢迎回到",color=Muted,fontSize=24.sp);Text("你的私人影院",color=White,fontSize=39.sp,fontWeight=FontWeight.Bold);Box(Modifier.size(44.dp,4.dp).background(Green));Text("同步收藏，继续精彩。\n在大屏上，找到喜欢的每一个故事。",color=Muted,fontSize=16.sp,lineHeight=28.sp);Text("使用欧乐影院账号登录",color=Green,fontSize=13.sp)};Column(Modifier.width(320.dp).clip(RoundedCornerShape(16.dp)).background(Panel).padding(25.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){Text("账号登录",color=White,fontSize=23.sp,fontWeight=FontWeight.Bold);InputBox(user,{user=it},"账号 / 邮箱");InputBox(pwd,{pwd=it},"密码",password=true);InputBox(captcha,{captcha=it},"图片验证码");Text("验证码区域 · 登录接口接入中",color=Muted,fontSize=12.sp);TvAction("登录",Icons.Rounded.ArrowForward,selected=true,modifier=Modifier.fillMaxWidth()){message="当前为界面预览，尚未提交账号"};if(message.isNotEmpty())Text(message,color=Gold,fontSize=11.sp);Text("账号密码可加密记住，验证码每次重新输入",color=Muted,fontSize=11.sp)}}}
+@Composable private fun AccountPreview(){var user by remember{mutableStateOf("")};var pwd by remember{mutableStateOf("")};var captcha by remember{mutableStateOf("")};var message by remember{mutableStateOf("")};Row(Modifier.fillMaxSize().padding(65.dp,25.dp),horizontalArrangement=Arrangement.spacedBy(90.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(17.dp)){Text("欢迎回到",color=Muted,fontSize=24.sp);Text("你的私人影院",color=White,fontSize=39.sp,fontWeight=FontWeight.Bold);Box(Modifier.size(44.dp,4.dp).background(Green));Text("同步收藏，继续精彩。\n在大屏上，找到喜欢的每一个故事。",color=Muted,fontSize=16.sp,lineHeight=28.sp);Text("使用欧乐影院账号登录",color=Green,fontSize=13.sp)};Column(Modifier.width(320.dp).clip(RoundedCornerShape(16.dp)).background(Panel).padding(25.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){Text("账号登录",color=White,fontSize=23.sp,fontWeight=FontWeight.Bold);InputBox(user,{user=it},"账号 / 邮箱");InputBox(pwd,{pwd=it},"密码",password=true);InputBox(captcha,{captcha=it},"图片验证码");Text("验证码区域 · 登录接口接入中",color=Muted,fontSize=13.sp);TvAction("登录",Icons.Rounded.ArrowForward,selected=true,modifier=Modifier.fillMaxWidth()){message="当前为界面预览，尚未提交账号"};if(message.isNotEmpty())Text(message,color=Gold,fontSize=11.sp);Text("账号密码可加密记住，验证码每次重新输入",color=Muted,fontSize=11.sp)}}}
 
 @Composable private fun LivePreview(){var channel by remember{mutableStateOf("央视")};Column(Modifier.fillMaxSize().padding(40.dp,18.dp)){SectionHeading("电视直播","此刻，正在发生");Spacer(Modifier.height(15.dp));FilterLine(listOf("全部频道","央视","地方"),channel){channel=it};Spacer(Modifier.height(25.dp));Row(horizontalArrangement=Arrangement.spacedBy(17.dp)){listOf("CCTV 13" to "新闻","CCTV 6" to "电影","CCTV 5" to "体育").forEach{(logo,name)->Card(onClick={},modifier=Modifier.weight(1f).height(170.dp),colors=CardDefaults.colors(containerColor=Panel),border=CardDefaults.border(focusedBorder=Border(androidx.compose.foundation.BorderStroke(2.dp,Green)))){Column(Modifier.fillMaxSize().padding(22.dp),verticalArrangement=Arrangement.SpaceBetween){Row(Modifier.fillMaxWidth()){Text(logo,fontSize=26.sp,color=White,fontWeight=FontWeight.Black);Spacer(Modifier.weight(1f));Text("LIVE",color=Green,fontSize=10.sp)};Column{Text(name,color=White,fontSize=18.sp);Text("频道预览 · 实时节目待接入",color=Muted,fontSize=11.sp)}}}}}}
 

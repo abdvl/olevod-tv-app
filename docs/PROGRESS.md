@@ -410,3 +410,12 @@
 - Recorded 20 ImageGen calls/results separately. No image-model identity or billable usage is exposed, so additional image-generation fees remain uncounted. Documented exact timestamps, scope exclusions and cumulative recorded cost ($227.73); this accounting turn and all implementation are outside the fixed cutoff.
 - Added `docs/accounting/ui-v2-design-2026-09-08.json` with aggregate counters and reconciliation data for the next checkpoint. No prompts, raw logs, credentials or image payloads are included. Documentation-only change; validation covers arithmetic, metadata consistency, local links and whitespace.
 - Independent read-only review found no discrepancies in the four sessions, compaction reconciliation, Decimal costs, timestamps or unknown image fees. This review is after the fixed cutoff and excluded from the milestone.
+
+### S47 / V2-01 - native UI v2 foundations
+
+- Started the user-authorized implementation on `codex/ui-v2`, following the approved native Android spec and its ten resumable checkpoints. Added `docs/verification/v2/IMPLEMENTATION_STATUS.md` and an independently authored validation plan.
+- Added `TvDesign.kt` with spec colors/dimensions, official logo, one Header, search before Home, persistent category labels, focus-expanded utility labels, and no live navigation item. Cold launch focuses Home; only confirmation changes routes. Existing native player/API/storage remain in use.
+- Replaced shared `PosterCard` rendering with a whole-card `PosterTile`: 2:3 container, full Fit artwork, outside-artwork title/score/metadata, fixed title area, no focus scaling, one semantic click target, and 4 dp scroll outset. Removed competing whole-section bringIntoView in home groups.
+- Verification: app/test builds, existing unit tests and lint passed. Independent `V2FoundationUiTest` final rerun passed 3/3, zero skips: header key traversal/confirm-only route selection, unclipped last-row card bounds/no scaling, and pixel checks for all four corners of 2:3, 3:4 and very tall source fixtures.
+- Earlier validation exposed an unmounted test focus target, a real missing scroll outset, and an incorrect image-load probe in letterboxing; all corrected and rerun. Full histories and per-page behavior remain in their later checkpoints; this is not whole-v2 or Chromecast acceptance.
+- Next: V2-02 source focus identity and shared cumulative feed. Its work may exist uncommitted; use the status document and Git diff to resume rather than repeat this checkpoint.
