@@ -23,12 +23,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
-internal data class SearchFixture(val hot:List<String>,val suggest:suspend(String)->List<String>,val feed:(String)->CatalogFeed)
+internal data class SearchFixture(val hot:List<String>,val suggest:suspend(String)->List<String>,val feed:(String)->CatalogFeed,val initialQuery:String="")
 internal fun removeLastCodePoint(value:String):String=if(value.isEmpty())value else value.substring(0,value.offsetByCodePoints(value.length,-1))
 
 @Composable
 internal fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit,fixture:SearchFixture?=null) {
-    var draftQuery by rememberSaveable{mutableStateOf("")}
+    var draftQuery by rememberSaveable{mutableStateOf(fixture?.initialQuery.orEmpty())}
     var submittedQuery by rememberSaveable{mutableStateOf<String?>(null)}
     var suggestions by remember{mutableStateOf<List<String>>(emptyList())}
     var hot by remember{mutableStateOf(fixture?.hot.orEmpty())}
@@ -55,8 +55,12 @@ internal fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit,fixture:SearchFi
     val words=if(term.isBlank())(vm.searchHistory+hot).distinct().take(20)else suggestions.distinct().take(20)
     val list=rememberSaveable(term,saver=LazyListState.Saver){LazyListState()}
     val wordRefs=remember(words){words.associateWith{FocusRequester()}}
+    val wordList=rememberSaveable(saver=LazyListState.Saver){LazyListState()}
     val resultRefs=remember(movies.map{it.id}){movies.associate{it.id to FocusRequester()}}
-    fun enterWords(){wordRefs[lastWord]?.requestFocus()?:wordRefs[words.firstOrNull()]?.requestFocus()}
+    fun enterWords(){if(words.isNotEmpty()){val i=words.indexOf(lastWord).coerceAtLeast(0)
+        if(wordList.layoutInfo.visibleItemsInfo.any{it.index==i})wordRefs[words[i]]?.requestFocus()
+        else scope.launch{wordList.scrollToItem(i);withFrameNanos{};wordRefs[words[i]]?.requestFocus()}
+    }}
     val enterResults:()->Unit={if(movies.isNotEmpty())scope.launch{
         val index=movies.indexOfFirst{it.id==lastResult}.coerceAtLeast(0)
         list.scrollToItem(index/2);withFrameNanos{};resultRefs[movies[index].id]?.requestFocus()
@@ -111,12 +115,12 @@ internal fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit,fixture:SearchFi
         Box(Modifier.width(1.dp).fillMaxHeight().background(TvDesign.border))
         Column(Modifier.width(170.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
             Text(if(term.isBlank())"热门与最近搜索"else"猜你想搜",color=White,fontSize=18.sp,lineHeight=24.sp)
-            LazyColumn(Modifier.weight(1f).focusRequester(suggestionsFocus).focusGroup(),contentPadding=PaddingValues(bottom=64.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){
+            LazyColumn(Modifier.weight(1f).focusRequester(suggestionsFocus).focusGroup(),state=wordList,contentPadding=PaddingValues(bottom=64.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){
                 itemsIndexed(words,key={_,word->word}){index,word->TvAction(word,selected=submittedQuery==word,modifier=Modifier.fillMaxWidth().focusRequester(wordRefs.getValue(word))
                     .restoreContentFocus("suggestion:$word").testTag("suggestion:$word").onFocusChanged{if(it.isFocused)lastWord=word}
                     .focusProperties{left=keys[lastKey];right=FocusRequester.Cancel;if(index==0)up=page?.header?:FocusRequester.Default;if(index==words.lastIndex)down=FocusRequester.Cancel}
                     .onPreviewKeyEvent{event->if(event.key==Key.DirectionRight){if(event.type==KeyEventType.KeyDown)enterResults();true}else false}){
-                        vm.saveQuery(word);submittedQuery=word.trim();focusIntent=word.trim();draftQuery=word
+                        if(fixture==null)vm.saveQuery(word);submittedQuery=word.trim();focusIntent=word.trim();draftQuery=word
                     }}
                 if(term.isBlank()&&vm.searchHistory.isNotEmpty())item{TvAction("清除搜索记录"){vm.clearSearchHistory()}}
             }
@@ -129,7 +133,7 @@ internal fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit,fixture:SearchFi
                         .then(if(rowIndex==0&&column==0)Modifier.focusRequester(firstResult)else Modifier)
                         .focusProperties{if(column==0)left=FocusRequester.Cancel;else right=FocusRequester.Cancel;if(rowIndex==0)up=page?.header?:FocusRequester.Default}
                         .onPreviewKeyEvent{event->if(column==0&&event.key==Key.DirectionLeft){if(event.type==KeyEventType.KeyDown){if(words.isNotEmpty())enterWords()else keys[lastKey].requestFocus()};true}else false},
-                        onFocused={lastResult=m.id;if(rowIndex==(movies.size-1)/2&&!result.loading&&!result.endReached&&result.error==null)feed?.loadNext()}){vm.saveQuery(term);open(m)}}
+                        onFocused={lastResult=m.id;if(rowIndex==(movies.size-1)/2&&!result.loading&&!result.endReached&&result.error==null)feed?.loadNext()}){if(fixture==null)vm.saveQuery(term);open(m)}}
                     repeat(2-row.size){Spacer(Modifier.weight(1f))}
                 }}
                 item(key="state"){

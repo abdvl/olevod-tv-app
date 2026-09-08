@@ -51,7 +51,10 @@ class V2SearchUiTest {
         compose.runOnIdle { witchResponse.complete(Unit) }
         focused("poster:501")
         compose.onNodeWithTag("poster:501").assertIsDisplayed()
-        compose.runOnIdle { assertTrue(opened.isEmpty()); assertEquals("魔女", isolated.vm.searchHistory.first()) }
+        compose.runOnIdle {
+            assertTrue(opened.isEmpty())
+            assertTrue("Preview fixture searches must not be persisted", isolated.vm.searchHistory.isEmpty())
+        }
         press(KeyEvent.KEYCODE_BACK)
         focused("search-input")
         compose.onNodeWithTag("poster:501").assertExists()

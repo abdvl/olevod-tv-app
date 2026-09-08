@@ -71,7 +71,7 @@ internal fun HistoryRecordCard(record:WatchRecord,metadata:HistoryMetadataLoader
         .border(2.dp,if(focused)Green else androidx.compose.ui.graphics.Color.Transparent,RoundedCornerShape(10.dp)).padding(10.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
         Row(resumeModifier.weight(1f).fillMaxHeight().restoreContentFocus("${record.movie.id}:resume").testTag("history-resume:${record.movie.id}")
             .onFocusChanged{if(it.isFocused)scope.launch{withFrameNanos{};bring.bringIntoView()}}
-            .semantics(mergeDescendants=true){contentDescription="${movie.title}，${resumeLabel(record)}，继续播放"}
+            .semantics(mergeDescendants=true){contentDescription="${movie.title}，${resumeLabel(record)}，${resumeActionLabel(record)}"}
             .clickable(interactionSource=source,indication=null){onOpen(movie)},horizontalArrangement=Arrangement.spacedBy(12.dp)){
             PosterArtwork(movie,Modifier.width(96.dp).fillMaxHeight())
             Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)){
@@ -82,7 +82,7 @@ internal fun HistoryRecordCard(record:WatchRecord,metadata:HistoryMetadataLoader
                 WatchProgress(record)
                 Spacer(Modifier.weight(1f))
                 Row(verticalAlignment=Alignment.CenterVertically){
-                    Text("继续播放",color=Green,fontSize=13.sp,lineHeight=18.sp)
+                    Text(resumeActionLabel(record),color=Green,fontSize=13.sp,lineHeight=18.sp)
                     if(showUpdated&&record.updatedAt>0){Spacer(Modifier.weight(1f));Text(watchDateLabel(record.updatedAt),color=Muted,fontSize=12.sp,lineHeight=16.sp)}
                 }
             }

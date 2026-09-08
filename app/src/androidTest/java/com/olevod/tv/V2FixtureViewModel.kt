@@ -13,7 +13,7 @@ import java.io.Closeable
 import java.io.File
 
 /** A fresh, namespaced AppViewModel for fixture tests; never opens the user's stored account/history. */
-internal class V2FixtureViewModel(label: String) : Closeable {
+internal class V2FixtureViewModel(label: String,credentialVault:com.olevod.tv.data.CredentialVault?=null) : Closeable {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val prefix = "v2-$label-${System.nanoTime()}"
     private val models = ViewModelStore()
@@ -25,7 +25,7 @@ internal class V2FixtureViewModel(label: String) : Closeable {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             vm = ViewModelProvider(models, object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T = AppViewModel(app) as T
+                override fun <T : ViewModel> create(modelClass: Class<T>): T = (credentialVault?.let{AppViewModel(app,it)}?:AppViewModel(app)) as T
             })[AppViewModel::class.java]
         }
     }

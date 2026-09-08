@@ -30,14 +30,15 @@ import androidx.tv.material3.Text
 import com.olevod.tv.data.Detail
 import com.olevod.tv.data.Episode
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 internal data class PlayerUiState(val movie:Movie,val detail:Detail?=null,val episode:Int=-1,val group:Int=0,
     val playing:Boolean=false,val buffering:Boolean=false,val ended:Boolean=false,val position:Long=0,val duration:Long=0,
     val speed:Float=1f,val seekable:Boolean=false,val favorite:Boolean=false,val favoriteBusy:Boolean=false,
-    val trackInfo:VideoTrackInfo=videoTrackInfo(-1,-1,-1,-1),val error:String?=null,val note:String="",val playRequested:Boolean=playing)
+    val trackInfo:VideoTrackInfo=videoTrackInfo(-1,-1,-1,-1),val error:String?=null,val note:String="",val playRequested:Boolean=playing,val loginRequired:Boolean=false,val renderedFrame:Boolean=false)
 internal data class PlayerActions(val back:()->Unit,val toggleFull:()->Unit,val togglePlay:()->Unit,val seek:(Long)->Unit,
     val setSpeed:(Float)->Unit,val favorite:()->Unit,val chooseGroup:(Int)->Unit,val playEpisode:(Episode)->Unit,
-    val retry:()->Unit,val episodeFocus:(Boolean)->Unit)
+    val retry:()->Unit,val episodeFocus:(Boolean)->Unit,val login:()->Unit={})
 
 @Composable
 internal fun PlayerContent(state:PlayerUiState,full:Boolean,actions:PlayerActions,video:@Composable ()->Unit){
@@ -80,14 +81,14 @@ internal fun PlayerContent(state:PlayerUiState,full:Boolean,actions:PlayerAction
         }}
     }.padding(if(full)0.dp else 36.dp,if(full)0.dp else 4.dp,if(full)0.dp else 36.dp,if(full)0.dp else 24.dp),horizontalArrangement=Arrangement.spacedBy(24.dp)){
         PlayerVideoStage(full,controls,Modifier.weight(1f),
-            videoModifier=if(full)Modifier.testTag("player-video")else Modifier.focusRequester(stage).testTag("player-video")
+            videoModifier=(if(full)Modifier.testTag("player-video")else Modifier.focusRequester(stage).testTag("player-video")
                 .focusProperties{down=refs[0];up=page?.header?:FocusRequester.Default;right=if(state.detail!=null)description else FocusRequester.Cancel}
                 .onFocusChanged{stageFocused=it.isFocused}.border(2.dp,if(stageFocused)Green else Color.Transparent)
-                .semantics{contentDescription="视频画面，按确认键全屏"}.clickable(onClick=actions.toggleFull),
+                .semantics{contentDescription="视频画面，按确认键全屏"}.clickable(onClick=actions.toggleFull)).semantics{stateDescription=if(state.renderedFrame)"视频已开始显示"else"等待视频画面"},
             video={
                 video()
                 if(state.buffering)Text("正在缓冲…",color=White,fontSize=14.sp,modifier=Modifier.background(Bg).padding(12.dp))
-                state.error?.let{Column(Modifier.background(Bg).padding(16.dp)){ErrorNotice(it,actions.retry)}}
+                state.error?.let{Column(Modifier.background(Bg).padding(16.dp)){ErrorNotice(it,actions.retry);if(state.loginRequired)TvAction("登录后继续",onClick=actions.login)}}
             },controlContent={
                 if(full)Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
                     Text(state.movie.title+actualEpisode?.let{" · ${it.title}"}.orEmpty(),color=White,fontSize=18.sp,lineHeight=24.sp,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.weight(1f))
@@ -120,24 +121,33 @@ internal fun PlayerContent(state:PlayerUiState,full:Boolean,actions:PlayerAction
             actualEpisode?.let{Text("正在播放：${it.title}",color=White,fontSize=14.sp,lineHeight=19.sp)}
             if(state.movie.note.isNotBlank())Text(state.movie.note,color=Muted,fontSize=13.sp,lineHeight=18.sp)
             Box(Modifier.fillMaxWidth().height(1.dp).background(TvDesign.border))
+            Text("剧情简介",color=White,fontSize=16.sp,lineHeight=22.sp)
             Text(state.detail?.description?:"正在加载影片信息…",color=Muted,fontSize=14.sp,lineHeight=22.sp,maxLines=4,overflow=TextOverflow.Ellipsis)
             if(state.detail!=null)TvAction("展开简介",Icons.Rounded.ExpandMore,modifier=Modifier.focusRequester(description).testTag("player-description").focusProperties{left=stage;up=page?.header?:FocusRequester.Default;down=refs[0];right=FocusRequester.Cancel}){descriptionMenu=true}
             state.detail?.let{d->if(d.director.isNotBlank())Text("导演：${d.director}",color=Muted,fontSize=13.sp,lineHeight=18.sp,maxLines=1,overflow=TextOverflow.Ellipsis);if(d.actor.isNotBlank())Text("主演：${d.actor}",color=Muted,fontSize=13.sp,lineHeight=18.sp,maxLines=2,overflow=TextOverflow.Ellipsis)}
             if(!state.seekable)Text("此片源暂不支持跳转",color=Muted,fontSize=13.sp,lineHeight=18.sp)
             if(state.ended&&state.episode==episodes.lastIndex)Text("已播放完",color=Green,fontSize=14.sp)
             if(state.note.isNotBlank())Text(state.note,color=TvDesign.warning,fontSize=13.sp,lineHeight=18.sp)
+            if(state.loginRequired&&state.error==null)TvAction("重新登录",onClick=actions.login)
         }
     }
     if(speedMenu)OptionPopover("播放速度",listOf(.5f,.75f,1f,1.25f,1.5f,1.75f,2f).map{FilterOption(it.toString(),"${it}×")},state.speed.toString(),onDismiss={speedMenu=false;restoreSpeed++}){actions.setSpeed(it.toFloat());speedMenu=false;restoreSpeed++}
     if(descriptionMenu)Dialog(onDismissRequest={descriptionMenu=false;restoreDescription++},properties=DialogProperties(usePlatformDefaultWidth=false)){
         val close=remember{FocusRequester()}
+        val button=remember{FocusRequester()};val scroll=rememberScrollState();val scope=rememberCoroutineScope()
         Column(Modifier.width(600.dp).heightIn(max=430.dp).background(Panel,RoundedCornerShape(14.dp)).padding(24.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
             Text(state.movie.title,color=White,fontSize=22.sp,lineHeight=28.sp)
-            Column(Modifier.weight(1f,false).verticalScroll(rememberScrollState()).focusRequester(close).focusable(),verticalArrangement=Arrangement.spacedBy(12.dp)){
+            Column(Modifier.weight(1f,false).verticalScroll(scroll).focusRequester(close).focusProperties{down=button;up=FocusRequester.Cancel}
+                .semantics{contentDescription="完整简介，上下键滚动阅读"}.onPreviewKeyEvent{event->
+                    val delta=when(event.key){Key.DirectionDown->120;Key.DirectionUp->-120;else->0}
+                    if(delta==0)false else if(delta>0&&scroll.value>=scroll.maxValue)false else{
+                        if(event.type==KeyEventType.KeyDown)scope.launch{scroll.scrollTo((scroll.value+delta).coerceIn(0,scroll.maxValue))};true
+                    }
+                }.focusable(),verticalArrangement=Arrangement.spacedBy(12.dp)){
                 Text(state.detail?.description.orEmpty(),color=White,fontSize=16.sp,lineHeight=24.sp)
                 state.detail?.let{Text("导演：${it.director}\n主演：${it.actor}",color=Muted,fontSize=14.sp,lineHeight=22.sp)}
             }
-            TvAction("返回播放",onClick={descriptionMenu=false;restoreDescription++})
+            TvAction("返回播放",modifier=Modifier.focusRequester(button).focusProperties{up=close},onClick={descriptionMenu=false;restoreDescription++})
         }
         LaunchedEffect(Unit){withFrameNanos{};close.requestFocus()}
     }
@@ -146,7 +156,7 @@ internal fun PlayerContent(state:PlayerUiState,full:Boolean,actions:PlayerAction
 @Composable
 internal fun PlayerAction(label:String,icon:ImageVector?,value:String?,enabled:Boolean,modifier:Modifier,onClick:()->Unit){
     val source=remember{MutableInteractionSource()};val focused by source.collectIsFocusedAsState()
-    Column(modifier.height(48.dp).background(if(focused)Green else Color.Transparent,RoundedCornerShape(8.dp))
+    Column(modifier.height(48.dp*maxOf(1f,androidx.compose.ui.platform.LocalDensity.current.fontScale)).background(if(focused)Green else Panel,RoundedCornerShape(8.dp)).border(1.dp,if(focused)Green else TvDesign.border,RoundedCornerShape(8.dp))
         .semantics{contentDescription=label+(value?.let{" $it"}.orEmpty());if(!enabled)disabled()}
         .clickable(enabled=enabled,interactionSource=source,indication=null,onClick=onClick),
         horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){

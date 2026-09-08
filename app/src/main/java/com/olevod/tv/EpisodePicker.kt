@@ -18,6 +18,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
+import androidx.tv.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.PlayArrow
 import com.olevod.tv.data.Episode
 
 @Composable
@@ -62,10 +65,13 @@ internal fun episodeLabel(episode:Episode):String = episode.title.takeIf{it.isNo
 @Composable
 private fun EpisodeButton(label:String,selected:Boolean,playing:Boolean,modifier:Modifier,onClick:()->Unit){
     val source=remember{MutableInteractionSource()};val focused by source.collectIsFocusedAsState()
-    Column(modifier.height(36.dp).background(if(focused)Green else if(playing)Green.copy(alpha=.12f)else Color.Transparent,RoundedCornerShape(7.dp))
+    Column(modifier.height(36.dp*maxOf(1f,androidx.compose.ui.platform.LocalDensity.current.fontScale)).background(if(focused)Green else if(playing)Green.copy(alpha=.12f)else Panel,RoundedCornerShape(7.dp))
         .semantics{this.selected=selected||playing}.clickable(interactionSource=source,indication=null,onClick=onClick).padding(horizontal=6.dp),
         horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){
-        Text((if(playing)"▶ "else"")+label,color=if(focused)Bg else if(selected||playing)Green else White,fontSize=13.sp,lineHeight=18.sp,maxLines=1,overflow=TextOverflow.Ellipsis,fontWeight=if(selected||playing)FontWeight.Bold else FontWeight.Normal)
+        Row(verticalAlignment=Alignment.CenterVertically){
+            if(playing)Icon(Icons.Rounded.PlayArrow,null,Modifier.size(14.dp),tint=if(focused)Bg else Green)
+            Text(label,color=if(focused)Bg else if(selected||playing)Green else White,fontSize=13.sp,lineHeight=18.sp,maxLines=1,overflow=TextOverflow.Ellipsis,fontWeight=if(selected||playing)FontWeight.Bold else FontWeight.Normal)
+        }
         Box(Modifier.width(18.dp).height(2.dp).background(if(selected&&!focused)Green else Color.Transparent))
     }
 }

@@ -8,6 +8,7 @@ import com.olevod.tv.data.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.channels.Channel as CoroutineChannel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,16 +16,19 @@ import kotlinx.coroutines.flow.update
 
 data class HomeSection(val category:Category,val movies:List<Movie> = emptyList(),val loading:Boolean=true,val error:String?=null)
 data class HomeState(val heroes:List<Hero> = emptyList(),val sections:List<HomeSection> = emptyList(),val loading:Boolean=true,val error:String?=null)
+data class PendingFavorite(val movieId:Long,val desired:Boolean,val account:String)
+data class PendingAuthentication(val movieId:Long,val desired:Boolean)
 
-class AppViewModel(application:Application):AndroidViewModel(application) {
+class AppViewModel @JvmOverloads constructor(application:Application,val credentials:CredentialVault=CredentialsStore(application)):AndroidViewModel(application) {
     private val searchPrefs=application.getSharedPreferences("search",0)
     var searchHistory by mutableStateOf(runCatching{org.json.JSONArray(searchPrefs.getString("words","[]")).let{a->(0 until a.length()).map{a.getString(it)}}}.getOrDefault(emptyList()))
         private set
     fun saveQuery(query:String){if(query.isBlank())return;searchHistory=(listOf(query.trim())+searchHistory).distinct().take(20);searchPrefs.edit().putString("words",org.json.JSONArray(searchHistory).toString()).apply()}
     fun clearSearchHistory(){searchHistory=emptyList();searchPrefs.edit().remove("words").apply()}
     var pendingResume:WatchRecord?=null
+    var pendingFavorite:PendingFavorite?=null
+    var pendingAuthentication by mutableStateOf<PendingAuthentication?>(null)
     var pendingChannel by mutableStateOf<Channel?>(null)
-    val credentials=CredentialsStore(application)
     var rememberedCredentials by mutableStateOf(credentials.read())
         private set
     var credentialPersistenceError by mutableStateOf<String?>(null)
@@ -38,10 +42,10 @@ class AppViewModel(application:Application):AndroidViewModel(application) {
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO){
                         write.value?.let{credentials.save(it.username,it.password)}?:credentials.clear()
                     }
-                    credentialPersistenceError=null;write.done?.complete(Unit)
+                    rememberedCredentials=write.value;credentialPersistenceError=null;write.done?.complete(Unit)
                 }catch(e:Exception){
                     if(e is CancellationException)throw e
-                    credentialPersistenceError="无法记住账号密码，请重试"
+                    credentialPersistenceError=if(write.value==null)"无法清除记住的账号密码，请重试"else"本次可继续登录，但账号未能记住"
                     write.done?.completeExceptionally(e)
                 }
             }
@@ -49,14 +53,14 @@ class AppViewModel(application:Application):AndroidViewModel(application) {
     }
     fun rememberCredentials(username:String,password:String){
         if(username.isBlank()||password.isBlank())return
-        val value=RememberedCredentials(username,password);rememberedCredentials=value
+        val value=RememberedCredentials(username,password)
         credentialQueue.trySend(CredentialWrite(value))
     }
-    fun forgetCredentials(){rememberedCredentials=null;credentialQueue.trySend(CredentialWrite(null))}
-    private suspend fun saveLoginCredentials(username:String,password:String){
-        val value=RememberedCredentials(username,password);rememberedCredentials=value
+    fun forgetCredentials(){credentialQueue.trySend(CredentialWrite(null))}
+    internal suspend fun saveLoginCredentials(username:String,password:String){
+        val value=RememberedCredentials(username,password)
         val done=kotlinx.coroutines.CompletableDeferred<Unit>()
-        credentialQueue.send(CredentialWrite(value,done));done.await()
+        credentialQueue.send(CredentialWrite(value,done));try{done.await()}catch(e:Exception){if(e is CancellationException)throw e}
     }
     val sessions=SessionStore(application)
     val history=HistoryStore(application){sessions.accountKey}
@@ -126,36 +130,63 @@ class AppViewModel(application:Application):AndroidViewModel(application) {
         FeedPage(result.items,result.total,if(result.total>=0)page*20<result.total else result.items.size>=20)
     }.also{cloudHistoryCache=it}
     fun invalidateFavorites(){favoritesCache?.cancel();favoritesCache=null;favoritesVersion++}
+    fun consumeFavoriteIntent(movieId:Long):PendingFavorite?{
+        val value=pendingFavorite?.takeIf{it.movieId==movieId}?:return null
+        pendingFavorite=null
+        return value.takeIf{it.account==sessions.accountKey}
+    }
     private fun clearAccountFeeds(){
+        pendingFavorite=null
+        pendingAuthentication=null
         favoritesCache?.cancel();favoritesCache=null;cloudHistoryCache?.cancel();cloudHistoryCache=null
         catalogFeeds.values.forEach{it.cancel()};catalogFeeds.clear()
         searchFeeds.values.forEach{it.cancel()};searchFeeds.clear()
     }
-    suspend fun login(username:String,password:String,captcha:String,captchaId:String){saveLoginCredentials(username,password);val result=api.login(username,password,captcha,captchaId);kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO){sessions.save(result.token,result.name,result.accountId)};clearAccountFeeds();history.clearView();history.load();sessionVersion++;loadHome()}
-    fun logout(){sessions.clear();clearAccountFeeds();history.clearView();viewModelScope.launch{history.load()};sessionVersion++;loadHome()}
+    suspend fun login(username:String,password:String,captcha:String,captchaId:String){
+        saveLoginCredentials(username,password)
+        val result=api.login(username,password,captcha,captchaId)
+        kotlinx.coroutines.currentCoroutineContext().ensureActive()
+        // Once the disk commit starts, finish the matching in-memory account transition.
+        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable){
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO){sessions.save(result.token,result.name,result.accountId)}
+            clearAccountFeeds();history.clearView();sessionVersion++;loadHome(force=true)
+            viewModelScope.launch{history.load()}
+        }
+        // A cancelled login page never replays its source action after the completed commit.
+        kotlinx.coroutines.currentCoroutineContext().ensureActive()
+    }
+    fun logout(){sessions.clear();clearAccountFeeds();history.clearView();viewModelScope.launch{history.load()};sessionVersion++;loadHome(force=true)}
     private val _home=MutableStateFlow(HomeState())
     val home=_home.asStateFlow()
     private var homeJob:Job?=null
-    fun loadHome() {
-        if(homeJob?.isActive==true)return
+    private var homeGeneration=0
+    private val sectionJobs=mutableMapOf<Int,Job>()
+    fun loadHome(force:Boolean=false) {
+        if(homeJob?.isActive==true&&!force)return
+        homeJob?.cancel();sectionJobs.values.forEach{it.cancel()};sectionJobs.clear()
+        val generation=++homeGeneration
+        if(force)_home.value=HomeState()
         homeJob=viewModelScope.launch {
             _home.update{it.copy(loading=true,error=null)}
             try {
                 api.config()
                 val categories=api.categories()
+                if(generation!=homeGeneration)return@launch
                 _home.update{it.copy(sections=categories.map{c->HomeSection(c)})}
-                try{val heroes=api.banners();_home.update{it.copy(heroes=heroes)}}catch(e:Exception){if(e is CancellationException)throw e}
+                try{val heroes=api.banners();if(generation!=homeGeneration)return@launch;_home.update{it.copy(heroes=heroes)}}catch(e:Exception){if(e is CancellationException)throw e}
+                if(generation!=homeGeneration)return@launch
                 _home.update{it.copy(loading=false)}
-                categories.forEach { c ->loadSection(c) }
-            }catch(e:Exception){if(e is CancellationException)throw e;_home.update{it.copy(loading=false,error=safeError(e))}}
+                categories.forEach { c ->loadSection(c,generation) }
+            }catch(e:Exception){if(e is CancellationException)throw e;if(generation==homeGeneration)_home.update{it.copy(loading=false,error=safeError(e))}}
         }
     }
-    private suspend fun loadSection(c:Category) {
+    private suspend fun loadSection(c:Category,generation:Int=homeGeneration) {
         try {
             val list=api.browse(Filter(category=c.id),size=10).items
+            if(generation!=homeGeneration)return
             _home.update{it.copy(sections=it.sections.map{s->if(s.category.id==c.id)s.copy(movies=list,loading=false,error=null) else s})}
-        }catch(e:Exception){if(e is CancellationException)throw e;_home.update{it.copy(sections=it.sections.map{s->if(s.category.id==c.id)s.copy(loading=false,error=safeError(e)) else s})}}
+        }catch(e:Exception){if(e is CancellationException)throw e;if(generation==homeGeneration)_home.update{it.copy(sections=it.sections.map{s->if(s.category.id==c.id)s.copy(loading=false,error=safeError(e)) else s})}}
     }
-    fun retrySection(c:Category){viewModelScope.launch{loadSection(c)}}
+    fun retrySection(c:Category){sectionJobs[c.id]?.cancel();val generation=homeGeneration;sectionJobs[c.id]=viewModelScope.launch{loadSection(c,generation)}}
 }
 internal fun safeError(e:Exception):String=when(e){is ApiException->e.userMessage;is java.io.IOException->"网络连接失败，请重试";else->"数据暂时无法加载，请重试"}

@@ -56,11 +56,13 @@ fun ConnectedHome(state:HomeState,vm:AppViewModel,open:(Movie)->Unit,history:()-
     var lastRecent by rememberSaveable { mutableLongStateOf(-1) }
     val entryId=recent.firstOrNull{it.movie.id==lastRecent}?.movie?.id ?: recent.firstOrNull()?.movie?.id
     val orderedSections=listOf(1,2,3,6,14).mapNotNull{id->state.sections.firstOrNull{it.category.id==id}}
-    DisposableEffect(list,entryId,state.heroes.isNotEmpty()) {
+    val fallback=if(state.heroes.isEmpty()&&!state.loading)orderedSections.flatMap{it.movies}.distinctBy{it.id}.take(2)else emptyList()
+    val hasRecommendation=state.heroes.isNotEmpty()||fallback.isNotEmpty()
+    DisposableEffect(list,entryId,hasRecommendation) {
         setRecentEntry { scope.launch {
-            list.scrollToItem(if(recent.isEmpty() && state.heroes.isNotEmpty())1 else 0)
+            list.scrollToItem(if(recent.isEmpty() && hasRecommendation)1 else 0)
             withFrameNanos{}
-            when {recent.isNotEmpty()->recentFocus.requestFocus();state.heroes.isNotEmpty()->heroEntry.requestFocus();else->historyEntry.requestFocus()}
+            when {recent.isNotEmpty()->recentFocus.requestFocus();hasRecommendation->heroEntry.requestFocus();else->historyEntry.requestFocus()}
         } }
         onDispose{setRecentEntry(null)}
     }
@@ -91,14 +93,14 @@ fun ConnectedHome(state:HomeState,vm:AppViewModel,open:(Movie)->Unit,history:()-
                                 val width by animateDpAsState(if(expanded)396.dp else tileWidth,tween(180),label="recent-width")
                                 RecentTile(record.copy(movie=movie),Modifier.width(width).onGloballyPositioned{cardCenter=it.positionInRoot().x+it.size.width/2f}
                                     .then(if(movie.id==entryId)Modifier.focusRequester(recentFocus)else Modifier)
-                                    .focusProperties{up=navigationHomeFocus;if(state.heroes.isNotEmpty())down=if(cardCenter>rowCenter&&state.heroes.size>1)heroRight else heroEntry},
+                                    .focusProperties{up=navigationHomeFocus;if(hasRecommendation)down=if(cardCenter>rowCenter&&(state.heroes.size+fallback.size)>1)heroRight else heroEntry},
                                     tileWidth,posterHeight,expanded,{lastRecent=movie.id}) {
                                     vm.pendingResume=record.copy(movie=movie);open(movie)
                                 }
                             } }
                             var historyCenter by remember{mutableFloatStateOf(0f)}
                             HistoryShortcut(Modifier.onGloballyPositioned{historyCenter=it.positionInRoot().x+it.size.width/2f}.width(tileWidth).height(posterHeight+with(LocalDensity.current){22.sp.toDp()}).focusRequester(historyEntry)
-                                .focusProperties{up=navigationHomeFocus;if(state.heroes.isNotEmpty())down=if(historyCenter>rowCenter&&state.heroes.size>1)heroRight else heroEntry},posterHeight,history)
+                                .focusProperties{up=navigationHomeFocus;if(hasRecommendation)down=if(historyCenter>rowCenter&&(state.heroes.size+fallback.size)>1)heroRight else heroEntry},posterHeight,history)
                         }
                     }
                 }
@@ -117,6 +119,12 @@ fun ConnectedHome(state:HomeState,vm:AppViewModel,open:(Movie)->Unit,history:()-
                                 }
                             }
                             if(state.heroes.size==1)Spacer(Modifier.weight(1f))
+                        }
+                    } else if(fallback.isNotEmpty()){
+                        SectionHeading("最近更新")
+                        Row(horizontalArrangement=Arrangement.spacedBy(16.dp)){
+                            fallback.forEachIndexed{index,movie->FallbackRecommendation(movie,Modifier.weight(1f).focusRequester(if(index==0)heroEntry else heroRight).focusProperties{up=if(recent.isNotEmpty())recentFocus else navigationHomeFocus}){open(movie)}}
+                            if(fallback.size==1)Spacer(Modifier.weight(1f))
                         }
                     } else if(state.loading)Text("正在加载精选推荐…",color=Muted,fontSize=13.sp)
                     state.error?.let{ErrorNotice(it){vm.loadHome()}}
@@ -144,7 +152,7 @@ private fun RecentTile(record:WatchRecord,modifier:Modifier,posterWidth:androidx
     LaunchedEffect(focused){if(focused){withFrameNanos{};bring.bringIntoView();delay(200);bring.bringIntoView()}}
     Column(modifier.height(posterHeight+with(LocalDensity.current){22.sp.toDp()}).bringIntoViewRequester(bring).restoreContentFocus("${record.movie.id}:resume")
         .onFocusChanged{if(it.isFocused)onFocused()}.testTag("recent:${record.movie.id}")
-        .semantics(mergeDescendants=true){contentDescription="${record.movie.title}，${resumeLabel(record)}，继续播放"}
+        .semantics(mergeDescendants=true){contentDescription="${record.movie.title}，${resumeLabel(record)}，${resumeActionLabel(record)}"}
         .border(2.dp,if(focused)Green else Color.Transparent,RoundedCornerShape(8.dp))
         .clickable(interactionSource=source,indication=null,onClick=onClick)) {
         Row(Modifier.height(posterHeight),horizontalArrangement=Arrangement.spacedBy(14.dp)) {
@@ -161,7 +169,7 @@ private fun RecentTile(record:WatchRecord,modifier:Modifier,posterWidth:androidx
                     .filter(String::isNotBlank).joinToString(" · "),color=Muted,fontSize=13.sp,lineHeight=18.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
                 Text((if(record.episode>0)"第 ${record.episode} 集 · "else"")+"已看 ${clock(record.positionMs)}"+(if(record.durationMs>0)" / ${clock(record.durationMs)}"else""),color=Muted,fontSize=13.sp,lineHeight=18.sp,maxLines=2)
                 WatchProgress(record)
-                Row(Modifier.background(Green,RoundedCornerShape(8.dp)).padding(horizontal=14.dp,vertical=6.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Rounded.PlayArrow,null,Modifier.size(22.dp),tint=Bg);Text("继续播放",color=Bg,fontSize=14.sp,lineHeight=19.sp,fontWeight=FontWeight.Bold)}
+                Row(Modifier.background(Green,RoundedCornerShape(8.dp)).padding(horizontal=14.dp,vertical=6.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Rounded.PlayArrow,null,Modifier.size(22.dp),tint=Bg);Text(resumeActionLabel(record),color=Bg,fontSize=14.sp,lineHeight=19.sp,fontWeight=FontWeight.Bold)}
             }
         }
         Text(if(expanded)""else record.movie.title,color=White,fontSize=14.sp,lineHeight=22.sp,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(horizontal=3.dp))
@@ -182,9 +190,24 @@ private fun HistoryShortcut(modifier:Modifier,height:androidx.compose.ui.unit.Dp
     }
 }
 internal fun resumeLabel(record:WatchRecord):String = if(record.episode>0)"第${record.episode}集 · ${clock(record.positionMs)}"else"已看${clock(record.positionMs)}"
+internal fun resumeActionLabel(record:WatchRecord):String=if(record.durationMs>0&&record.positionMs>=record.durationMs-10000)"重新播放"else"继续播放"
 @Composable internal fun WatchProgress(record:WatchRecord,modifier:Modifier=Modifier) {
     if(record.durationMs>0)Box(modifier.fillMaxWidth().height(3.dp).background(Muted.copy(alpha=.25f))) {
         Box(Modifier.fillMaxWidth((record.positionMs.toDouble()/record.durationMs).coerceIn(0.0,1.0).toFloat()).fillMaxHeight().background(Green))
     }
 }
 @Composable internal fun ErrorNotice(message:String,retry:()->Unit){Column(verticalArrangement=Arrangement.spacedBy(10.dp)){Text(message,color=TvDesign.error,fontSize=15.sp);TvAction("重试",onClick=retry)}}
+
+@Composable
+private fun FallbackRecommendation(movie:Movie,modifier:Modifier,onClick:()->Unit){
+    val source=remember{MutableInteractionSource()};val focused by source.collectIsFocusedAsState()
+    Row(modifier.height(138.dp*maxOf(1f,LocalDensity.current.fontScale)).restoreContentFocus("fallback:${movie.id}")
+        .background(Panel,RoundedCornerShape(10.dp)).border(2.dp,if(focused)Green else Color.Transparent,RoundedCornerShape(10.dp))
+        .clickable(interactionSource=source,indication=null,onClick=onClick).padding(8.dp),horizontalArrangement=Arrangement.spacedBy(16.dp)){
+        PosterArtwork(movie,Modifier.width(81.dp).fillMaxHeight())
+        Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(8.dp)){
+            Text(movie.title,color=White,fontSize=22.sp,lineHeight=28.sp,maxLines=2,overflow=TextOverflow.Ellipsis,fontWeight=FontWeight.Bold)
+            Text(listOf(movie.year,movie.area,movie.note).filter(String::isNotBlank).joinToString(" · "),color=Muted,fontSize=13.sp,lineHeight=18.sp,maxLines=2,overflow=TextOverflow.Ellipsis)
+        }
+    }
+}

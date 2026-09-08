@@ -15,6 +15,17 @@ internal class ContentFocusMemory(val anchor:MutableState<String?>) {
 internal val LocalContentFocusMemory=compositionLocalOf<ContentFocusMemory?>{null}
 internal val LocalFocusSection=compositionLocalOf{"content"}
 
+/** Lazy layouts may need several frames to attach a target after scrolling or a page append. */
+internal suspend fun FocusRequester.requestWhenAttached(stillWanted:()->Boolean={true}):Boolean {
+    repeat(30){
+        if(!stillWanted())return false
+        val focused=try{requestFocus()}catch(_:IllegalStateException){false}
+        if(focused)return true
+        withFrameNanos{}
+    }
+    return false
+}
+
 @Composable
 internal fun ContentFocusScope(content:@Composable ()->Unit) {
     val anchor=rememberSaveable{mutableStateOf<String?>(null)}

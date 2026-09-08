@@ -47,7 +47,7 @@ import kotlinx.coroutines.launch
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
-fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,onBack:()->Unit) {
+fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,onLogin:(Boolean?)->Unit={},onBack:()->Unit) {
     val context=LocalContext.current
     val owner=LocalLifecycleOwner.current
     val scope=rememberCoroutineScope()
@@ -67,6 +67,7 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
     var playRequested by remember{mutableStateOf(false)}
     var buffering by remember{mutableStateOf(true)}
     var ended by remember{mutableStateOf(false)}
+    var renderedFrame by remember{mutableStateOf(false)}
     var position by remember{mutableLongStateOf(0)}
     var duration by remember{mutableLongStateOf(0)}
     var speed by remember{mutableFloatStateOf(1f)}
@@ -74,6 +75,8 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
     var favorite by remember{mutableStateOf(false)}
     var favoriteBusy by remember{mutableStateOf(false)}
     var note by remember{mutableStateOf("")}
+    var loginRequired by remember{mutableStateOf(false)}
+    var loginDesired by remember{mutableStateOf<Boolean?>(null)}
     val player=remember {
         val http=DefaultHttpDataSource.Factory().setUserAgent("Mozilla/5.0 OlevodTV/0.1").setDefaultRequestProperties(mapOf("Referer" to "https://www.olevod.com/"))
         ExoPlayer.Builder(context).setMediaSourceFactory(DefaultMediaSourceFactory(http)).setSeekBackIncrementMs(30000).setSeekForwardIncrementMs(30000).setAudioAttributes(AudioAttributes.DEFAULT,true).setHandleAudioBecomingNoisy(true).build()
@@ -81,13 +84,34 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
     val currentDetail by rememberUpdatedState(detail)
     val currentEpisode by rememberUpdatedState(episode)
     fun saveProgress(forceSync:Boolean=true){val d=currentDetail;val ep=d?.episodes?.find{it.index==player.currentMediaItem?.mediaId?.toIntOrNull()};if(d!=null&&ep!=null)vm.record(d.movie,ep.index,player.currentPosition,player.duration.coerceAtLeast(0),accountAtStart,forceSync)}
+    fun login(desired:Boolean?){
+        saveProgress();detail?.episodes?.getOrNull(episode)?.let{ep->vm.pendingResume=WatchRecord(detail!!.movie,ep.index,player.currentPosition.coerceAtLeast(0),player.duration.coerceAtLeast(0),System.currentTimeMillis())}
+        vm.pendingAuthentication=null
+        onLogin(desired)
+    }
+    fun setFavorite(desired:Boolean){
+        if(favoriteBusy)return
+        if(vm.sessions.token==null){login(desired);return}
+        val account=vm.sessions.accountKey;favoriteBusy=true
+        // Cancellation can leave a successful server mutation without its response; always re-read.
+        vm.invalidateFavorites()
+        scope.launch{try{vm.api.favorite(movie.id,desired);if(vm.sessions.accountKey==account){favorite=desired;vm.invalidateFavorites();note=""}}
+            catch(e:Exception){if(e is CancellationException)throw e;note=safeError(e);if(e is ApiException&&e.code in setOf(12,13,14,16)){loginRequired=true;loginDesired=desired;vm.pendingAuthentication=PendingAuthentication(movie.id,desired)}}
+            finally{favoriteBusy=false}}
+    }
     DisposableEffect(player,owner) {
         val session=MediaSession.Builder(context,player).build()
         val listener=object:Player.Listener {
             override fun onPlayWhenReadyChanged(playWhenReady:Boolean,reason:Int){playRequested=playWhenReady}
             override fun onIsPlayingChanged(value:Boolean){playing=value;if(!value)saveProgress()}
             override fun onPlaybackStateChanged(state:Int){buffering=state==Player.STATE_BUFFERING;ended=state==Player.STATE_ENDED;seekable=player.isCurrentMediaItemSeekable}
-            override fun onPlayerError(e:PlaybackException){error="视频暂时无法播放，可重新加载或返回选择其他影片";buffering=false}
+            override fun onRenderedFirstFrame(){renderedFrame=true}
+            override fun onPlayerError(e:PlaybackException){error=when(e.errorCode){
+                PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT->"视频网络连接失败，请检查网络后重试"
+                PlaybackException.ERROR_CODE_DECODING_FAILED,PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,PlaybackException.ERROR_CODE_DECODER_INIT_FAILED->"当前设备无法解码此片源，请选择其他影片"
+                PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND->"视频资源暂不可用或已过期，请重新加载"
+                else->"视频暂时无法播放，可重新加载或返回选择其他影片"
+            };buffering=false}
         }
         val analytics=object:androidx.media3.exoplayer.analytics.AnalyticsListener {
             override fun onVideoInputFormatChanged(eventTime:androidx.media3.exoplayer.analytics.AnalyticsListener.EventTime,format:Format,decoderReuseEvaluation:androidx.media3.exoplayer.DecoderReuseEvaluation?){
@@ -98,17 +122,22 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
         player.addListener(listener)
         val observer=LifecycleEventObserver{_,event->if(event==Lifecycle.Event.ON_STOP){saveProgress();player.pause()}}
         owner.lifecycle.addObserver(observer)
-        onDispose{saveProgress();owner.lifecycle.removeObserver(observer);player.removeListener(listener);player.removeAnalyticsListener(analytics);session.release();player.release()}
+        onDispose{saveProgress();if(vm.pendingFavorite?.movieId==movie.id)vm.pendingFavorite=null;owner.lifecycle.removeObserver(observer);player.removeListener(listener);player.removeAnalyticsListener(analytics);session.release();player.release()}
     }
     LaunchedEffect(movie.id,retry) {
-        saveProgress();player.stop();trackInfo=videoTrackInfo(-1,-1,-1,-1);detail=null;error=null;buffering=true
+        saveProgress();player.stop();trackInfo=videoTrackInfo(-1,-1,-1,-1);detail=null;error=null;buffering=true;loginRequired=false
         try { val d=vm.api.detail(movie.id);val start=playbackStart(d,resume)
             detail=d;favorite=d.favorite;episode=start.arrayIndex;nextStart=start.position
             if(start.missingEpisode)note="原观看集数已不可用，从第一集开始"
             if(d.episodes.isEmpty()){error="该影片暂无可用播放源";buffering=false}
         }
-        catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e);buffering=false}
+        catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e);buffering=false;loginRequired=e is ApiException&&e.code in setOf(12,13,14,16)}
     }
+    LaunchedEffect(detail,vm.sessionVersion){if(detail!=null){
+        val intent=vm.consumeFavoriteIntent(movie.id);if(intent!=null){
+            if(intent.desired!=favorite)setFavorite(intent.desired)
+        }
+    }}
     LaunchedEffect(detail,episode,playRetry) {
         val d=detail?:return@LaunchedEffect
         val item=d.episodes.getOrNull(episode)?:return@LaunchedEffect
@@ -116,6 +145,7 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
         // Auto-next must not replace the episode row the user is currently navigating.
         if(!episodeAreaFocused)episodeGroup=episode.coerceAtLeast(0)/10
         trackInfo=videoTrackInfo(-1,-1,-1,-1)
+        renderedFrame=false
         player.setMediaItem(MediaItem.Builder().setMediaId(item.index.toString()).setUri(item.uri).setMediaMetadata(MediaMetadata.Builder().setTitle(d.movie.title).build()).build())
         val start=nextStart;nextStart=0
         if(start>0)player.seekTo(start)
@@ -131,16 +161,12 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
     LaunchedEffect(player){while(true){delay(10000);if(player.isPlaying&&owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))saveProgress(false)}}
     LaunchedEffect(ended){if(ended&&episode+1<(detail?.episodes?.size?:0)){saveProgress();nextStart=0;episode++}}
     val shownMovie=detail?.movie?:movie
-    PlayerContent(PlayerUiState(shownMovie,detail,episode,episodeGroup,playing,buffering,ended,position,duration,speed,seekable,favorite,favoriteBusy,trackInfo,error,note,playRequested),full,
+    val authentication=vm.pendingAuthentication?.takeIf{it.movieId==movie.id}
+    PlayerContent(PlayerUiState(shownMovie,detail,episode,episodeGroup,playing,buffering,ended,position,duration,speed,seekable,favorite,favoriteBusy,trackInfo,error,note,playRequested,loginRequired||authentication!=null,renderedFrame),full,
         PlayerActions(back=onBack,toggleFull=toggleFull,togglePlay={if(player.playWhenReady)player.pause()else player.play()},
             seek={delta->if(player.isCurrentMediaItemSeekable)player.seekTo(jumpPosition(player.currentPosition,player.duration,delta))},
-            setSpeed={speed=it;player.setPlaybackSpeed(it)},favorite={
-                if(!favoriteBusy){val desired=!favorite;val account=vm.sessions.accountKey;favoriteBusy=true
-                    scope.launch{try{vm.api.favorite(movie.id,desired);if(vm.sessions.accountKey==account){favorite=desired;vm.invalidateFavorites();note=""}}
-                    catch(e:Exception){if(e is CancellationException)throw e;note=safeError(e)}finally{favoriteBusy=false}}
-                }
-            },chooseGroup={episodeGroup=it},playEpisode={ep->val target=detail?.episodes?.indexOf(ep)?:-1;if(target>=0&&target!=episode){saveProgress();nextStart=0;episode=target}},
-            retry={if(detail==null)retry++ else{nextStart=player.currentPosition.coerceAtLeast(0);playRetry++}},episodeFocus={episodeAreaFocused=it})){
+            setSpeed={speed=it;player.setPlaybackSpeed(it)},favorite={if(authentication!=null)login(authentication.desired)else setFavorite(!favorite)},chooseGroup={episodeGroup=it},playEpisode={ep->val target=detail?.episodes?.indexOf(ep)?:-1;if(target>=0&&target!=episode){saveProgress();nextStart=0;episode=target}},
+            retry={if(detail==null)retry++ else{nextStart=player.currentPosition.coerceAtLeast(0);playRetry++}},episodeFocus={episodeAreaFocused=it},login={login(authentication?.desired?:loginDesired)})){
         AndroidView(factory={PlayerView(it).apply{this.player=player;useController=false;isFocusable=false;keepScreenOn=true}},modifier=Modifier.fillMaxSize(),update={it.player=player;it.keepScreenOn=playing})
     }
 }

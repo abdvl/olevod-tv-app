@@ -7,12 +7,17 @@ class RememberedCredentials(val username:String,val password:String) {
 }
 
 /** Separate encrypted vault; logout only clears SessionStore's session vault. */
-class CredentialsStore(context:Context,storeName:String="remembered-login") {
+interface CredentialVault {
+    fun read():RememberedCredentials?
+    fun save(username:String,password:String)
+    fun clear()
+}
+class CredentialsStore(context:Context,storeName:String="remembered-login"):CredentialVault {
     private val vault=SessionStore(context,storeName)
-    fun read():RememberedCredentials?=vault.token?.let{RememberedCredentials(vault.name,it)}
-    fun save(username:String,password:String){
+    override fun read():RememberedCredentials?=vault.token?.let{RememberedCredentials(vault.name,it)}
+    override fun save(username:String,password:String){
         require(username.isNotBlank() && password.isNotBlank())
         vault.save(password,username,"remembered-login")
     }
-    fun clear()=vault.clear(synchronous=true)
+    override fun clear()=vault.clear(synchronous=true)
 }
