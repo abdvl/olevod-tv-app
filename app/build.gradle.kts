@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -20,8 +22,23 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+    val releasePropertiesFile = rootProject.file(".secrets/release-signing.properties")
+    val releaseProperties = Properties().apply {
+        if (releasePropertiesFile.exists()) releasePropertiesFile.inputStream().use { load(it) }
+    }
+    signingConfigs {
+        if (releasePropertiesFile.exists()) create("personalRelease") {
+            storeFile = rootProject.file(releaseProperties.getProperty("storeFile"))
+            storePassword = releaseProperties.getProperty("storePassword")
+            keyAlias = releaseProperties.getProperty("keyAlias")
+            keyPassword = releaseProperties.getProperty("keyPassword")
+        }
+    }
     buildTypes {
-        release { isMinifyEnabled = false }
+        release {
+            isMinifyEnabled = false
+            if (releasePropertiesFile.exists()) signingConfig = signingConfigs.getByName("personalRelease")
+        }
     }
 }
 dependencies {

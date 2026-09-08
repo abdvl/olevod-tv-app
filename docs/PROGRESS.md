@@ -369,3 +369,10 @@
 - Final build/lint passed. Three Android tests passed: real API MiniCategoryHomeUiTest (movie hot/score top2, navigation focus, directory→VIP→mini alias path, root exit cancel) and two ExitConfirmationDialog tests (default, boundaries, both actions and Back).
 - Actual emulator touch→Back→exit showed Continue watching focus and direct OK dismissed; screenshots inspected. Latest APK installed successfully on Chromecast. No claim of complete physical mini-home validation.
 - Screenshots: verification/screenshots/emulator-mini-movie-hot.png, emulator-mini-movie-score.png, emulator-exit-confirmation.png. All show the final navigation with short dramas last.
+
+### S41 - v0.1 release preparation
+
+- Prepared dedicated signed, non-debuggable v0.1 APK (app version 0.1.0/code 1); private key/config remain ignored and local. APK SHA256: 72291aa02800eb599f9d9261e94a39586eb77880be88b15373772f1c5d845e3d.
+- Release build, 23 unit tests, lint and signature verification passed; fresh TV emulator install and real guest playback succeeded. Existing Chromecast debug install and data retained.
+- Added ten actual release screenshots, detailed README features/remote navigation, installation and debug-to-release migration instructions, signing/build instructions, release notes and verification report. Independent agent reviewed documentation and release validation.
+- GitHub publication follows this commit; APK and checksum are under ignored artifacts/releases/v0.1.

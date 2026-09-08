@@ -19,7 +19,7 @@ adb -s emulator-5554 install -r app/build/outputs/apk/debug/app-debug.apk
 adb -s emulator-5554 shell am start -n com.olevod.tv/.MainActivity
 ```
 
-APK：`app/build/outputs/apk/debug/app-debug.apk`。它是可调试的个人测试版本，未作为商店/正式签名发布。
+APK：`app/build/outputs/apk/debug/app-debug.apk`。它是可调试的开发版本；GitHub发布使用下文的专用签名release构建。
 
 数据库集成测试：
 
@@ -60,3 +60,26 @@ Discover current ports with `adb mdns services`. Use `adb pair IP:PAIR_PORT`, en
 Always pass `adb -s IP:CONNECT_PORT` when the emulator is also connected. The private login helper accepts `ANDROID_SERIAL=IP:CONNECT_PORT`; it writes credentials to a temporary private file and atomically renames it only after transfer completes.
 
 The supplied Chromecast has been paired, installed and logged in on the device. Read `verification/CHROMECAST_REGRESSION.md` for physical-device outcomes, separate from simulator results.
+
+## v0.1 发布构建与签名
+
+正式安装包版本名0.1.0、versionCode1，对应 GitHub tag `v0.1`。`release` 关闭调试入口，使用本机私有发布证书；debug 继续使用开发证书。
+
+首次为自己的分发创建签名（只执行一次）：
+
+```sh
+source scripts/android-env.sh
+python3 scripts/init-release-signing.py
+```
+
+脚本创建 `.secrets/olevod-release.jks` 和 `.secrets/release-signing.properties`，拒绝覆盖已有签名。**安全备份这两个文件；不要提交、上传或丢失它们。** 本仓库 `.gitignore` 排除整个 `.secrets/`。自行生成的新证书不能覆盖本仓库作者签名的安装包。
+
+已有签名时，恢复备份而不是重新生成。构建并校验：
+
+```sh
+bash scripts/build-release.sh
+```
+
+输出到 `artifacts/releases/v0.1/`：`olevod-tv-v0.1.apk`、`SHA256SUMS.txt`。脚本执行 release 构建、release 单元测试、lint 与签名校验，不会上传文件。没有签名配置时脚本直接停止，避免误发未签名 APK。
+
+首次从 debug 版迁移到发布签名 APK 需卸载旧版，会清本机数据；详见 [安装说明](INSTALL.md)。正式签名 APK 在独立干净 API34 TV 模拟器上验收，不为测试清除已有 Chromecast 的账号和历史。
