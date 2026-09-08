@@ -97,3 +97,9 @@
 - 央视/地方分类、频道分页、北京时间日期与节目单、独立MediaSession直播播放器。
 - 采用服务端返回的detail.hls，不擅自选择会员候选地址。
 - assembleDebug通过；等待模拟器交还后验证两频道播放。
+
+### S12 — feat: add programme replay selection
+
+- 仅过去且hasVod的节目显示回看操作；使用网站回看授权接口，支持返回直播。
+- 回看支持±30秒，节目日期以Asia/Shanghai显示；不假设直播支持DVR。
+- 回看请求字段/节目资格已有独立契约测试；真实媒体播放待模拟器实测。

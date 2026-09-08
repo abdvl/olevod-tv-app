@@ -89,7 +89,8 @@ private fun LiveWatch(channel:Channel,vm:AppViewModel,full:Boolean,toggleFull:()
             LazyColumn(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(7.dp)){
                 items(detail?.programmes?:emptyList(),key={it.id}){p->
                     Column{Text(p.time,color=Muted,fontSize=11.sp)
-                        Text((if(p.state==2)"正在播 · "else"")+p.title,color=if(p.state==2)Green else White,fontSize=14.sp,modifier=Modifier.padding(10.dp))
+                        if(p.hasReplay&&p.state==1)TvAction("回看 · ${p.title}"){scope.launch{loading=true;error=null;try{val source=vm.api.replay(channel,p);title=p.title;replay=true;uri=source}catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e);loading=false}}}
+                        else Text((if(p.state==2)"正在播 · "else"")+p.title,color=if(p.state==2)Green else White,fontSize=14.sp,modifier=Modifier.padding(10.dp))
                     }
                 }
             }
