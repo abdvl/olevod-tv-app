@@ -445,3 +445,11 @@
 - Independent review found stale catalog filters on reentry and origin-category loss after changing catalog category. Added openCatalog with a fresh destination epoch/default feed and saved source category, keeping the originating mini state intact.
 - Independent Mini tests passed 2/2, zero skips: both long rankings and browse-all return, sparse/empty ranking entry. First empty-fixture test raced recomposition; synchronized the test and reran the original app. Actual root route fixes independently reviewed; full real-route execution remains integration work.
 - Details and screenshot: `docs/verification/v2/V2-04.md`, `screenshots/mini-movie.png`.
+
+### S51 / V2-05 - compact catalog filters
+
+- Replaced seven persistent filter rows with a category title, five compact triggers and a six-column poster grid. Filters remain fixed while results scroll; unknown totals show loaded count, not -1 or a fabricated zero.
+- Added modal option lists/grids with current-value checks and explicit directional neighbors. Years scroll internally in four columns. Simple confirmation applies once and returns to its trigger; cancel preserves the grid and query. More filters keeps membership/initial drafts until Apply; cancel discards both.
+- Query changes reset the matching feed and scroll anchor; repeated same-value confirmations preserve them. Header and triggers stay operable during loading, empty results or errors. Last-row visibility/focus triggers cumulative loading with bounded retry behavior.
+- Independent catalog tests passed 4/4, plus Foundation/Home 6/6 in the same frozen build (10/10, zero skips). Covered year boundaries/confirmation, sort cancellation with preserved deep-grid setup, combined draft apply/cancel, and unknown total text. See `docs/verification/v2/V2-05.md` for limits.
+- Compared runtime catalog and year dialog against approved references, refined title/trigger typography and modal size, and removed a redundant loaded-count row. Latest runtime images are in `docs/verification/v2/screenshots/`; final minor visual refinements will receive the integrated UI rerun.

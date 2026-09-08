@@ -1,26 +1,19 @@
 package com.olevod.tv
 
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.*
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,6 +21,7 @@ import androidx.tv.material3.Text
 import com.olevod.tv.data.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 
 @Composable
 fun ConnectedBrowse(categoryName:String,vm:AppViewModel,open:(Movie)->Unit,chooseCategory:(String)->Unit) {
@@ -41,100 +35,90 @@ fun ConnectedBrowse(categoryName:String,vm:AppViewModel,open:(Movie)->Unit,choos
     var sort by rememberSaveable(categoryName){mutableStateOf("update")}
     var retry by remember{mutableIntStateOf(0)}
     LaunchedEffect(retry){error=null;try{if(categories.isEmpty()||retry>0)categories=vm.api.categories()}catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e)}}
-    val category=categories.firstOrNull{it.name==categoryName || (categoryName=="VIP蓝光"&&it.id==6)}
+    val category=categories.firstOrNull{it.name==categoryName || categoryLabel(it.id)==categoryName}
     val filter=Filter(category?.id?:1,area,year,type,initial,membership,sort)
     val feed=remember(filter,category!=null,vm.sessionVersion){if(category==null)null else vm.catalogFeed(filter)}
     DisposableEffect(feed){onDispose{feed?.cancel()}}
-    val result=feed?.state?:CatalogFeedState(loading=true)
+    LaunchedEffect(feed){if(feed!=null&&feed.state.nextPage==1&&feed.state.error==null)feed.loadNext()}
+    CatalogPageContent(category?:Category(1,categoryName,emptyList(),emptyList(),emptyList()),categories,filter,
+        feed?.state ?: CatalogFeedState(loading=error==null,error=error),open,
+        changeFilter={next->if(next!=filter){vm.catalogFeed(next).reset();area=next.area;year=next.year;type=next.type;initial=next.initial;membership=next.membership;sort=next.sort}},
+        chooseCategory={id->categories.firstOrNull{it.id==id}?.let{c->
+            if(c.id!=filter.category){vm.catalogFeed(Filter(category=c.id)).reset();chooseCategory(c.name)}
+        }},loadMore={if(error!=null)retry++ else feed?.loadNext()})
+}
+
+@Composable
+internal fun CatalogPageContent(category:Category,categories:List<Category>,filter:Filter,result:CatalogFeedState,
+                                open:(Movie)->Unit,changeFilter:(Filter)->Unit,chooseCategory:(Int)->Unit,loadMore:()->Unit){
+    val list=rememberSaveable(filter,saver=LazyListState.Saver){LazyListState()}
+    val triggers=remember{List(5){FocusRequester()}}
+    val title=remember{FocusRequester()};val reset=remember{FocusRequester()};val firstRow=remember{List(6){FocusRequester()}}
+    var lastTrigger by rememberSaveable{mutableIntStateOf(0)}
+    var overlay by remember{mutableStateOf<String?>(null)}
+    var overlaySource by remember{mutableIntStateOf(0)}
+    var restoreTrigger by remember{mutableIntStateOf(0)}
+    val page=LocalPageFocus.current
+    val memory=LocalContentFocusMemory.current
+    val scope=rememberCoroutineScope()
     val movies=result.items
-    val total=result.total
-    val loading=result.loading
-    // Reset scroll by saveable input, without moving a keyed composition group ahead of feed effects.
-    val listState=rememberSaveable(filter,saver=LazyListState.Saver){LazyListState()}
-    LaunchedEffect(feed){if(feed!=null&&feed.state.items.isEmpty()&&feed.state.error==null)feed.loadNext()}
-    LaunchedEffect(feed,listState){
-        snapshotFlow {
-            val layout=listState.layoutInfo
-            val state=feed?.state
-            (layout.visibleItemsInfo.lastOrNull()?.index?:-1)>=layout.totalItemsCount-2 &&
-                state!=null && state.items.isNotEmpty() && layout.totalItemsCount>=((state.items.size+5)/6)+3 && !state.loading && !state.endReached && state.error==null
-        }.distinctUntilChanged().collect{nearEnd->if(nearEnd)feed?.loadNext()}
+    val enterResults:(Int)->Unit={column->if(movies.isNotEmpty())scope.launch{list.scrollToItem(0);withFrameNanos{};firstRow[minOf(column,movies.lastIndex)].requestFocus()}}
+    DisposableEffect(page){page?.enter={triggers[0].requestFocus()};onDispose{page?.enter=null}}
+    LaunchedEffect(Unit){if(memory?.anchor?.value==null){withFrameNanos{};triggers[0].requestFocus()}}
+    LaunchedEffect(restoreTrigger){if(restoreTrigger>0){withFrameNanos{};(if(overlaySource<0)title else triggers[overlaySource]).requestFocus()}}
+    val close:()->Unit={overlay=null;restoreTrigger++}
+    // Updated callbacks/state are read in the scrolling observer; each query has a separate saved anchor.
+    val currentResult by rememberUpdatedState(result)
+    val currentLoad by rememberUpdatedState(loadMore)
+    LaunchedEffect(list,filter,"tail") {snapshotFlow{
+        val state=currentResult;val rows=(state.items.size+5)/6
+        rows>0&&(list.layoutInfo.visibleItemsInfo.lastOrNull()?.index?:-1)>=rows-1&&!state.loading&&!state.endReached&&state.error==null
+    }.distinctUntilChanged().collect{if(it)currentLoad()}}
+    Column(Modifier.fillMaxSize().padding(horizontal=36.dp).testTag("catalog-page"),verticalArrangement=Arrangement.spacedBy(12.dp)){
+        Row(Modifier.fillMaxWidth().padding(top=8.dp),verticalAlignment=Alignment.CenterVertically){
+            CatalogTitleButton("${categoryLabel(category.id)}目录",modifier=Modifier.focusRequester(title).restoreContentFocus("category")
+                .testTag("catalog-category").focusProperties{up=page?.header?:FocusRequester.Default;down=triggers[0];right=reset}){overlaySource=-1;overlay="category"}
+            Text(if(result.total>=0)"${result.total} 部"else"已加载 ${movies.size} 部",color=Muted,fontSize=13.sp,lineHeight=18.sp)
+            Spacer(Modifier.weight(1f))
+            TvAction("重置筛选",modifier=Modifier.focusRequester(reset).restoreContentFocus("reset").testTag("catalog-reset").focusProperties{left=title;down=triggers[4];up=page?.header?:FocusRequester.Default}){changeFilter(Filter(category=category.id))}
+        }
+        val labels=listOf("排序：${sortOptions.firstOrNull{it.value==filter.sort}?.label?:"最近更新"}",
+            "类型：${category.types.firstOrNull{it.first==filter.type}?.second?:"全部"}","地区：${filter.area.takeUnless{it=="0"}?:"全部"}",
+            "年份：${filter.year.takeUnless{it=="0"}?:"全部"}","更多筛选"+listOf(filter.membership!=3,filter.initial!="0").count{it}.takeIf{it>0}?.let{" · $it"}.orEmpty())
+        Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+            labels.forEachIndexed { index,label->FilterTrigger(label,expanded=overlay!=null&&overlaySource==index,modifier=Modifier.weight(if(index==0)1.25f else 1f)
+                .focusRequester(triggers[index]).restoreContentFocus("filter:$index").onFocusChanged{if(it.isFocused)lastTrigger=index}
+                .testTag("filter:$index").focusProperties{up=if(index<3)title else reset;left=if(index>0)triggers[index-1]else FocusRequester.Cancel;right=if(index<4)triggers[index+1]else FocusRequester.Cancel}
+                .onPreviewKeyEvent { e->if(e.key==androidx.compose.ui.input.key.Key.DirectionDown&&movies.isNotEmpty()){if(e.type==androidx.compose.ui.input.key.KeyEventType.KeyDown)enterResults(index);true}else false }){overlaySource=index;overlay=listOf("sort","type","area","year","more")[index]} }
+        }
+        val extraFilters=listOf(membershipOptions.firstOrNull{it.value==filter.membership.toString()}?.label?.takeIf{filter.membership!=3}.orEmpty(),filter.initial.takeUnless{it=="0"}.orEmpty()).filter(String::isNotBlank).joinToString(" · ")
+        if(extraFilters.isNotBlank())Text(extraFilters,color=Muted,fontSize=13.sp,lineHeight=18.sp)
+        PosterFocusGroup("catalog:$filter") {LazyColumn(Modifier.weight(1f).testTag("catalog-results"),state=list,contentPadding=PaddingValues(4.dp,4.dp,4.dp,64.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
+            itemsIndexed(movies.chunked(6),key={_,row->row.first().id}){rowIndex,row->Row(horizontalArrangement=Arrangement.spacedBy(12.dp)){
+                row.forEachIndexed{column,movie->PosterCard(movie,Modifier.weight(1f)
+                    .then(if(rowIndex==0)Modifier.focusRequester(firstRow[column])else Modifier)
+                    .focusProperties{if(rowIndex==0)up=triggers[lastTrigger];if(column==0)left=FocusRequester.Cancel;if(column==row.lastIndex)right=FocusRequester.Cancel},
+                    onFocused={if(rowIndex==(movies.size-1)/6&&!result.loading&&!result.endReached&&result.error==null)loadMore()}){open(movie)}}
+                repeat(6-row.size){Spacer(Modifier.weight(1f))}
+            }}
+            item("state"){
+                when{
+                    result.error!=null->ErrorNotice(result.error,loadMore)
+                    result.loading||result.nextPage==1->Text(if(movies.isEmpty())"正在加载影片…"else"正在加载更多…",color=Muted,fontSize=14.sp)
+                    movies.isEmpty()->Column(verticalArrangement=Arrangement.spacedBy(12.dp)){Text("当前条件下没有影片",color=Muted);TvAction("重置筛选"){changeFilter(Filter(category=category.id))}}
+                    result.endReached->Text("已显示全部影片",color=Muted,fontSize=13.sp)
+                }
+            }
+        }}
     }
-    PosterFocusGroup(filter.toString()){LazyColumn(Modifier.fillMaxSize().padding(horizontal=28.dp),state=listState,verticalArrangement=Arrangement.spacedBy(12.dp),contentPadding=PaddingValues(top=8.dp,bottom=64.dp)) {
-        item(key="filters"){
-            Column(Modifier.fillMaxWidth().background(Panel,RoundedCornerShape(12.dp)).padding(horizontal=12.dp,vertical=10.dp),verticalArrangement=Arrangement.spacedBy(2.dp)){
-                val rows=listOf(
-                    BrowseFilterRow("排序",listOf("desc" to "最新上传","update" to "最近更新","hot" to "人气最高","score" to "评分最高"),sort){sort=it},
-                    BrowseFilterRow("分类",categories.map{it.id.toString() to it.name}.ifEmpty{listOf("1" to categoryName)},category?.id?.toString().orEmpty()){id->categories.firstOrNull{it.id.toString()==id}?.let{chooseCategory(it.name)}},
-                    BrowseFilterRow("类型",listOf("0" to "全部类型")+(category?.types?:emptyList()).map{it.first.toString() to it.second},type.toString()){type=it.toInt()},
-                    BrowseFilterRow("地区",listOf("0" to "全部地区")+(category?.areas?:emptyList()).map{it to it},area){area=it},
-                    BrowseFilterRow("年份",listOf("0" to "全部年份")+(category?.years?:emptyList()).map{it to it},year){year=it},
-                    BrowseFilterRow("范围",listOf("3" to "全部影片","1" to "会员","2" to "免费"),membership.toString()){membership=it.toInt()},
-                    BrowseFilterRow("字母",listOf("0" to "全部字母")+('A'..'Z').map{it.toString() to it.toString()},initial){initial=it}
-                )
-                val targets=remember(rows.map{it.options.map{p->p.first}}){rows.map{r->r.options.map{FocusRequester()}}}
-                rows.forEachIndexed { rowIndex,row ->
-                    BrowseOptions(row,targets[rowIndex]) { column ->
-                        val up=if(rowIndex>0)targets[rowIndex-1][column.coerceAtMost(targets[rowIndex-1].lastIndex)]else FocusRequester.Default
-                        val down=if(rowIndex<rows.lastIndex)targets[rowIndex+1][column.coerceAtMost(targets[rowIndex+1].lastIndex)]else FocusRequester.Default
-                        Modifier.focusProperties { this.up=up;this.down=down }
-                    }
-                }
-            }
-        }
-        item(key="summary"){
-            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
-                Text(categoryName+if(total>=0)" · $total 部"else"",color=White,fontSize=15.sp,fontWeight=FontWeight.Bold)
-                Spacer(Modifier.weight(1f))
-                Text("已加载 ${movies.size} 部",color=Muted,fontSize=12.sp)
-                Spacer(Modifier.width(12.dp))
-                BrowseChip("重置筛选",false){area="0";year="0";type=0;initial="0";membership=3;sort="update"}
-            }
-        }
-        when {
-            error!=null->item{ErrorNotice(error!!){retry++}}
-            movies.isEmpty()&&loading->item{Text("正在加载…",color=Muted)}
-            movies.isEmpty()&&result.error==null->item{Text("当前条件下没有影片",color=Muted)}
-            else->items(movies.chunked(6),key={row->row.first().id}){row->
-                Row(Modifier.padding(horizontal=3.dp,vertical=4.dp),horizontalArrangement=Arrangement.spacedBy(14.dp)){
-                    row.forEach{m->PosterCard(m,Modifier.weight(1f),posterRatio=.78f){open(m)}}
-                    repeat(6-row.size){Spacer(Modifier.weight(1f))}
-                }
-            }
-        }
-        item(key="load-more"){
-            when {
-                result.error!=null->ErrorNotice(result.error){feed?.loadNext()}
-                loading&&movies.isNotEmpty()->Text("正在加载更多…",color=Muted,modifier=Modifier.padding(12.dp))
-                result.endReached&&movies.isNotEmpty()->Text("已显示全部影片",color=Muted,modifier=Modifier.padding(12.dp))
-            }
-        }
-    }}
-}
-
-private data class BrowseFilterRow(val title:String,val options:List<Pair<String,String>>,val value:String,val choose:(String)->Unit)
-
-@Composable
-private fun BrowseOptions(row:BrowseFilterRow,targets:List<FocusRequester>,directions:(Int)->Modifier){
-    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
-        Text(row.title,color=Muted,fontSize=12.sp,modifier=Modifier.width(48.dp))
-        // Compose every chip so explicit vertical targets remain reachable even off screen.
-        Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)){
-            row.options.forEachIndexed{index,(key,label)->
-                BrowseChip(label,key==row.value,Modifier.focusRequester(targets[index]).then(directions(index))){row.choose(key)}
-            }
-        }
+    when(overlay){
+        "category"->OptionPopover("选择分类",categories.map{FilterOption(it.id.toString(),categoryLabel(it.id))},category.id.toString(),onDismiss=close){chooseCategory(it.toInt());close()}
+        "sort"->OptionPopover("排序",sortOptions,filter.sort,onDismiss=close){changeFilter(filter.copy(sort=it));close()}
+        "type"->OptionPopover("类型",listOf(FilterOption("0","全部"))+category.types.map{FilterOption(it.first.toString(),it.second)},filter.type.toString(),3,close){changeFilter(filter.copy(type=it.toInt()));close()}
+        "area"->OptionPopover("地区",listOf(FilterOption("0","全部"))+category.areas.map{FilterOption(it,it)},filter.area,3,close){changeFilter(filter.copy(area=it));close()}
+        "year"->OptionPopover("年份",listOf(FilterOption("0","全部"))+category.years.sortedByDescending{it.toIntOrNull()?:0}.map{FilterOption(it,it)},filter.year,4,close){changeFilter(filter.copy(year=it));close()}
+        "more"->MoreFiltersPopover(filter.membership,filter.initial,close){membership,initial->changeFilter(filter.copy(membership=membership,initial=initial));close()}
     }
 }
 
-@Composable
-private fun BrowseChip(label:String,selected:Boolean,modifier:Modifier=Modifier,onClick:()->Unit){
-    val interaction=remember{MutableInteractionSource()}
-    val focused by interaction.collectIsFocusedAsState()
-    Text(label,color=if(focused)Bg else if(selected)Green else White,fontSize=12.sp,lineHeight=16.sp,fontWeight=if(focused||selected)FontWeight.Bold else FontWeight.Normal,
-        modifier=modifier.clip(RoundedCornerShape(30.dp)).background(if(focused)Green else if(selected)Green.copy(alpha=.1f)else androidx.compose.ui.graphics.Color.Transparent)
-            .border(if(selected&&!focused)1.dp else 0.dp,if(selected&&!focused)Green.copy(alpha=.3f)else androidx.compose.ui.graphics.Color.Transparent,RoundedCornerShape(30.dp))
-            .clickable(interactionSource=interaction,indication=null,onClick=onClick).padding(horizontal=11.dp,vertical=3.dp))
-}
-
-@Composable internal fun SectionTitle(title:String,subtitle:String=""){Row{Text(title,color=White,fontSize=23.sp);Spacer(Modifier.width(12.dp));Text(subtitle,color=Muted,fontSize=12.sp,modifier=Modifier.padding(top=9.dp))}}
+@Composable internal fun SectionTitle(title:String,subtitle:String=""){Row(verticalAlignment=Alignment.CenterVertically){Text(title,color=White,fontSize=28.sp,lineHeight=36.sp);Spacer(Modifier.width(12.dp));Text(subtitle,color=Muted,fontSize=13.sp,lineHeight=18.sp)}}

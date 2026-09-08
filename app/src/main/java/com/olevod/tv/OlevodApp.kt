@@ -132,7 +132,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
                     else if(home.error!=null)ErrorNotice(home.error!!){vm.loadHome()}
                     else Text("正在加载分类…",color=Muted)
                 }
-                "browse" -> if(preview) BrowseScreen(category,movies,openMovie) else ConnectedBrowse(category,vm,openMovie){category=it}
+                "browse" -> if(preview) CatalogPreview(movies,openMovie) else ConnectedBrowse(category,vm,openMovie){category=it}
                 "search" -> if(preview) SearchScreen(movies,openMovie) else ConnectedSearch(vm,openMovie)
                 "player" -> if(preview) PlayerPreview(selected,movies,full,{full=!full},openMovie) else NativePlayer(selected,vm,full,{full=!full}){if(full)full=false else screen=backScreen}
                 "live" -> if(preview) LivePreview() else LiveScreen(vm,full){full=!full}
