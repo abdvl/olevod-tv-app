@@ -218,3 +218,10 @@
 - Independent review confirmed the write/clear race is fixed.
 - CatalogFeed appends and deduplicates batches, retains old results on error, retries the same page and stops at end. Bounded per-filter/per-query caches retain results when returning from a movie.
 - New regression covers concurrent-load rejection, failed append, retry and end-of-list. Build/lint/all 19 unit tests passed.
+
+### S21 - reference-inspired category layout and infinite scrolling
+
+- Replaced the modal filter UI with seven directly navigable rows, using only verified site dimensions.
+- Six portrait posters per row; no page buttons. The last visible row triggers the next batch after layout has caught up, avoiding duplicate initial prefetch.
+- Filter-specific scroll/focus state and cached feeds retain loaded results on return. Emulator screenshot confirmed the initial 20 items and complete poster titles.
+- Latest implementation is installed on Chromecast for independent validation.

@@ -60,6 +60,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 private val LocalPosterFocus=compositionLocalOf<MutableState<Long>?>{null}
 
+@Composable
+internal fun PosterFocusGroup(identity:String,content:@Composable ()->Unit){
+    val lastPoster=rememberSaveable(identity){mutableLongStateOf(-1)}
+    CompositionLocalProvider(LocalPosterFocus provides lastPoster){content()}
+}
+
 internal val Bg = Color(0xFF101718)
 internal val Panel = Color(0xFF1B2526)
 internal val Green = Color(0xFF66E681)
@@ -89,12 +95,12 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     MaterialTheme(colorScheme=darkColorScheme(primary=Green,onPrimary=Bg,surface=Panel,onSurface=White,background=Bg)) {
         Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF192425),Bg)))) {
             if(!full) Header(screen,if(preview)"界面预览" else "实时内容",{if(it=="directory"){category="电影";screen="browse"}else screen=it},vm.sessionVersion.let{if(vm.sessions.token!=null)"账号"else"登录"})
-            if(!full && screen in listOf("home","browse","live")) Navigation(category=if(screen=="home")"首页" else if(screen=="live")"直播" else category) { label -> if(label=="首页") screen="home" else if(label=="直播") screen="live" else {category=label;screen="browse"} }
+            if(!full && screen in listOf("home","live")) Navigation(category=if(screen=="home")"首页" else if(screen=="live")"直播" else category) { label -> if(label=="首页") screen="home" else if(label=="直播") screen="live" else {category=label;screen="browse"} }
             pageStates.SaveableStateProvider(screen) {
                 val lastPoster=rememberSaveable{mutableLongStateOf(-1)}
                 CompositionLocalProvider(LocalPosterFocus provides lastPoster){ when(screen) {
                 "home" -> if(preview) HomeScreen(movies,heroes,openMovie,{category=it;screen="browse"}) else ConnectedHome(home,vm,openMovie){category=it;screen="browse"}
-                "browse" -> if(preview) BrowseScreen(category,movies,openMovie) else ConnectedBrowse(category,vm,openMovie)
+                "browse" -> if(preview) BrowseScreen(category,movies,openMovie) else ConnectedBrowse(category,vm,openMovie){category=it}
                 "search" -> if(preview) SearchScreen(movies,openMovie) else ConnectedSearch(vm,openMovie)
                 "player" -> if(preview) PlayerPreview(selected,movies,full,{full=!full},openMovie) else NativePlayer(selected,vm,full){full=!full}
                 "live" -> if(preview) LivePreview() else LiveScreen(vm,full){full=!full}
