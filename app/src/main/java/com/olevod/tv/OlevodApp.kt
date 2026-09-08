@@ -33,6 +33,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,6 +75,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     val context = LocalContext.current
     val movies = remember { val a = JSONArray(context.assets.open("preview_movies.json").bufferedReader().readText()); (0 until a.length()).map { i -> val m=a.getJSONObject(i); Movie(m.getLong("id"),m.getString("name"),m.getString("image"),m.optString("remarks"),m.optString("score"),m.optInt("typeId1",1),m.optString("year"),m.optString("area"),m.optBoolean("vip")) } }
     val heroes = remember { val a = JSONArray(context.assets.open("preview_banners.json").bufferedReader().readText()); (0 until a.length()).map { i -> val m=a.getJSONObject(i);Hero(m.getLong("id"),m.getString("title"),m.getString("image"),m.getString("desc")) } }
+    val pageStates=rememberSaveableStateHolder()
     var screen by rememberSaveable { mutableStateOf(initialScreen) }
     var category by rememberSaveable { mutableStateOf("电影") }
     var selected by remember { mutableStateOf(movies.first()) }
@@ -84,18 +86,18 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     CompositionLocalProvider(LocalBringIntoViewSpec provides EdgeBringIntoViewSpec) {
     MaterialTheme(colorScheme=darkColorScheme(primary=Green,onPrimary=Bg,surface=Panel,onSurface=White,background=Bg)) {
         Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF192425),Bg)))) {
-            if(!full) Header(screen,if(preview || screen!="home")"界面预览" else "实时内容",{screen=it})
+            if(!full) Header(screen,if(preview || screen !in listOf("home","browse"))"界面预览" else "实时内容",{screen=it})
             if(screen in listOf("home","browse","live")) Navigation(category=if(screen=="home")"首页" else if(screen=="live")"直播" else category) { label -> if(label=="首页") screen="home" else if(label=="直播") screen="live" else {category=label;screen="browse"} }
-            when(screen) {
+            pageStates.SaveableStateProvider(screen) { when(screen) {
                 "home" -> if(preview) HomeScreen(movies,heroes,openMovie,{category=it;screen="browse"}) else ConnectedHome(home,vm,openMovie){category=it;screen="browse"}
-                "browse" -> BrowseScreen(category,movies,openMovie)
+                "browse" -> if(preview) BrowseScreen(category,movies,openMovie) else ConnectedBrowse(category,vm,openMovie)
                 "search" -> SearchScreen(movies,openMovie)
                 "player" -> PlayerPreview(selected,movies,full,{full=!full},openMovie)
                 "live" -> LivePreview()
                 "history" -> EmptyCollection("观看历史","从上次的精彩，继续看下去","开始播放后，此设备的观看记录会出现在这里",Icons.Rounded.History){screen="home"}
                 "favorites" -> EmptyCollection("我的收藏","把喜欢的故事留在这里","登录后可同步欧乐账号的收藏",Icons.Rounded.BookmarkBorder){screen="account"}
                 "account" -> AccountPreview()
-            }
+            }}
         }
     }
 }

@@ -4,8 +4,8 @@
 
 ## 当前检查点
 
-- 已完成：S01–S06（真实首页已接入）。
-- 进行中：S07 分类浏览接入。
+- 已完成：S01–S07（真实首页与浏览已接入）。
+- 进行中：S08 搜索接入。
 - 下一步：S06真实首页，随后浏览、搜索、播放。
 - 已有设计基线提交：`4552cc8 Add design docs`。
 - 用户目标设备：Google Chromecast with Google TV（4K/HD 待确认）。
@@ -65,3 +65,10 @@
 - 预览入口仅debug可用；正常启动直接请求API。
 - 模拟器在线实测推荐与短剧等分类加载，截图 artifacts/screenshots/05-live-home.png。
 - assembleDebug通过；暂无Chromecast实机连接。
+
+### S07 — feat: connect catalog filters and pagination
+
+- 网站动态地区/年份/子类型，会员/首字母及更新、添加、热度、评分排序。
+- 每页20部、明确上一页/下一页，便于遥控器定位；返回保留筛选和滚动状态。
+- 模拟器真实电影目录显示成功；API参数顺序由单元测试验证。
+- 独立API审查发现直播组字段为title，已修正；新增契约测试另随API检查提交。
