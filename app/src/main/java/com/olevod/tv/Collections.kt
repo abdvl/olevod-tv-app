@@ -22,7 +22,7 @@ fun HistoryScreen(vm:AppViewModel,open:(Movie)->Unit,login:()->Unit) {
     var clear by remember{mutableStateOf(false)}
     val scope=rememberCoroutineScope()
     Column(Modifier.fillMaxSize().padding(40.dp,15.dp,40.dp,25.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){
-        Row{SectionTitle("观看历史","此设备 · ${records.size} 部");Spacer(Modifier.weight(1f));if(!cloud&&records.isNotEmpty())TvAction("清空历史"){clear=true}}
+        Row{SectionTitle("观看历史",if(cloud)"网站账号"else"此设备 · ${records.size} 部");Spacer(Modifier.weight(1f));if(!cloud&&records.isNotEmpty())TvAction("清空历史"){clear=true}}
         Row{TvAction("此设备",selected=!cloud){cloud=false};TvAction("网站账号",selected=cloud){cloud=true}}
         if(cloud)CloudHistoryPanel(vm,open,login) else {
         if(records.isEmpty())Text("开始播放后，这里会保留所有观看记录",color=Muted)

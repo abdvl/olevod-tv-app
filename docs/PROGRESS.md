@@ -13,14 +13,14 @@
 | S09 | 普通点播与控制已独立通过；VIP80632原生播放成功 |
 | S10 | 原生验证码登录、磁盘加密和跨进程会话已实际通过 |
 | S11–S12 | 独立通过：CCTV13、东方卫视（重试恢复）、午夜新闻回看原生播放 |
-| S13 | 本机点播历史25条、重开与账号隔离测试通过；UI续播复测中 |
-| S14 | 影视与频道收藏代码完成；账号实际增删与列表待验收 |
+| S13 | 本机25条、重开与账号隔离通过；独立UI验证记录和返回焦点 |
+| S14 | 影视收藏增删通过；频道列表可用，取消接口60秒回读未生效 |
 | S15 | 云历史分页读取、新观看同步及真实回读通过；离线补传未实现 |
-| S16 | 焦点、后台播放、账号竞争、异常恢复已修，修复版独立回归中 |
-| S17 | build/lint/13协议测试通过；最终报告与测试包整理中，Chromecast未连接 |
+| S16 | 焦点、后台播放、账号竞争、异常恢复及云同步顺序已修，独立复查通过 |
+| S17 | build/lint/17单元测试通过；Chromecast 192.168.128.86:5555拒绝连接，等待启用调试 |
 
 - 登录依赖已解除：用户授权本次登录调试代填验证码，Android同客户端验证码登录已成功；Chrome因Mac锁定暂不可用。
-- 下一步：收藏最终一致回读验证、最终云历史UI与构建验收；Chromecast实机待连接。
+- 下一步：连接用户提供的Chromecast，安装并做实机验收；频道取消收藏保留为未解决的网站接口问题。
 - 用户已授权每步本地commit、使用Android Studio、独立agent验证和`.secrects`测试账号。未推送远端。
 - 恢复时保留已完成提交，先检查未提交修改和本表的“待验收”。
 
@@ -162,3 +162,17 @@
 - 本地和网络分队列按序处理，30秒节流及暂停/退出触发，账号冻结和切换检查，失败保留本地。
 - 真实账号同步/回读测试与只读账号测试共2项通过；进度117秒/总时长1050秒匹配真实VIP观看。
 - 云上传为运行时尽力完成，不承诺杀进程后的离线补传。
+
+### S14 supplement - account favorites validation
+
+- Movie favorite save/list/cancel passed; original account state restored.
+- Channel cancellation uses the public website endpoint and fields. Business code 0 did not converge after a bounded 60-second read-back. This test remains FAILED.
+- Buttons reject repeated clicks while pending; channel saves are idempotent and displayed channels are deduplicated.
+- Final read-only check: exactly one original CCTV13 favorite, record ID 687; no additional channels.
+
+### S17 - emulator validation checkpoint
+
+- assembleDebug, assembleDebugAndroidTest, lintDebug and 17 unit tests passed.
+- Native encrypted login, cross-process session, local history storage, actual VIP playback and cloud watch sync/read-back passed.
+- Independent agent verified CCTV13, Dongfang after retry, programme replay, full two-row home and card focus restoration. Ordered cloud queue fix reviewed independently.
+- Cloud history UI displays the actual account records. Chromecast audio, HDR/4K and sustained playback remain pending physical-device connection.
