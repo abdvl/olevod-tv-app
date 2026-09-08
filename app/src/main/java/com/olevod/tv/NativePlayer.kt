@@ -122,14 +122,12 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
             AndroidKeyEvent.KEYCODE_MEDIA_REWIND->{player.seekBack();true}
             else->{if(full&&!controls){when(event.nativeKeyEvent.keyCode){AndroidKeyEvent.KEYCODE_DPAD_LEFT->player.seekBack();AndroidKeyEvent.KEYCODE_DPAD_RIGHT->player.seekForward();else->controls=true};true}else false}
         }
-    }}.padding(if(full)0.dp else 40.dp,if(full)0.dp else 12.dp,if(full)0.dp else 40.dp,if(full)24.dp else 24.dp),horizontalArrangement=Arrangement.spacedBy(22.dp)) {
-        Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.fillMaxWidth().then(if(full)Modifier.weight(1f)else Modifier.aspectRatio(16f/9)),contentAlignment=Alignment.Center) {
+    }}.padding(if(full)0.dp else 40.dp,if(full)0.dp else 12.dp,if(full)0.dp else 40.dp,if(full)0.dp else 24.dp),horizontalArrangement=Arrangement.spacedBy(22.dp)) {
+        PlayerVideoStage(full,controls,Modifier.weight(1f),video={
                 AndroidView(factory={PlayerView(it).apply{this.player=player;useController=false;isFocusable=false;keepScreenOn=true}},modifier=Modifier.fillMaxSize(),update={it.player=player;it.keepScreenOn=playing})
                 if(buffering)Text("正在缓冲…",color=White,modifier=Modifier.background(Bg).padding(12.dp))
                 error?.let{Column(Modifier.background(Bg).padding(20.dp)){ErrorNotice(it){retry++}}}
-            }
-            if(controls || !full)Column(Modifier.padding(horizontal=if(full)30.dp else 0.dp),verticalArrangement=Arrangement.spacedBy(9.dp)) {
+        },controlContent={
                 Box(Modifier.fillMaxWidth().height(3.dp).background(Panel)){Box(Modifier.fillMaxWidth(if(duration>0)(position.toFloat()/duration).coerceIn(0f,1f)else 0f).fillMaxHeight().background(Green))}
                 Row(Modifier.fillMaxWidth()){Text(clock(position),color=Muted,fontSize=11.sp);Spacer(Modifier.weight(1f));Text(clock(duration),color=Muted,fontSize=11.sp)}
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
@@ -149,8 +147,7 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
                 }
                 }
                 if(note.isNotBlank())Text(note,color=Gold,fontSize=11.sp)
-            }
-        }
+        })
         if(!full)Column(Modifier.width(260.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
             Text(detail?.movie?.title?:movie.title,color=White,fontSize=24.sp,maxLines=2,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             Text(listOf(detail?.movie?.score?:movie.score,detail?.movie?.year?:movie.year,detail?.movie?.area?:movie.area).filter{it.isNotBlank()}.joinToString(" · "),color=Green,fontSize=14.sp)

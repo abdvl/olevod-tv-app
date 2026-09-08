@@ -289,3 +289,10 @@
 - Fullscreen controls reserve a non-focusable information area on the right, refreshed from ExoPlayer's current video format every 500ms.
 - Shows actual format width/height and the supplied average bitrate; peak-only values are explicitly marked. Missing metadata is shown as unavailable, never replaced by network download speed.
 - Retry/episode changes clear the prior display. Three new tests cover average precedence, peak labeling and missing data; build/lint/all 23 tests passed. Integrated device check follows the official-logo update.
+
+### S32 - stable fullscreen video with translucent controls
+
+- Fullscreen video occupies a fixed full-size Box. The controls are a bottom-aligned sibling overlay with a transparent-to-82%-black gradient, rather than a row that consumes video height.
+- Resolution/bitrate remain on the overlay's right. Up hide, Down/OK show and automatic hide use the same overlay visibility without resizing the video.
+- Added a real Compose Android regression test: video bounds are identical with controls shown, hidden, then shown again. Passed on TV emulator (1 test); build/lint/all 23 unit tests passed.
+- Integrated Chromecast verification will follow the logo and reported catalog-sort fix.
