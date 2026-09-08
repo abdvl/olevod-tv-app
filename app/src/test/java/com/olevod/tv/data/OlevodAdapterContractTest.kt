@@ -35,7 +35,7 @@ class OlevodAdapterContractTest {
         val server=MockWebServer();server.start()
         try {
             var clears=0
-            val api=OlevodApi(base=server.url("/").toString(),onUnauthorized={clears++})
+            val api=OlevodApi(token={"existing.payload.signature"},base=server.url("/").toString(),onUnauthorized={clears++})
             for(code in listOf(12,13)){server.enqueue(MockResponse().setBody("""{"code":$code}"""));try{api.categories()}catch(expected:ApiException){}}
             assertEquals(1,clears)
         } finally {server.shutdown()}
@@ -173,6 +173,23 @@ class OlevodAdapterContractTest {
             assertEquals(40L,body.getLong("duration"))
             assertEquals(6939.0,body.getDouble("percent"),0.0)
             assertEquals(1788825600L,body.getLong("saveTime"))
+        }finally{server.shutdown()}
+    }
+
+    @Test fun expiredOldRequestCannotLogOutNewSession() = runBlocking {
+        val server=MockWebServer();server.start()
+        var currentToken="old.payload.signature"
+        var loggedOut=false
+        try {
+            server.dispatcher=object:okhttp3.mockwebserver.Dispatcher(){
+                override fun dispatch(request:okhttp3.mockwebserver.RecordedRequest):MockResponse {
+                    currentToken="new.payload.signature"
+                    return MockResponse().setBody("""{"code":13}""")
+                }
+            }
+            val api=OlevodApi(token={currentToken},base=server.url("/").toString(),onUnauthorized={loggedOut=true})
+            try{api.categories();fail("Expected session error")}catch(e:ApiException){assertEquals(13,e.code)}
+            assertFalse(loggedOut)
         }finally{server.shutdown()}
     }
 

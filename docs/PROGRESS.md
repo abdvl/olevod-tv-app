@@ -17,7 +17,7 @@
 | S14 | 影视收藏增删通过；频道列表可用，取消接口60秒回读未生效 |
 | S15 | 云历史分页读取、新观看同步及真实回读通过；离线补传未实现 |
 | S16 | 焦点、后台播放、账号竞争、异常恢复及云同步顺序已修，独立复查通过 |
-| S17 | build/lint/17单元测试通过；Chromecast已配对安装、实机登录通过，独立实机回归中 |
+| S17 | build/lint/18单元测试通过；Chromecast已配对安装、实机登录通过，独立实机回归中 |
 
 - 登录依赖已解除：用户授权本次登录调试代填验证码，Android同客户端验证码登录已成功；Chrome因Mac锁定暂不可用。
 - 下一步：完成Chromecast实机播放与遥控器验收；频道取消收藏保留为未解决的网站接口问题。
@@ -191,3 +191,9 @@
 - All four sort modes returned distinct first/second pages with 20 items each.
 - Combined USA / 2025 / free / score filter returned matching results; Chinese search matched the requested title.
 - Test was executed on emulator-5554 while the independent agent owned Chromecast, without interrupting physical playback.
+
+### S16 - prevent stale request session invalidation
+
+- Capture the token used to construct each API request. Only invalidate the session if the response still belongs to the active token.
+- Regression covers old-token expiration after a new token is active, and expiration of the actual current session.
+- assembleDebug, lintDebug and all 18 unit tests passed. Physical device will receive this API-only update after the independent UI run.

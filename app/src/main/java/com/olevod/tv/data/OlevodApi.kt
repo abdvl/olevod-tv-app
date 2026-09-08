@@ -49,14 +49,15 @@ class OlevodApi(
 ) {
     @Volatile var imageBase="https://static.olelive.com"
         private set
-    private fun url(parts:List<String>,get:Boolean):HttpUrl {
+    private fun url(parts:List<String>,get:Boolean,requestToken:String?):HttpUrl {
         val b=base.toHttpUrl().newBuilder();parts.forEach{b.addPathSegment(it)}
         if(get)b.addQueryParameter("_vv",RequestSignature.at(now()))
-        token()?.split('.')?.takeIf{it.size==3}?.let { t ->listOf("_he","_pl","_si").forEachIndexed{i,k->b.addQueryParameter(k,t[i])} }
+        requestToken?.split('.')?.takeIf{it.size==3}?.let { t ->listOf("_he","_pl","_si").forEachIndexed{i,k->b.addQueryParameter(k,t[i])} }
         return b.build()
     }
     suspend fun request(parts:List<String>,post:Any?=null):JSONObject {
-        val request=Request.Builder().url(url(parts,post==null)).header("Referer","https://www.olevod.com/").header("User-Agent","Mozilla/5.0 OlevodTV/0.1")
+        val requestToken=token()
+        val request=Request.Builder().url(url(parts,post==null,requestToken)).header("Referer","https://www.olevod.com/").header("User-Agent","Mozilla/5.0 OlevodTV/0.1")
         if(post!=null)request.post(post.toString().toRequestBody("application/json; charset=utf-8".toMediaType()))
         val call=client.newCall(request.build())
         val bytes=suspendCancellableCoroutine<ByteArray> { continuation ->
@@ -75,7 +76,7 @@ class OlevodApi(
         val raw=if(bytes.size>2&&bytes[0]==0x1f.toByte()&&bytes[1]==0x8b.toByte())GZIPInputStream(bytes.inputStream()).readBytes() else bytes
         val json=try{JSONObject(raw.toString(Charsets.UTF_8))}catch(e:Exception){throw ApiException(-1,"网站返回了无法识别的数据")}
         val code=json.optInt("code",-1)
-        if(code in setOf(13,14,16))onUnauthorized()
+        if(code in setOf(13,14,16) && requestToken!=null && token()==requestToken)onUnauthorized()
         if(code!=0)throw ApiException(code,when(code){12->"请先登录账号";13,14,16->"登录已失效，请重新登录";else->"请求未完成（网站代码 $code）"})
         return json
     }
