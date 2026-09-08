@@ -162,7 +162,9 @@ source scripts/android-env.sh
 | [构建与调试](docs/BUILD_AND_TEST.md) | Android Studio、命令行与测试运行方式 |
 | [当前进度](docs/PROGRESS.md) | 每一步完成内容、提交检查点和验证情况 |
 | [实施步骤](docs/IMPLEMENTATION_STEPS.md) | 分步开发与恢复入口 |
-| [产品与代码设计](docs/DESIGN.md) | 结构与功能设计 |
+| [UI v2 完整设计规范](docs/design-v2/DESIGN_SPEC.md) | 已认可的新版布局、组件参数、焦点与状态、API 边界；尚未实现 |
+| [UI v2 设计稿与验收](docs/design-v2/README.md) | 十张参考图、设计 tokens、验收矩阵和后续开发检查点 |
+| [早期产品与代码设计](docs/DESIGN.md) | v1 历史方案；新版 UI 以 v2 规范为准 |
 | [API 调查](docs/API_RESEARCH.md) | 网站接口及已确认的数据契约 |
 | [云历史能力](docs/CLOUD_HISTORY_STATUS.md) | 同步行为、单位和支持边界 |
 | [独立实机回归](docs/verification/FINAL_INTEGRATED_TV.md) | 播放控制、历史与遥控器检查 |

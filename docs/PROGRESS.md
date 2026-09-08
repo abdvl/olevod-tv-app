@@ -393,3 +393,12 @@
 - Added README Token history with the previously reported v0.1 development snapshot, model, main/subagent totals, cached/uncached input, output and Standard API equivalent cost ($202.00).
 - Documented snapshot boundaries (includes publication, MIT License and initial usage inquiry), pricing date, assumptions, excluded fees and future per-release incremental accounting. No raw task logs or credentials published.
 - Verified arithmetic and Markdown formatting; documentation-only change.
+
+### S45 - approved UI v2 design specification
+
+- User approved the image-based redesign and requested a complete development specification. Added `docs/design-v2/DESIGN_SPEC.md` covering 18 hard requirements, the single navigation row, visual units/tokens, complete portrait artwork, every main page, precise remote focus/Back rules, async focus intent, continuous loading, playback/episode/account states, API mappings and current limitations.
+- Preserved ten final approved ImageGen references in `docs/design-v2/assets/` (15,535,990 bytes total), copied without modification; manifest records source filenames, dimensions and SHA-256. The gallery explicitly identifies them as design references, flags the missing search icon in the focused-home draft, and distinguishes mock data from runtime facts.
+- Added `tokens.json` and `ACCEPTANCE.md`: 72 pending implementation acceptance cases, screenshot requirements, and ten resumable development checkpoints. Covered additional states without standalone mocks, including category mini homes, favorites, first login, errors and confirmations.
+- Independent read-only review completed in two passes. Corrected lifecycle wording, focus-triggered pagination wording, filter apply versus cancel scroll behavior, and minimum focus-target dimensions. Reconciled ordinary-player height arithmetic with the 36 dp minimum target size.
+- Documentation checks passed: 66 local links, ten PNG hashes/dimensions, JSON parsing, Markdown tables/fences/whitespace, layout arithmetic, minimum target dimensions, action/header order, and coverage of all 18 requirements. Base palette contrast checked; actual rendered contrast and all Android acceptance cases remain for implementation.
+- Linked the new specification from README and marked the early `docs/DESIGN.md` as historical where superseded. This checkpoint contains documentation and design assets only; no APK/UI implementation or new release. Resume future development from V2-01 in the acceptance document after implementation is requested.

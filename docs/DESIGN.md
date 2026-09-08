@@ -1,5 +1,7 @@
 # Olevod Android TV：产品与代码设计
 
+> **历史文档。** 本文保留 2026-09-07 的早期方案，部分规则已被后续需求替换。新 UI 开发请以 [UI v2 完整设计规范](design-v2/DESIGN_SPEC.md) 为准，并查看 [已认可设计稿](design-v2/README.md) 和 [验收清单](design-v2/ACCEPTANCE.md)。本页中的两层导航、旧筛选布局、选集位置、不保存密码及规划中的存储／设置能力，不能直接当作当前实现或 v2 要求。
+
 版本：v1，2026-09-07。本文为实现规格与代码草案，不是已实现、已编译的 App。
 接口事实见 [API_RESEARCH.md](API_RESEARCH.md)，执行顺序见 [EXECUTION_PLAN.md](EXECUTION_PLAN.md)。
 

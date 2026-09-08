@@ -1,0 +1,98 @@
+{
+  "version": "2.0-design",
+  "date": "2026-09-08",
+  "kind": "approved-design-reference-not-runtime-screenshot",
+  "generation": "built-in imagegen; copied byte-for-byte; no image edits",
+  "assets": [
+    {
+      "file": "01-home-default.png",
+      "title": "首页：默认焦点与最近五部",
+      "sourceFile": "exec-790fbf69-0f91-41f1-9fc7-f9d1c826ca41.png",
+      "widthPx": 1672,
+      "heightPx": 941,
+      "bytes": 1835774,
+      "sha256": "dc28e188e825baf31403d3e7959440f1343f5ed7719534622a2f849aaa1eb931"
+    },
+    {
+      "file": "02-home-recent-focused.png",
+      "title": "首页：最近播放展开",
+      "sourceFile": "exec-329bac8f-4ef1-4913-bd34-84a97ce3ae8a.png",
+      "widthPx": 1672,
+      "heightPx": 941,
+      "bytes": 1813173,
+      "sha256": "739796fe957f4750ba424b2e0e50a338241708e6002253dd3e7a96e5dcd6af1e"
+    },
+    {
+      "file": "03-catalog.png",
+      "title": "目录：紧凑筛选",
+      "sourceFile": "exec-bcd87ac3-4359-461c-8d12-75c5068b64f0.png",
+      "widthPx": 1672,
+      "heightPx": 941,
+      "bytes": 1644015,
+      "sha256": "40c4867313e7df7495ae983144285a782de803fa63e4e38a53de53b7e65f5387"
+    },
+    {
+      "file": "04-catalog-year-overlay.png",
+      "title": "目录：年份浮层",
+      "sourceFile": "exec-ab42df9c-6207-440f-94d2-ec5446459d0d.png",
+      "widthPx": 1672,
+      "heightPx": 941,
+      "bytes": 1475025,
+      "sha256": "c08cbfaa6d2ba828fc7d16576d69d7f3cb63488de332b1914e11e5ca759094fa"
+    },
+    {
+      "file": "05-search-suggestion.png",
+      "title": "搜索：联想词焦点",
+      "sourceFile": "exec-7fe52ece-1a12-41f2-9cc0-c5c4476ee148.png",
+      "widthPx": 1672,
+      "heightPx": 941,
+      "bytes": 1203288,
+      "sha256": "6f27b35c6c6be11176aaeb870e019f197e066f6a2ac6b0f11146c42accfde248"
+    },
+    {
+      "file": "06-search-results.png",
+      "title": "搜索：结果首项焦点",
+      "sourceFile": "exec-4c3e6901-14ca-475a-9166-0759756e92b4.png",
+      "widthPx": 1672,
+      "heightPx": 941,
+      "bytes": 1606137,
+      "sha256": "9ff7e3c2cd686bbc12addbf87713763a512536ae86cd74c376cfca5863cd2bf9"
+    },
+    {
+      "file": "07-player.png",
+      "title": "播放：普通模式最终修正版",
+      "sourceFile": "exec-9747070b-7c3e-4783-b65e-a00150366a95.png",
+      "widthPx": 1672,
+      "heightPx": 941,
+      "bytes": 1589254,
+      "sha256": "6c0fe3cfaa755f85cd2661448a7c5258d203175da09b96367c746afbf03c09bf"
+    },
+    {
+      "file": "08-player-fullscreen.png",
+      "title": "播放：全屏覆盖控制",
+      "sourceFile": "exec-bd1daf41-bbae-4584-9ac3-fc7810e5a385.png",
+      "widthPx": 1672,
+      "heightPx": 941,
+      "bytes": 1678879,
+      "sha256": "885aa3802d0d5756e5dea3a3be68d6bddd9a01058c37f6d0637e75ef96cda2a4"
+    },
+    {
+      "file": "09-history.png",
+      "title": "历史：两列完整信息",
+      "sourceFile": "exec-7d71cb09-d1d9-4f45-a817-5b17408db924.png",
+      "widthPx": 1672,
+      "heightPx": 941,
+      "bytes": 1526140,
+      "sha256": "46c1cd00c58cd1d3677638ed9f71af8d1d4ed271e26e8578085eb7ac61e74cbd"
+    },
+    {
+      "file": "10-login-remembered.png",
+      "title": "登录：已记住账号",
+      "sourceFile": "exec-add952e5-20f4-4ea2-8566-0c70c2022b83.png",
+      "widthPx": 1672,
+      "heightPx": 941,
+      "bytes": 1164305,
+      "sha256": "61f4cc62bd7067507786fc4eb9090ec19459dd72405906147cc040e0a4df0155"
+    }
+  ]
+}
