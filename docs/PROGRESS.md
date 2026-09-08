@@ -460,3 +460,11 @@
 - Added explicit cross-column neighbors and remembered keyboard/result targets, cumulative result loading, independent error/empty guidance, and Unicode code-point deletion. API debouncing remains 350 ms for suggestions and 400 ms for typed results.
 - Independent Search 3 + Catalog 4 tests passed 7/7, zero skips, including MN → 魔女 → first result, Back during a pending request, and a non-cooperative old response after newer typing. See `V2-06.md`; API/IME/device integration and final runtime screenshots remain in V2-10.
 - App/test builds, JVM tests and lint also passed after subsequent player/account drafts. Those uncommitted drafts are intentionally outside this checkpoint.
+
+### S53 / V2-07 - native playback and stable fullscreen overlay
+
+- Separated testable PlayerContent from the existing Media3 lifecycle wrapper. Ordinary layout reserves all eight controls and ten-episode groups below the video; description is limited to four lines and expands in a modal. Up targets the video, then Header; Header Down returns to the video.
+- Fullscreen shows a translucent gradient over the unchanged video rectangle. Up hides controls, Down/Confirm reveals them, and hidden Left/Right seek 30 seconds. Episode navigation and paused/buffering/error/menu/accessibility states prevent idle hiding.
+- Retained MediaSession/audio-focus handling, background pause, release on route departure, local progress and throttled cloud synchronization. Media3 Format supplies resolution and average/peak bitrate. True episode array indices drive resume and manual/automatic next episode; manual selection starts at zero and speed persists through the playback session.
+- Independent Player UI tests passed 4/4, zero skips, covering all button deltas/bounds, Header/video round trips, three fullscreen visibility cycles with identical video bounds, groups/short final group, speed confirmation/cancel, and disabled seek navigation. See V2-07.md for frozen artifacts and the exclusion of actual media playback/lifecycle acceptance.
+- Added focused JVM coverage for explicit resume precedence, non-contiguous indices, missing episodes, completed restart and unknown duration. Added shared favorite/cloud feed caches required to invalidate returned collections after a confirmed favorite change; collection layouts remain in V2-08.

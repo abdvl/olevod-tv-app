@@ -116,7 +116,18 @@ class AppViewModel(application:Application):AndroidViewModel(application) {
         while(searchFeeds.size>8)searchFeeds.remove(searchFeeds.keys.first())?.cancel()
         return feed
     }
+    private var favoritesCache:CatalogFeed?=null
+    private var cloudHistoryCache:PagedFeed<WatchRecord>?=null
+    var favoritesVersion by mutableIntStateOf(0)
+        private set
+    fun favoritesFeed():CatalogFeed=favoritesCache?:CatalogFeed(viewModelScope){page->api.favorites(page)}.also{favoritesCache=it}
+    fun cloudHistoryFeed():PagedFeed<WatchRecord> = cloudHistoryCache?:PagedFeed(viewModelScope,{it.movie.id}){page->
+        val result=api.cloudHistory(page)
+        FeedPage(result.items,result.total,if(result.total>=0)page*20<result.total else result.items.size>=20)
+    }.also{cloudHistoryCache=it}
+    fun invalidateFavorites(){favoritesCache?.cancel();favoritesCache=null;favoritesVersion++}
     private fun clearAccountFeeds(){
+        favoritesCache?.cancel();favoritesCache=null;cloudHistoryCache?.cancel();cloudHistoryCache=null
         catalogFeeds.values.forEach{it.cancel()};catalogFeeds.clear()
         searchFeeds.values.forEach{it.cancel()};searchFeeds.clear()
     }

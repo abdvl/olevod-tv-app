@@ -51,14 +51,8 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
     val context=LocalContext.current
     val owner=LocalLifecycleOwner.current
     val scope=rememberCoroutineScope()
-    val surfaceFocus=remember{FocusRequester()}
-    val fullFocus=remember{FocusRequester()}
-    val videoFocus=remember{FocusRequester()}
-    val groupEntry=remember{FocusRequester()}
-    var videoFocused by remember{mutableStateOf(false)}
     var episodeAreaFocused by remember{mutableStateOf(false)}
     var episodeGroup by remember(movie.id){mutableIntStateOf(0)}
-    var interactionTick by remember{mutableIntStateOf(0)}
     val accountAtStart=remember(movie.id){vm.sessions.accountKey}
     val resume=remember(movie.id){vm.pendingResume?.takeIf{it.movie.id==movie.id}?:vm.history.records.value.find{it.movie.id==movie.id}}
     LaunchedEffect(movie.id){vm.pendingResume=null}
@@ -66,9 +60,11 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
     var episode by remember(movie.id){mutableIntStateOf(-1)}
     var error by remember(movie.id){mutableStateOf<String?>(null)}
     var retry by remember{mutableIntStateOf(0)}
-    var controls by remember{mutableStateOf(true)}
-    var speedMenu by remember{mutableStateOf(false)}
+    var playRetry by remember{mutableIntStateOf(0)}
+    var nextStart by remember(movie.id){mutableLongStateOf(0)}
+    var seekable by remember{mutableStateOf(false)}
     var playing by remember{mutableStateOf(false)}
+    var playRequested by remember{mutableStateOf(false)}
     var buffering by remember{mutableStateOf(true)}
     var ended by remember{mutableStateOf(false)}
     var position by remember{mutableLongStateOf(0)}
@@ -88,21 +84,32 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
     DisposableEffect(player,owner) {
         val session=MediaSession.Builder(context,player).build()
         val listener=object:Player.Listener {
+            override fun onPlayWhenReadyChanged(playWhenReady:Boolean,reason:Int){playRequested=playWhenReady}
             override fun onIsPlayingChanged(value:Boolean){playing=value;if(!value)saveProgress()}
-            override fun onPlaybackStateChanged(state:Int){buffering=state==Player.STATE_BUFFERING;ended=state==Player.STATE_ENDED}
+            override fun onPlaybackStateChanged(state:Int){buffering=state==Player.STATE_BUFFERING;ended=state==Player.STATE_ENDED;seekable=player.isCurrentMediaItemSeekable}
             override fun onPlayerError(e:PlaybackException){error="视频暂时无法播放，可重新加载或返回选择其他影片";buffering=false}
         }
+        val analytics=object:androidx.media3.exoplayer.analytics.AnalyticsListener {
+            override fun onVideoInputFormatChanged(eventTime:androidx.media3.exoplayer.analytics.AnalyticsListener.EventTime,format:Format,decoderReuseEvaluation:androidx.media3.exoplayer.DecoderReuseEvaluation?){
+                trackInfo=videoTrackInfo(format.width,format.height,format.averageBitrate,format.peakBitrate)
+            }
+        }
+        player.addAnalyticsListener(analytics)
         player.addListener(listener)
         val observer=LifecycleEventObserver{_,event->if(event==Lifecycle.Event.ON_STOP){saveProgress();player.pause()}}
         owner.lifecycle.addObserver(observer)
-        onDispose{saveProgress();owner.lifecycle.removeObserver(observer);player.removeListener(listener);session.release();player.release()}
+        onDispose{saveProgress();owner.lifecycle.removeObserver(observer);player.removeListener(listener);player.removeAnalyticsListener(analytics);session.release();player.release()}
     }
     LaunchedEffect(movie.id,retry) {
         saveProgress();player.stop();trackInfo=videoTrackInfo(-1,-1,-1,-1);detail=null;error=null;buffering=true
-        try { val d=vm.api.detail(movie.id);detail=d;favorite=d.favorite;episode=d.episodes.indexOfFirst{it.index==(resume?.episode?:d.resumeEpisode)}.takeIf{it>=0}?:0;if(d.episodes.isEmpty()){error="该影片暂无可用播放源";buffering=false} }
+        try { val d=vm.api.detail(movie.id);val start=playbackStart(d,resume)
+            detail=d;favorite=d.favorite;episode=start.arrayIndex;nextStart=start.position
+            if(start.missingEpisode)note="原观看集数已不可用，从第一集开始"
+            if(d.episodes.isEmpty()){error="该影片暂无可用播放源";buffering=false}
+        }
         catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e);buffering=false}
     }
-    LaunchedEffect(detail,episode) {
+    LaunchedEffect(detail,episode,playRetry) {
         val d=detail?:return@LaunchedEffect
         val item=d.episodes.getOrNull(episode)?:return@LaunchedEffect
         if(!item.uri.startsWith("https://")){error="此片源暂不支持原生播放";buffering=false;return@LaunchedEffect}
@@ -110,74 +117,32 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
         if(!episodeAreaFocused)episodeGroup=episode.coerceAtLeast(0)/10
         trackInfo=videoTrackInfo(-1,-1,-1,-1)
         player.setMediaItem(MediaItem.Builder().setMediaId(item.index.toString()).setUri(item.uri).setMediaMetadata(MediaMetadata.Builder().setTitle(d.movie.title).build()).build())
-        val start=if(item.index==resume?.episode)resume.positionMs.takeUnless{resume.durationMs>0&&it>=resume.durationMs-10000}?:0 else if(item.index==d.resumeEpisode)d.resumeSeconds*1000 else 0
+        val start=nextStart;nextStart=0
         if(start>0)player.seekTo(start)
+        player.setPlaybackSpeed(speed)
+
         error=null;player.prepare();if(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))player.play();ended=false
     }
     LaunchedEffect(player){while(true){
         position=player.currentPosition.coerceAtLeast(0);duration=player.duration.takeIf{it!=C.TIME_UNSET&&it>0}?:0
-        val format=player.videoFormat
-        trackInfo=videoTrackInfo(format?.width?:-1,format?.height?:-1,format?.averageBitrate?:-1,format?.peakBitrate?:-1)
+        seekable=player.isCurrentMediaItemSeekable
         delay(500)
     }}
     LaunchedEffect(player){while(true){delay(10000);if(player.isPlaying&&owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))saveProgress(false)}}
-    LaunchedEffect(controls,playing,speedMenu,full,interactionTick,episodeAreaFocused){if(full&&controls&&playing&&!speedMenu&&!episodeAreaFocused){delay(5000);controls=false}}
-    LaunchedEffect(ended){if(ended&&episode+1<(detail?.episodes?.size?:0)){saveProgress();episode++}}
-    LaunchedEffect(full,controls){if(full&&!controls)surfaceFocus.requestFocus()else fullFocus.requestFocus()}
-    BackHandler{if(speedMenu)speedMenu=false else onBack()}
-    Row(Modifier.fillMaxSize().background(Color.Black).playerKeyInput(surfaceFocus,full&&!controls) { event ->
-        if(event.nativeKeyEvent.keyCode==AndroidKeyEvent.KEYCODE_BACK){
-            if(event.type==KeyEventType.KeyUp){if(speedMenu)speedMenu=false else onBack()}
-            true
-        }else if(event.type!=KeyEventType.KeyDown)false else {interactionTick++;when(event.nativeKeyEvent.keyCode){
-            AndroidKeyEvent.KEYCODE_DPAD_UP->{if(episodeAreaFocused)false else if(full){controls=false;true}else false}
-            AndroidKeyEvent.KEYCODE_MEDIA_PLAY_PAUSE->{if(player.isPlaying)player.pause()else player.play();true}
-            AndroidKeyEvent.KEYCODE_MEDIA_FAST_FORWARD->{player.seekForward();true}
-            AndroidKeyEvent.KEYCODE_MEDIA_REWIND->{player.seekBack();true}
-            else->{if(full&&!controls){when(event.nativeKeyEvent.keyCode){AndroidKeyEvent.KEYCODE_DPAD_LEFT->player.seekBack();AndroidKeyEvent.KEYCODE_DPAD_RIGHT->player.seekForward();else->controls=true};true}else false}
-        }
-    }}.padding(if(full)0.dp else 40.dp,if(full)0.dp else 12.dp,if(full)0.dp else 40.dp,if(full)0.dp else 24.dp),horizontalArrangement=Arrangement.spacedBy(22.dp)) {
-        PlayerVideoStage(full,controls,Modifier.weight(1f),
-            videoModifier=if(full)Modifier else Modifier.focusRequester(videoFocus)
-                .focusProperties{down=fullFocus}
-                .onFocusChanged{videoFocused=it.isFocused}
-                .border(if(videoFocused)2.dp else 0.dp,if(videoFocused)Green else Color.Transparent)
-                .semantics{contentDescription="视频画面，按确认键全屏"}.clickable{toggleFull()},video={
-                AndroidView(factory={PlayerView(it).apply{this.player=player;useController=false;isFocusable=false;keepScreenOn=true}},modifier=Modifier.fillMaxSize(),update={it.player=player;it.keepScreenOn=playing})
-                if(buffering)Text("正在缓冲…",color=White,modifier=Modifier.background(Bg).padding(12.dp))
-                error?.let{Column(Modifier.background(Bg).padding(20.dp)){ErrorNotice(it){retry++}}}
-        },controlContent={
-                Box(Modifier.fillMaxWidth().height(3.dp).background(Panel)){Box(Modifier.fillMaxWidth(if(duration>0)(position.toFloat()/duration).coerceIn(0f,1f)else 0f).fillMaxHeight().background(Green))}
-                Row(Modifier.fillMaxWidth()){Text(clock(position),color=Muted,fontSize=11.sp);Spacer(Modifier.weight(1f));Text(clock(duration),color=Muted,fontSize=11.sp)}
-                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
-                Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()).focusProperties{if(!full)up=videoFocus;if(!detail?.episodes.isNullOrEmpty())down=groupEntry},horizontalArrangement=Arrangement.spacedBy(2.dp)) {
-                    TvAction(if(full)"退出全屏"else"全屏",Icons.Rounded.Fullscreen,selected=true,modifier=Modifier.focusRequester(fullFocus),onClick=toggleFull)
-                    TvAction(if(playing)"暂停" else "播放",if(playing)Icons.Rounded.Pause else Icons.Rounded.PlayArrow){if(playing)player.pause() else player.play()}
-                    TvAction("30秒",Icons.Rounded.Replay30){player.seekBack()}
-                    TvAction("30秒",Icons.Rounded.Forward30){player.seekForward()}
-                    TvAction("5分钟",Icons.Rounded.FastRewind){player.seekTo(jumpPosition(player.currentPosition,player.duration,-300000))}
-                    TvAction("5分钟",Icons.Rounded.FastForward){player.seekTo(jumpPosition(player.currentPosition,player.duration,300000))}
-                    TvAction("${speed}×"){speedMenu=true}
-                    TvAction(if(favoriteBusy)"处理中…"else if(favorite)"已收藏"else"收藏",Icons.Rounded.BookmarkBorder){if(!favoriteBusy){favoriteBusy=true;scope.launch{try{vm.api.favorite(movie.id,!favorite);favorite=!favorite;note=""}catch(e:Exception){if(e is CancellationException)throw e;note=safeError(e)}finally{favoriteBusy=false}}}}
+    LaunchedEffect(ended){if(ended&&episode+1<(detail?.episodes?.size?:0)){saveProgress();nextStart=0;episode++}}
+    val shownMovie=detail?.movie?:movie
+    PlayerContent(PlayerUiState(shownMovie,detail,episode,episodeGroup,playing,buffering,ended,position,duration,speed,seekable,favorite,favoriteBusy,trackInfo,error,note,playRequested),full,
+        PlayerActions(back=onBack,toggleFull=toggleFull,togglePlay={if(player.playWhenReady)player.pause()else player.play()},
+            seek={delta->if(player.isCurrentMediaItemSeekable)player.seekTo(jumpPosition(player.currentPosition,player.duration,delta))},
+            setSpeed={speed=it;player.setPlaybackSpeed(it)},favorite={
+                if(!favoriteBusy){val desired=!favorite;val account=vm.sessions.accountKey;favoriteBusy=true
+                    scope.launch{try{vm.api.favorite(movie.id,desired);if(vm.sessions.accountKey==account){favorite=desired;vm.invalidateFavorites();note=""}}
+                    catch(e:Exception){if(e is CancellationException)throw e;note=safeError(e)}finally{favoriteBusy=false}}
                 }
-                if(full)Column(Modifier.width(145.dp),horizontalAlignment=Alignment.End,verticalArrangement=Arrangement.spacedBy(3.dp)){
-                    Text(trackInfo.resolution,color=White,fontSize=12.sp,maxLines=1)
-                    Text(trackInfo.bitrate,color=Muted,fontSize=11.sp,maxLines=1)
-                }
-                }
-                if(note.isNotBlank())Text(note,color=Gold,fontSize=11.sp)
-                detail?.let{d->EpisodePicker(d.episodes,d.episodes.getOrNull(episode)?.index?:-1,episodeGroup,
-                    chooseGroup={episodeGroup=it},play={ep->saveProgress();episode=d.episodes.indexOf(ep)},
-                    controlsFocus=fullFocus,groupEntry=groupEntry,onFocusWithin={episodeAreaFocused=it})}
-        })
-        if(!full)Column(Modifier.width(260.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
-            Text(detail?.movie?.title?:movie.title,color=White,fontSize=24.sp,maxLines=2,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Text(listOf(detail?.movie?.score?:movie.score,detail?.movie?.year?:movie.year,detail?.movie?.area?:movie.area).filter{it.isNotBlank()}.joinToString(" · "),color=Green,fontSize=14.sp)
-            Text(detail?.description?:"正在加载影片信息…",color=Muted,fontSize=13.sp,lineHeight=21.sp,maxLines=4,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,modifier=Modifier.heightIn(max=90.dp))
-            detail?.let{d->Text("导演：${d.director}\n主演：${d.actor}",color=Muted,fontSize=12.sp,lineHeight=20.sp,maxLines=2,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)}
-        }
+            },chooseGroup={episodeGroup=it},playEpisode={ep->val target=detail?.episodes?.indexOf(ep)?:-1;if(target>=0&&target!=episode){saveProgress();nextStart=0;episode=target}},
+            retry={if(detail==null)retry++ else{nextStart=player.currentPosition.coerceAtLeast(0);playRetry++}},episodeFocus={episodeAreaFocused=it})){
+        AndroidView(factory={PlayerView(it).apply{this.player=player;useController=false;isFocusable=false;keepScreenOn=true}},modifier=Modifier.fillMaxSize(),update={it.player=player;it.keepScreenOn=playing})
     }
-    if(speedMenu)Dialog(onDismissRequest={speedMenu=false}){Column(Modifier.background(Panel).padding(25.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){Text("播放速度",color=White,fontSize=22.sp);listOf(.5f,.75f,1f,1.25f,1.5f,1.75f,2f).forEach{value->TvAction("${value}×",selected=speed==value){speed=value;player.setPlaybackSpeed(value);speedMenu=false}}}}
 }
 internal fun clock(ms:Long):String {val seconds=ms/1000;return if(seconds>=3600)"%d:%02d:%02d".format(seconds/3600,seconds/60%60,seconds%60)else "%02d:%02d".format(seconds/60,seconds%60)}
 

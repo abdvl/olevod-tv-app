@@ -23,12 +23,12 @@ internal fun PlayerVideoStage(
         Box(Modifier.fillMaxSize().then(videoModifier),contentAlignment=Alignment.Center){video()}
         if(controlsVisible)Column(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(Color.Transparent,Color.Black.copy(alpha=.82f))))
-                .padding(start=30.dp,top=28.dp,end=30.dp,bottom=24.dp),
-            verticalArrangement=Arrangement.spacedBy(9.dp)
+                .background(Brush.verticalGradient(listOf(Color.Transparent,Color(0xFF0A1112).copy(alpha=.88f))))
+                .padding(start=36.dp,top=28.dp,end=36.dp,bottom=24.dp),
+            verticalArrangement=Arrangement.spacedBy(8.dp)
         ){controlContent()}
-    }else Column(modifier.fillMaxHeight(),verticalArrangement=Arrangement.spacedBy(12.dp)){
+    }else Column(modifier.fillMaxHeight(),verticalArrangement=Arrangement.spacedBy(8.dp)){
         Box(Modifier.fillMaxWidth().weight(1f).then(videoModifier),contentAlignment=Alignment.Center){video()}
-        Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(9.dp)){controlContent()}
+        Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(8.dp)){controlContent()}
     }
 }
