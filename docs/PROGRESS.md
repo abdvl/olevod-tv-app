@@ -17,7 +17,7 @@
 | S14 | 影视收藏增删通过；频道列表可用，取消接口60秒回读未生效 |
 | S15 | 云历史分页读取、新观看同步及真实回读通过；离线补传未实现 |
 | S16 | 焦点、后台播放、账号竞争、异常恢复及云同步顺序已修，独立复查通过 |
-| S17 | build/lint/19单元测试通过；Chromecast已配对安装、实机登录通过，独立实机回归中 |
+| S17 | build/lint/20单元测试通过；Chromecast已配对安装、实机登录通过，独立实机回归中 |
 
 - 登录依赖已解除：用户授权本次登录调试代填验证码，Android同客户端验证码登录已成功；Chrome因Mac锁定暂不可用。
 - 下一步：完成新增账号记忆、验证码数字键盘、导航与续播的实机验收。用户已明确暂缓直播稳定性排查，保留现有直播功能及问题记录。
@@ -237,3 +237,16 @@
 
 - Playback synopsis is capped to four lines / 90dp, title to two lines and cast/director to two lines.
 - Reduced right-panel spacing so episode selection remains accessible on the first screen. Installed for physical confirmation.
+
+### S24 - exact remote playback control order
+
+- Controls now appear in the user-requested order: fullscreen, play/pause, -30s, +30s, -5min, +5min, speed, favorite.
+- Default control focus is fullscreen. Five-minute jumps clamp at zero and media duration; unit coverage includes both boundaries.
+- Physical Back is handled on key-up by the player, preserving menu/fullscreen/page hierarchy and avoiding a first press merely clearing focus.
+- Build/lint/all 20 unit tests passed; latest physical revalidation pending installation after the current independent run.
+
+### S25 - bottom-row visibility
+
+- Catalog and search lists have 64dp bottom content padding.
+- Poster focus requests visibility for the whole image/title/year container, not just the image; requests from cards that lost focus are ignored.
+- Reuse existing category metadata when returning to the catalog to reduce transient empty-top layout before focus restoration.

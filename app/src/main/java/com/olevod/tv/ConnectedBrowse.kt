@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun ConnectedBrowse(categoryName:String,vm:AppViewModel,open:(Movie)->Unit,chooseCategory:(String)->Unit) {
-    var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
+    var categories by remember { mutableStateOf(vm.home.value.sections.map{it.category}) }
     var error by remember{mutableStateOf<String?>(null)}
     var area by rememberSaveable(categoryName){mutableStateOf("0")}
     var year by rememberSaveable(categoryName){mutableStateOf("0")}
@@ -37,7 +37,7 @@ fun ConnectedBrowse(categoryName:String,vm:AppViewModel,open:(Movie)->Unit,choos
     var membership by rememberSaveable(categoryName){mutableIntStateOf(3)}
     var sort by rememberSaveable(categoryName){mutableStateOf("update")}
     var retry by remember{mutableIntStateOf(0)}
-    LaunchedEffect(retry){error=null;try{categories=vm.api.categories()}catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e)}}
+    LaunchedEffect(retry){error=null;try{if(categories.isEmpty()||retry>0)categories=vm.api.categories()}catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e)}}
     val category=categories.firstOrNull{it.name==categoryName || (categoryName=="VIP蓝光"&&it.id==6)}
     val filter=Filter(category?.id?:1,area,year,type,initial,membership,sort)
     val feed=remember(filter,category!=null){if(category==null)null else vm.catalogFeed(filter)}
@@ -55,7 +55,7 @@ fun ConnectedBrowse(categoryName:String,vm:AppViewModel,open:(Movie)->Unit,choos
                 state!=null && state.items.isNotEmpty() && layout.totalItemsCount>=((state.items.size+5)/6)+3 && !state.loading && !state.endReached && state.error==null
         }.distinctUntilChanged().collect{nearEnd->if(nearEnd)feed?.loadNext()}
     }
-    PosterFocusGroup(filter.toString()){LazyColumn(Modifier.fillMaxSize().padding(horizontal=28.dp),state=listState,verticalArrangement=Arrangement.spacedBy(12.dp),contentPadding=PaddingValues(top=8.dp,bottom=24.dp)) {
+    PosterFocusGroup(filter.toString()){LazyColumn(Modifier.fillMaxSize().padding(horizontal=28.dp),state=listState,verticalArrangement=Arrangement.spacedBy(12.dp),contentPadding=PaddingValues(top=8.dp,bottom=64.dp)) {
         item(key="filters"){
             Column(Modifier.fillMaxWidth().background(Panel,RoundedCornerShape(12.dp)).padding(horizontal=12.dp,vertical=10.dp),verticalArrangement=Arrangement.spacedBy(2.dp)){
                 BrowseOptions("排序",listOf("desc" to "最新上传","update" to "最近更新","hot" to "人气最高","score" to "评分最高"),sort){sort=it}

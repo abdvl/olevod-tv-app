@@ -102,7 +102,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
                 "home" -> if(preview) HomeScreen(movies,heroes,openMovie,{category=it;screen="browse"}) else ConnectedHome(home,vm,openMovie){category=it;screen="browse"}
                 "browse" -> if(preview) BrowseScreen(category,movies,openMovie) else ConnectedBrowse(category,vm,openMovie){category=it}
                 "search" -> if(preview) SearchScreen(movies,openMovie) else ConnectedSearch(vm,openMovie)
-                "player" -> if(preview) PlayerPreview(selected,movies,full,{full=!full},openMovie) else NativePlayer(selected,vm,full){full=!full}
+                "player" -> if(preview) PlayerPreview(selected,movies,full,{full=!full},openMovie) else NativePlayer(selected,vm,full,{full=!full}){if(full)full=false else screen=backScreen}
                 "live" -> if(preview) LivePreview() else LiveScreen(vm,full){full=!full}
                 "history" -> if(!preview) HistoryScreen(vm,openMovie){screen="account"} else EmptyCollection("观看历史","从上次的精彩，继续看下去","开始播放后，此设备的观看记录会出现在这里",Icons.Rounded.History){screen="home"}
                 "favorites" -> if(!preview) FavoritesScreen(vm,openMovie,{screen="account"}){vm.pendingChannel=it;screen="live"} else EmptyCollection("我的收藏","把喜欢的故事留在这里","登录后可同步欧乐账号的收藏",Icons.Rounded.BookmarkBorder){screen="account"}
@@ -224,9 +224,12 @@ internal fun SectionHeading(title:String,subtitle:String="",more:(()->Unit)?=nul
 internal fun PosterCard(movie:Movie,modifier:Modifier=Modifier,posterRatio:Float=.72f,onFocused:()->Unit={},onClick:()->Unit) {
     val remembered=LocalPosterFocus.current
     val focus=remember{FocusRequester()}
+    val bringWholePoster=remember{BringIntoViewRequester()}
+    val scope=rememberCoroutineScope()
+    var cardFocused by remember{mutableStateOf(false)}
     LaunchedEffect(Unit){if(remembered?.value==movie.id)focus.requestFocus()}
-    Column(modifier,verticalArrangement=Arrangement.spacedBy(7.dp)) {
-        Card(onClick=onClick,modifier=Modifier.focusRequester(focus).onFocusChanged{if(it.isFocused){remembered?.value=movie.id;onFocused()}}.fillMaxWidth().aspectRatio(posterRatio),shape=CardDefaults.shape(RoundedCornerShape(9.dp)),scale=CardDefaults.scale(focusedScale=1.035f),border=CardDefaults.border(focusedBorder=Border(androidx.compose.foundation.BorderStroke(2.dp,Green)))) {
+    Column(modifier.bringIntoViewRequester(bringWholePoster),verticalArrangement=Arrangement.spacedBy(7.dp)) {
+        Card(onClick=onClick,modifier=Modifier.focusRequester(focus).onFocusChanged{cardFocused=it.isFocused;if(it.isFocused){remembered?.value=movie.id;scope.launch{withFrameNanos{};if(cardFocused)bringWholePoster.bringIntoView()};onFocused()}}.fillMaxWidth().aspectRatio(posterRatio),shape=CardDefaults.shape(RoundedCornerShape(9.dp)),scale=CardDefaults.scale(focusedScale=1.035f),border=CardDefaults.border(focusedBorder=Border(androidx.compose.foundation.BorderStroke(2.dp,Green)))) {
             Box(Modifier.fillMaxSize().background(Panel)) {
                 AsyncImage(movie.image,movie.title,Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent,Color.Transparent,Color.Black.copy(alpha=.8f)))))

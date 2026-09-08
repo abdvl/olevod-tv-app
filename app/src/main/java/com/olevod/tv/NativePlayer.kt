@@ -40,12 +40,12 @@ import kotlinx.coroutines.launch
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
-fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
+fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,onBack:()->Unit) {
     val context=LocalContext.current
     val owner=LocalLifecycleOwner.current
     val scope=rememberCoroutineScope()
     val surfaceFocus=remember{FocusRequester()}
-    val playFocus=remember{FocusRequester()}
+    val fullFocus=remember{FocusRequester()}
     var interactionTick by remember{mutableIntStateOf(0)}
     val accountAtStart=remember(movie.id){vm.sessions.accountKey}
     val resume=remember(movie.id){vm.pendingResume?.takeIf{it.movie.id==movie.id}?:vm.history.records.value.find{it.movie.id==movie.id}}
@@ -102,10 +102,13 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
     LaunchedEffect(player){while(true){delay(10000);if(player.isPlaying&&owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))saveProgress(false)}}
     LaunchedEffect(controls,playing,speedMenu,full,interactionTick){if(full&&controls&&playing&&!speedMenu){delay(5000);controls=false}}
     LaunchedEffect(ended){if(ended&&episode+1<(detail?.episodes?.size?:0)){saveProgress();episode++}}
-    LaunchedEffect(full,controls){if(full&&!controls)surfaceFocus.requestFocus()else playFocus.requestFocus()}
-    BackHandler(speedMenu){speedMenu=false}
+    LaunchedEffect(full,controls){if(full&&!controls)surfaceFocus.requestFocus()else fullFocus.requestFocus()}
+    BackHandler{if(speedMenu)speedMenu=false else onBack()}
     Row(Modifier.fillMaxSize().background(Color.Black).focusRequester(surfaceFocus).focusable().onPreviewKeyEvent { event ->
-        if(event.type!=KeyEventType.KeyDown || event.nativeKeyEvent.keyCode==AndroidKeyEvent.KEYCODE_BACK)false else {interactionTick++;when(event.nativeKeyEvent.keyCode){
+        if(event.nativeKeyEvent.keyCode==AndroidKeyEvent.KEYCODE_BACK){
+            if(event.type==KeyEventType.KeyUp){if(speedMenu)speedMenu=false else onBack()}
+            true
+        }else if(event.type!=KeyEventType.KeyDown)false else {interactionTick++;when(event.nativeKeyEvent.keyCode){
             AndroidKeyEvent.KEYCODE_MEDIA_PLAY_PAUSE->{if(player.isPlaying)player.pause()else player.play();true}
             AndroidKeyEvent.KEYCODE_MEDIA_FAST_FORWARD->{player.seekForward();true}
             AndroidKeyEvent.KEYCODE_MEDIA_REWIND->{player.seekBack();true}
@@ -122,11 +125,13 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
                 Box(Modifier.fillMaxWidth().height(3.dp).background(Panel)){Box(Modifier.fillMaxWidth(if(duration>0)(position.toFloat()/duration).coerceIn(0f,1f)else 0f).fillMaxHeight().background(Green))}
                 Row(Modifier.fillMaxWidth()){Text(clock(position),color=Muted,fontSize=11.sp);Spacer(Modifier.weight(1f));Text(clock(duration),color=Muted,fontSize=11.sp)}
                 LazyRow(horizontalArrangement=Arrangement.spacedBy(2.dp)) {
+                    item{TvAction(if(full)"退出全屏"else"全屏",Icons.Rounded.Fullscreen,selected=true,modifier=Modifier.focusRequester(fullFocus),onClick=toggleFull)}
+                    item{TvAction(if(playing)"暂停" else "播放",if(playing)Icons.Rounded.Pause else Icons.Rounded.PlayArrow){if(playing)player.pause() else player.play()}}
                     item{TvAction("30秒",Icons.Rounded.Replay30){player.seekBack()}}
-                    item{TvAction(if(playing)"暂停" else "播放",if(playing)Icons.Rounded.Pause else Icons.Rounded.PlayArrow,selected=true,modifier=Modifier.focusRequester(playFocus)){if(playing)player.pause() else player.play()}}
                     item{TvAction("30秒",Icons.Rounded.Forward30){player.seekForward()}}
+                    item{TvAction("5分钟",Icons.Rounded.FastRewind){player.seekTo(jumpPosition(player.currentPosition,player.duration,-300000))}}
+                    item{TvAction("5分钟",Icons.Rounded.FastForward){player.seekTo(jumpPosition(player.currentPosition,player.duration,300000))}}
                     item{TvAction("${speed}×"){speedMenu=true}}
-                    item{TvAction(if(full)"退出全屏"else"全屏",Icons.Rounded.Fullscreen,onClick=toggleFull)}
                     item{TvAction(if(favoriteBusy)"处理中…"else if(favorite)"已收藏"else"收藏",Icons.Rounded.BookmarkBorder){if(!favoriteBusy){favoriteBusy=true;scope.launch{try{vm.api.favorite(movie.id,!favorite);favorite=!favorite;note=""}catch(e:Exception){if(e is CancellationException)throw e;note=safeError(e)}finally{favoriteBusy=false}}}}}
                 }
                 if(note.isNotBlank())Text(note,color=Gold,fontSize=11.sp)
@@ -144,3 +149,5 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
     if(speedMenu)Dialog(onDismissRequest={speedMenu=false}){Column(Modifier.background(Panel).padding(25.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){Text("播放速度",color=White,fontSize=22.sp);listOf(.5f,.75f,1f,1.25f,1.5f,1.75f,2f).forEach{value->TvAction("${value}×",selected=speed==value){speed=value;player.setPlaybackSpeed(value);speedMenu=false}}}}
 }
 internal fun clock(ms:Long):String {val seconds=ms/1000;return if(seconds>=3600)"%d:%02d:%02d".format(seconds/3600,seconds/60%60,seconds%60)else "%02d:%02d".format(seconds/60,seconds%60)}
+
+internal fun jumpPosition(position:Long,duration:Long,delta:Long):Long=(position+delta).coerceAtLeast(0).coerceAtMost(duration.takeIf{it>0}?:Long.MAX_VALUE)

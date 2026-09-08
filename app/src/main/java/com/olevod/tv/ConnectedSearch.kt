@@ -65,7 +65,7 @@ fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit) {
         }
         Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(12.dp)){
             Text(if(term.isBlank())"最近更新"else"包含「$term」的影片 · ${result.total} 部",color=White,fontSize=17.sp)
-            PosterFocusGroup(term){LazyColumn(Modifier.weight(1f),state=listState,verticalArrangement=Arrangement.spacedBy(18.dp),contentPadding=PaddingValues(4.dp,5.dp,4.dp,18.dp)){
+            PosterFocusGroup(term){LazyColumn(Modifier.weight(1f),state=listState,verticalArrangement=Arrangement.spacedBy(18.dp),contentPadding=PaddingValues(4.dp,5.dp,4.dp,64.dp)){
                 items(movies.chunked(2),key={it.first().id}){row->Row(horizontalArrangement=Arrangement.spacedBy(14.dp)){
                     row.forEach{m->PosterCard(m,Modifier.weight(1f),posterRatio=.74f){if(term.isNotBlank())vm.saveQuery(term);open(m)}}
                     repeat(2-row.size){Spacer(Modifier.weight(1f))}
