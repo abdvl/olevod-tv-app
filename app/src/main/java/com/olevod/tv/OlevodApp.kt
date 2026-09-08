@@ -71,7 +71,7 @@ data class Movie(val id: Long, val title: String, val image: String, val note: S
 data class Hero(val id: Long, val title: String, val image: String, val note: String)
 
 @Composable
-fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppViewModel = viewModel()) {
+fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppViewModel = viewModel(), initialMovieId:Long?=null) {
     val home by vm.home.collectAsStateWithLifecycle()
     LaunchedEffect(preview){ if(!preview)vm.loadHome() }
     val context = LocalContext.current
@@ -80,7 +80,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     val pageStates=rememberSaveableStateHolder()
     var screen by rememberSaveable { mutableStateOf(initialScreen) }
     var category by rememberSaveable { mutableStateOf("电影") }
-    var selected by rememberSaveable(stateSaver=androidx.compose.runtime.saveable.Saver<Movie,String>(save={com.olevod.tv.data.MovieJson.encode(it)},restore={com.olevod.tv.data.MovieJson.decode(it)})) { mutableStateOf(movies.first()) }
+    var selected by rememberSaveable(stateSaver=androidx.compose.runtime.saveable.Saver<Movie,String>(save={com.olevod.tv.data.MovieJson.encode(it)},restore={com.olevod.tv.data.MovieJson.decode(it)})) { mutableStateOf(initialMovieId?.let{Movie(it,"正在加载影片…","")}?:movies.first()) }
     var backScreen by rememberSaveable { mutableStateOf("home") }
     var full by rememberSaveable { mutableStateOf(false) }
     val openMovie: (Movie) -> Unit = { selected=it;backScreen=screen;screen="player" }
@@ -88,7 +88,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     CompositionLocalProvider(LocalBringIntoViewSpec provides EdgeBringIntoViewSpec) {
     MaterialTheme(colorScheme=darkColorScheme(primary=Green,onPrimary=Bg,surface=Panel,onSurface=White,background=Bg)) {
         Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF192425),Bg)))) {
-            if(!full) Header(screen,if(preview)"界面预览" else "实时内容",{screen=it})
+            if(!full) Header(screen,if(preview)"界面预览" else "实时内容",{screen=it},vm.sessionVersion.let{if(vm.sessions.token!=null)"账号"else"登录"})
             if(!full && screen in listOf("home","browse","live")) Navigation(category=if(screen=="home")"首页" else if(screen=="live")"直播" else category) { label -> if(label=="首页") screen="home" else if(label=="直播") screen="live" else {category=label;screen="browse"} }
             pageStates.SaveableStateProvider(screen) {
                 val lastPoster=rememberSaveable{mutableLongStateOf(-1)}
@@ -98,7 +98,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
                 "search" -> if(preview) SearchScreen(movies,openMovie) else ConnectedSearch(vm,openMovie)
                 "player" -> if(preview) PlayerPreview(selected,movies,full,{full=!full},openMovie) else NativePlayer(selected,vm,full){full=!full}
                 "live" -> if(preview) LivePreview() else LiveScreen(vm,full){full=!full}
-                "history" -> if(!preview) HistoryScreen(vm,openMovie) else EmptyCollection("观看历史","从上次的精彩，继续看下去","开始播放后，此设备的观看记录会出现在这里",Icons.Rounded.History){screen="home"}
+                "history" -> if(!preview) HistoryScreen(vm,openMovie){screen="account"} else EmptyCollection("观看历史","从上次的精彩，继续看下去","开始播放后，此设备的观看记录会出现在这里",Icons.Rounded.History){screen="home"}
                 "favorites" -> if(!preview) FavoritesScreen(vm,openMovie,{screen="account"}){vm.pendingChannel=it;screen="live"} else EmptyCollection("我的收藏","把喜欢的故事留在这里","登录后可同步欧乐账号的收藏",Icons.Rounded.BookmarkBorder){screen="account"}
                 "account" -> if(preview) AccountPreview() else AccountScreen(vm)
             }}}
@@ -128,7 +128,7 @@ internal fun TvAction(label: String, icon: ImageVector? = null, selected: Boolea
 }
 
 @Composable
-private fun Header(screen:String,status:String,go:(String)->Unit) {
+private fun Header(screen:String,status:String,go:(String)->Unit,accountLabel:String="登录") {
     Row(Modifier.fillMaxWidth().padding(start=38.dp,end=38.dp,top=19.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically) {
         TvAction("搜索",Icons.Rounded.Search,screen=="search"){go("search")}
         TvAction("历史",Icons.Rounded.History,screen=="history"){go("history")}
@@ -139,7 +139,7 @@ private fun Header(screen:String,status:String,go:(String)->Unit) {
         Text("OLE",color=White,fontSize=22.sp,fontWeight=FontWeight.Black,letterSpacing=2.sp)
         Text(" TV",color=Green,fontSize=22.sp,fontWeight=FontWeight.Black)
         Spacer(Modifier.width(18.dp))
-        TvAction("登录",Icons.Rounded.AccountCircle,screen=="account"){go("account")}
+        TvAction(accountLabel,Icons.Rounded.AccountCircle,screen=="account"){go("account")}
     }
 }
 

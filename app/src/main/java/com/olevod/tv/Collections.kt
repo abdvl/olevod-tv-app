@@ -16,14 +16,18 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @Composable
-fun HistoryScreen(vm:AppViewModel,open:(Movie)->Unit) {
+fun HistoryScreen(vm:AppViewModel,open:(Movie)->Unit,login:()->Unit) {
     val records by vm.history.records.collectAsStateWithLifecycle()
+    var cloud by rememberSaveable{mutableStateOf(false)}
     var clear by remember{mutableStateOf(false)}
     val scope=rememberCoroutineScope()
     Column(Modifier.fillMaxSize().padding(40.dp,15.dp,40.dp,25.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){
-        Row{SectionTitle("观看历史","此设备 · ${records.size} 部");Spacer(Modifier.weight(1f));if(records.isNotEmpty())TvAction("清空历史"){clear=true}}
+        Row{SectionTitle("观看历史","此设备 · ${records.size} 部");Spacer(Modifier.weight(1f));if(!cloud&&records.isNotEmpty())TvAction("清空历史"){clear=true}}
+        Row{TvAction("此设备",selected=!cloud){cloud=false};TvAction("网站账号",selected=cloud){cloud=true}}
+        if(cloud)CloudHistoryPanel(vm,open,login) else {
         if(records.isEmpty())Text("开始播放后，这里会保留所有观看记录",color=Muted)
         LazyColumn(verticalArrangement=Arrangement.spacedBy(16.dp)){items(records,key={it.movie.id}){r->Row(horizontalArrangement=Arrangement.spacedBy(20.dp)){Column(Modifier.weight(1f)){TvAction(r.movie.title){open(r.movie)};Text("第 ${r.episode} 集 · ${clock(r.positionMs)} / ${clock(r.durationMs)}",color=Muted,fontSize=13.sp,modifier=Modifier.padding(start=14.dp))};TvAction("删除"){scope.launch{vm.history.remove(r.movie.id)}}}}}
+        }
     }
     if(clear)Dialog(onDismissRequest={clear=false}){Column(Modifier.background(Panel).padding(25.dp),verticalArrangement=Arrangement.spacedBy(15.dp)){Text("清空此设备全部观看历史？",color=White);Row{TvAction("取消"){clear=false};TvAction("清空"){scope.launch{vm.history.remove(null)};clear=false}}}}
 }

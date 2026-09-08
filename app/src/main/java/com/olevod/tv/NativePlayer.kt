@@ -48,7 +48,8 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
     val playFocus=remember{FocusRequester()}
     var interactionTick by remember{mutableIntStateOf(0)}
     val accountAtStart=remember(movie.id){vm.sessions.accountKey}
-    val resume=remember(movie.id){vm.history.records.value.find{it.movie.id==movie.id}}
+    val resume=remember(movie.id){vm.pendingResume?.takeIf{it.movie.id==movie.id}?:vm.history.records.value.find{it.movie.id==movie.id}}
+    LaunchedEffect(movie.id){vm.pendingResume=null}
     var detail by remember(movie.id){mutableStateOf<Detail?>(null)}
     var episode by remember(movie.id){mutableIntStateOf(-1)}
     var error by remember(movie.id){mutableStateOf<String?>(null)}
@@ -62,6 +63,7 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
     var duration by remember{mutableLongStateOf(0)}
     var speed by remember{mutableFloatStateOf(1f)}
     var favorite by remember{mutableStateOf(false)}
+    var favoriteBusy by remember{mutableStateOf(false)}
     var note by remember{mutableStateOf("")}
     val player=remember {
         val http=DefaultHttpDataSource.Factory().setUserAgent("Mozilla/5.0 OlevodTV/0.1").setDefaultRequestProperties(mapOf("Referer" to "https://www.olevod.com/"))
@@ -69,7 +71,7 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
     }
     val currentDetail by rememberUpdatedState(detail)
     val currentEpisode by rememberUpdatedState(episode)
-    fun saveProgress(){val d=currentDetail;val ep=d?.episodes?.getOrNull(currentEpisode);if(d!=null&&ep!=null)vm.record(d.movie,ep.index,player.currentPosition,player.duration.coerceAtLeast(0),accountAtStart)}
+    fun saveProgress(forceSync:Boolean=true){val d=currentDetail;val ep=d?.episodes?.find{it.index==player.currentMediaItem?.mediaId?.toIntOrNull()};if(d!=null&&ep!=null)vm.record(d.movie,ep.index,player.currentPosition,player.duration.coerceAtLeast(0),accountAtStart,forceSync)}
     DisposableEffect(player,owner) {
         val session=MediaSession.Builder(context,player).build()
         val listener=object:Player.Listener {
@@ -83,7 +85,7 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
         onDispose{saveProgress();owner.lifecycle.removeObserver(observer);player.removeListener(listener);session.release();player.release()}
     }
     LaunchedEffect(movie.id,retry) {
-        player.stop();detail=null;error=null;buffering=true
+        saveProgress();player.stop();detail=null;error=null;buffering=true
         try { val d=vm.api.detail(movie.id);detail=d;favorite=d.favorite;episode=d.episodes.indexOfFirst{it.index==(resume?.episode?:d.resumeEpisode)}.takeIf{it>=0}?:0;if(d.episodes.isEmpty()){error="该影片暂无可用播放源";buffering=false} }
         catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e);buffering=false}
     }
@@ -91,13 +93,13 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
         val d=detail?:return@LaunchedEffect
         val item=d.episodes.getOrNull(episode)?:return@LaunchedEffect
         if(!item.uri.startsWith("https://")){error="此片源暂不支持原生播放";buffering=false;return@LaunchedEffect}
-        player.setMediaItem(MediaItem.Builder().setUri(item.uri).setMediaMetadata(MediaMetadata.Builder().setTitle(d.movie.title).build()).build())
+        player.setMediaItem(MediaItem.Builder().setMediaId(item.index.toString()).setUri(item.uri).setMediaMetadata(MediaMetadata.Builder().setTitle(d.movie.title).build()).build())
         val start=if(item.index==resume?.episode)resume.positionMs.takeUnless{resume.durationMs>0&&it>=resume.durationMs-10000}?:0 else if(item.index==d.resumeEpisode)d.resumeSeconds*1000 else 0
         if(start>0)player.seekTo(start)
         error=null;player.prepare();if(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))player.play();ended=false
     }
     LaunchedEffect(player){while(true){position=player.currentPosition.coerceAtLeast(0);duration=player.duration.takeIf{it!=C.TIME_UNSET&&it>0}?:0;delay(500)}}
-    LaunchedEffect(player){while(true){delay(10000);if(player.isPlaying&&owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))saveProgress()}}
+    LaunchedEffect(player){while(true){delay(10000);if(player.isPlaying&&owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))saveProgress(false)}}
     LaunchedEffect(controls,playing,speedMenu,full,interactionTick){if(full&&controls&&playing&&!speedMenu){delay(5000);controls=false}}
     LaunchedEffect(ended){if(ended&&episode+1<(detail?.episodes?.size?:0)){saveProgress();episode++}}
     LaunchedEffect(full,controls){if(full&&!controls)surfaceFocus.requestFocus()else playFocus.requestFocus()}
@@ -125,7 +127,7 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit) {
                     item{TvAction("30秒",Icons.Rounded.Forward30){player.seekForward()}}
                     item{TvAction("${speed}×"){speedMenu=true}}
                     item{TvAction(if(full)"退出全屏"else"全屏",Icons.Rounded.Fullscreen,onClick=toggleFull)}
-                    item{TvAction(if(favorite)"已收藏"else"收藏",Icons.Rounded.BookmarkBorder){scope.launch{try{vm.api.favorite(movie.id,!favorite);favorite=!favorite;note=""}catch(e:Exception){if(e is CancellationException)throw e;note=safeError(e)}}}}
+                    item{TvAction(if(favoriteBusy)"处理中…"else if(favorite)"已收藏"else"收藏",Icons.Rounded.BookmarkBorder){if(!favoriteBusy){favoriteBusy=true;scope.launch{try{vm.api.favorite(movie.id,!favorite);favorite=!favorite;note=""}catch(e:Exception){if(e is CancellationException)throw e;note=safeError(e)}finally{favoriteBusy=false}}}}}
                 }
                 if(note.isNotBlank())Text(note,color=Gold,fontSize=11.sp)
             }

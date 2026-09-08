@@ -13,6 +13,34 @@ import java.util.zip.GZIPOutputStream
 
 /** Synthetic responses preserve public website field contracts without account or signed URL fixtures. */
 class OlevodAdapterContractTest {
+    @Test fun favoriteRecordUsesVodIdentityAndChannelUsesDetailIdentity() = runBlocking {
+        val server=MockWebServer();server.start()
+        try {
+            server.enqueue(MockResponse().setBody("""{"code":0,"data":{"list":[{"id":900,"vodId":123,"name":"测试影片"}],"total":1}}"""))
+            server.enqueue(MockResponse().setBody("""{"code":0,"data":{"list":[{"channelId":58,"stream_id":"CCTV13HD","title":"新闻","detail":{"id":58,"name":"新闻"}}]}}"""))
+            val api=OlevodApi(base=server.url("/").toString())
+            assertEquals(123L,api.favorites(1).items.single().id)
+            assertEquals("CCTV13HD",api.favoriteChannels().single().streamId)
+        } finally {server.shutdown()}
+    }
+    @Test fun loginUsesStableWebsiteUserIdInsteadOfLoginAlias() = runBlocking {
+        val server=MockWebServer();server.start()
+        try {
+            server.enqueue(MockResponse().setBody("""{"code":0,"data":{"token":"test.session.only","user":{"userId":42,"userName":"alias","userNickName":"昵称"}}}"""))
+            val session=OlevodApi(base=server.url("/").toString()).login("different-alias","test-password","test-captcha","captcha-id")
+            assertEquals("42",session.accountId);assertEquals("昵称",session.name)
+        } finally {server.shutdown()}
+    }
+    @Test fun onlyExpiredSessionCodesClearExistingSession() = runBlocking {
+        val server=MockWebServer();server.start()
+        try {
+            var clears=0
+            val api=OlevodApi(base=server.url("/").toString(),onUnauthorized={clears++})
+            for(code in listOf(12,13)){server.enqueue(MockResponse().setBody("""{"code":$code}"""));try{api.categories()}catch(expected:ApiException){}}
+            assertEquals(1,clears)
+        } finally {server.shutdown()}
+    }
+
     @Test fun searchSelectsVodGroupAndUsesItsPaginationTotal() = runBlocking {
         val server = MockWebServer()
         server.start()
@@ -43,7 +71,7 @@ class OlevodAdapterContractTest {
         val server = MockWebServer()
         server.start()
         try {
-            repeat(2) { server.enqueue(MockResponse().setBody("""{"code":0,"data":{"detail":{"hls":"https://media.example.test/live.m3u8?quality=hd"},"programs":[]}}""")) }
+            repeat(2) { server.enqueue(MockResponse().setBody("""{"code":0,"data":{"detail":{"hls":"https://media.example.test/live.m3u8?quality=hd"},"programs":[]}}""")); server.enqueue(MockResponse().setBody("""{"code":0,"data":{"groupId":1}}""")) }
             var clock = 1700000000L
             val api = OlevodApi(token = { "private.header.signature" }, base = server.url("/").toString(), now = { clock })
             val channel = Channel(58, "CCTV13HD", "News", "", "")
@@ -128,4 +156,24 @@ class OlevodAdapterContractTest {
             assertFalse(body.has("id"))
         } finally { server.shutdown() }
     }
+    @Test fun cloudHistoryUsesSecondsAndSyncDoesNotSendPercentage() = runBlocking {
+        val server=MockWebServer();server.start()
+        try {
+            server.enqueue(MockResponse().setBody("""{"code":0,"data":{"list":[{"id":91,"vodId":123,"name":"Film","episode":2,"watchDuration":40.5,"watchPercent":6939}],"total":21}}"""))
+            server.enqueue(MockResponse().setBody("""{"code":0,"data":{}}"""))
+            val api=OlevodApi(base=server.url("/").toString())
+            val page=api.cloudHistory(2);val record=page.items.single()
+            assertEquals(21,page.total);assertEquals(123L,record.movie.id)
+            assertEquals(40500L,record.positionMs);assertEquals(6939000L,record.durationMs)
+            assertEquals(2,JSONObject(server.takeRequest().body.readUtf8()).getInt("page"))
+            api.syncWatch(record.copy(updatedAt=1788825600000))
+            val request=server.takeRequest()
+            assertEquals("/pub/user/watches/sync",request.requestUrl!!.encodedPath)
+            val body=org.json.JSONArray(request.body.readUtf8()).getJSONObject(0)
+            assertEquals(40L,body.getLong("duration"))
+            assertEquals(6939.0,body.getDouble("percent"),0.0)
+            assertEquals(1788825600L,body.getLong("saveTime"))
+        }finally{server.shutdown()}
+    }
+
 }

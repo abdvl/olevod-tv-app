@@ -8,6 +8,7 @@ import com.olevod.tv.data.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel as CoroutineChannel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -26,7 +27,44 @@ class AppViewModel(application:Application):AndroidViewModel(application) {
     val sessions=SessionStore(application)
     val history=HistoryStore(application){sessions.accountKey}
     init{viewModelScope.launch{history.load()}}
-    fun record(movie:Movie,episode:Int,position:Long,duration:Long,account:String=sessions.accountKey){viewModelScope.launch{history.save(movie,episode,position,duration,account)}}
+    private data class PendingWatch(val watch:WatchRecord,val account:String,val token:String?,val force:Boolean)
+    private val watchQueue=CoroutineChannel<PendingWatch>(CoroutineChannel.UNLIMITED)
+    private val cloudQueue=CoroutineChannel<PendingWatch>(CoroutineChannel.UNLIMITED)
+    private val lastSync=mutableMapOf<String,Pair<Long,Long>>()
+    var historySyncError by mutableStateOf<String?>(null)
+        private set
+    init {
+        viewModelScope.launch {
+            for(pending in watchQueue) {
+                val watch=pending.watch
+                history.save(watch.movie,watch.episode,watch.positionMs,watch.durationMs,pending.account)
+                cloudQueue.send(pending)
+            }
+        }
+        viewModelScope.launch {
+            for(pending in cloudQueue) {
+                val watch=pending.watch
+                val capturedToken=pending.token
+                if(capturedToken==null || watch.positionMs<1000 || watch.durationMs<=0 ||
+                    pending.account!=sessions.accountKey || capturedToken!=sessions.token)continue
+                val key="${pending.account}:${watch.movie.id}:${watch.episode}"
+                val previous=lastSync[key]
+                if(previous!=null && (previous.second==watch.positionMs || (!pending.force && watch.updatedAt-previous.first<30000)))continue
+                try {
+                    OlevodApi(token={capturedToken}).syncWatch(watch)
+                    lastSync[key]=watch.updatedAt to watch.positionMs
+                    if(pending.account==sessions.accountKey)historySyncError=null
+                }catch(e:Exception){
+                    if(e is CancellationException)throw e
+                    if(pending.account==sessions.accountKey)historySyncError="本机进度已保存；网站同步失败，下次观看时重试"
+                }
+            }
+        }
+    }
+    fun record(movie:Movie,episode:Int,position:Long,duration:Long,account:String=sessions.accountKey,forceSync:Boolean=false){
+        val capturedToken=sessions.token.takeIf{account==sessions.accountKey}
+        watchQueue.trySend(PendingWatch(WatchRecord(movie,episode,position,duration,System.currentTimeMillis()),account,capturedToken,forceSync))
+    }
     var sessionVersion by mutableIntStateOf(0)
         private set
     val api=OlevodApi(token={sessions.token},onUnauthorized={logout()})

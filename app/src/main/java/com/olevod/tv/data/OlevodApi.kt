@@ -24,6 +24,7 @@ data class Detail(val movie:Movie,val description:String,val actor:String,val di
 data class Channel(val id:Long,val streamId:String,val title:String,val image:String,val programme:String)
 data class Programme(val id:Long,val title:String,val time:String,val start:String,val end:String,val hasReplay:Boolean,val state:Int)
 class LiveDetail(val channel:Channel,val uri:String,val programmes:List<Programme>,val favorite:Boolean)
+data class CloudHistoryPage(val items:List<WatchRecord>,val total:Int)
 class LoginSession(val token:String,val name:String,val accountId:String)
 class ApiException(val code:Int,val userMessage:String):IOException(userMessage)
 
@@ -110,12 +111,33 @@ class OlevodApi(
     }
     suspend fun favorite(id:Long,save:Boolean){request(if(save)listOf("pub","vod","favorite")else listOf("pub","vod","favorite","cancel"),if(save)JSONObject().put("id",id)else JSONObject().put("ids",JSONArray().put(id)))}
     suspend fun favorites(page:Int):CatalogPage {val o=request(listOf("pub","vod","favorite","list"),JSONObject().put("page",page).put("pageSize",20)).getJSONObject("data");return CatalogPage(o.optJSONArray("list").objects().map{movie(it).copy(id=it.getLong("vodId"))},o.optInt("total"),page,20)}
-    suspend fun favoriteChannel(id:Long,save:Boolean){request(if(save)listOf("pub","user","favorite","save")else listOf("pub","user","favorite","cancel","channel"),JSONObject().put("channelId",id).put("favoriteType",3))}
-    suspend fun favoriteChannels():List<Channel>{val o=request(listOf("pub","user","favorites"),JSONObject().put("page",0).put("pageSize",999).put("favoriteType",3)).getJSONObject("data");return o.optJSONArray("list").objects().map{row->val d=row.getJSONObject("detail");Channel(d.getLong("id"),row.getString("stream_id"),row.optString("title").ifBlank{d.optString("name")},image(row.optString("currentImg")),d.optString("currentTitle"))}}
+    suspend fun cloudHistory(page:Int):CloudHistoryPage {
+        val o=request(listOf("pub","vod","history","list"),JSONObject().put("page",page).put("pageSize",20)).getJSONObject("data")
+        return CloudHistoryPage(o.optJSONArray("list").objects().map{WatchRecord(movie(it).copy(id=it.getLong("vodId")),it.optInt("episode"),(it.optDouble("watchDuration",0.0)*1000).toLong(),(it.optDouble("watchPercent",0.0)*1000).toLong(),0)},o.optInt("total"))
+    }
+    suspend fun syncWatch(record:WatchRecord) {
+        require(record.movie.id>0 && record.positionMs>=1000 && record.durationMs>0)
+        request(listOf("pub","user","watches","sync"),JSONArray().put(JSONObject()
+            .put("id",record.movie.id).put("title",record.movie.title).put("episode",record.episode)
+            .put("duration",record.positionMs/1000).put("percent",record.durationMs/1000)
+            .put("saveTime",record.updatedAt/1000).put("type","vod")))
+    }
+    private suspend fun favoriteChannelRows():List<JSONObject> = request(listOf("pub","user","favorites"),JSONObject().put("page",0).put("pageSize",999).put("favoriteType",3)).getJSONObject("data").optJSONArray("list").objects()
+    suspend fun favoriteChannel(id:Long,save:Boolean){
+        val count=favoriteChannelRows().count{it.optLong("channelId")==id}
+        if((save&&count>0)||(!save&&count==0))return
+        request(if(save)listOf("pub","user","favorite","save")else listOf("pub","user","favorite","cancel","channel"),JSONObject().put("channelId",id).put("favoriteType",3))
+        repeat(6){attempt->
+            if(attempt>0)kotlinx.coroutines.delay(1000)
+            if(favoriteChannelRows().any{it.optLong("channelId")==id}==save)return
+        }
+        throw ApiException(-2,"网站尚未确认收藏变更，请稍后刷新")
+    }
+    suspend fun favoriteChannels():List<Channel> = favoriteChannelRows().map{row->val d=row.getJSONObject("detail");Channel(d.getLong("id"),row.getString("stream_id"),row.optString("title").ifBlank{d.optString("name")},image(row.optString("currentImg")),d.optString("currentTitle"))}.distinctBy{it.id}
     suspend fun liveGroups():List<Pair<Int,String>> { val d=get("v1","pub","live","conditions") as JSONArray;return d.objects().firstOrNull{it.optString("type")=="tv"}?.optJSONObject("data")?.optJSONArray("groups").objects().map{it.optInt("id") to it.optString("title")} }
     fun channel(o:JSONObject)=Channel(o.optLong("id"),o.optString("streamId"),o.optString("title"),image(o.optString("currentImg",o.optString("icon"))),o.optString("currentTitle"))
     suspend fun channels(group:Int=0,order:Int=3,page:Int=1):Pair<List<Channel>,Int>{val o=get("v1","pub","live","list","tv","0","0",order.toString(),group.toString(),page.toString(),"36") as JSONObject;return o.optJSONArray("list").objects().map(::channel) to o.optInt("total")}
-    suspend fun liveDetail(channel:Channel,date:String):LiveDetail {val o=get("v1","pub","live","info","tv",channel.id.toString(),channel.streamId,date) as JSONObject;val d=o.getJSONObject("detail");val source=d.optString("hls");val signed=if(source.startsWith("https://"))source.toHttpUrl().newBuilder().addQueryParameter("token",RequestSignature.at(now())).build().toString()else source;return LiveDetail(channel,signed,o.optJSONArray("programs").objects().map{Programme(it.getLong("id"),it.optString("title"),it.optString("showTime"),it.optString("start"),it.optString("end"),it.optBoolean("hasVod"),it.optInt("liveType"))},d.optBoolean("favorite"))}
+    suspend fun liveDetail(channel:Channel,date:String):LiveDetail {val o=get("v1","pub","live","info","tv",channel.id.toString(),channel.streamId,date) as JSONObject;val d=o.getJSONObject("detail");val member=token()!=null && request(listOf("pub","user","info"),JSONObject()).getJSONObject("data").optInt("groupId")==3;val source=if(member)d.optJSONArray("urls").objects().maxByOrNull{it.optInt("type")}?.optString("hls")?.takeIf{it.isNotBlank()}?:d.optString("hls")else d.optString("hls");val signed=if(source.startsWith("https://"))source.toHttpUrl().newBuilder().addQueryParameter("token",RequestSignature.at(now())).build().toString()else source;return LiveDetail(channel,signed,o.optJSONArray("programs").objects().map{Programme(it.getLong("id"),it.optString("title"),it.optString("showTime"),it.optString("start"),it.optString("end"),it.optBoolean("hasVod"),it.optInt("liveType"))},d.optBoolean("favorite"))}
     suspend fun replay(channel:Channel,programme:Programme):String=request(listOf("pub","tv","vod","url"),JSONObject().put("programmeId",programme.id).put("stream_id",channel.streamId)).getJSONObject("data").getString("hls")
 }
 internal fun JSONArray?.objects():List<JSONObject> = if(this==null)emptyList()else (0 until length()).mapNotNull{optJSONObject(it)}
