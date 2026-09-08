@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun AccountScreen(vm:AppViewModel) {
-    val remembered=remember{vm.credentials.read()}
+    val remembered=remember{vm.rememberedCredentials}
     var username by remember{mutableStateOf(remembered?.username.orEmpty())}
     var password by remember{mutableStateOf(remembered?.password.orEmpty())}
     var editCredentials by remember{mutableStateOf(remembered==null)}
@@ -52,7 +52,7 @@ fun AccountScreen(vm:AppViewModel) {
             Text("账号密码加密保存在这台电视。下次只需输入新验证码。",color=Muted,fontSize=15.sp)
             if(loggedIn){
                 Text(vm.sessions.name.ifBlank{"已登录"},color=White,fontSize=20.sp)
-                TvAction("退出登录"){vm.logout();val saved=vm.credentials.read();username=saved?.username.orEmpty();password=saved?.password.orEmpty();editCredentials=saved==null}
+                TvAction("退出登录"){vm.logout();val saved=vm.rememberedCredentials;username=saved?.username.orEmpty();password=saved?.password.orEmpty();editCredentials=saved==null}
                 TvAction("清除记住的账号密码"){forget()}
             }
         }
@@ -78,6 +78,7 @@ fun AccountScreen(vm:AppViewModel) {
                     TvAction(digit,modifier=Modifier.weight(1f).then(if(digit=="1")Modifier.focusRequester(keypadFocus)else Modifier)){if(captcha.length<8)captcha+=digit}
                 }}
             }
+            vm.credentialPersistenceError?.let{Text(it,color=Gold,fontSize=12.sp)}
             if(error!=null)Text(error!!,color=Gold,fontSize=12.sp)
             TvAction(if(busy)"登录中…"else"登录",selected=true){if(!busy){
                 if(username.isBlank()||password.isBlank()||captcha.isBlank()){error="请输入账号、密码和验证码"}

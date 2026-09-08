@@ -14,5 +14,5 @@ class CredentialsStore(context:Context,storeName:String="remembered-login") {
         require(username.isNotBlank() && password.isNotBlank())
         vault.save(password,username,"remembered-login")
     }
-    fun clear()=vault.clear()
+    fun clear()=vault.clear(synchronous=true)
 }

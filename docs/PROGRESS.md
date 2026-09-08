@@ -17,7 +17,7 @@
 | S14 | 影视收藏增删通过；频道列表可用，取消接口60秒回读未生效 |
 | S15 | 云历史分页读取、新观看同步及真实回读通过；离线补传未实现 |
 | S16 | 焦点、后台播放、账号竞争、异常恢复及云同步顺序已修，独立复查通过 |
-| S17 | build/lint/18单元测试通过；Chromecast已配对安装、实机登录通过，独立实机回归中 |
+| S17 | build/lint/19单元测试通过；Chromecast已配对安装、实机登录通过，独立实机回归中 |
 
 - 登录依赖已解除：用户授权本次登录调试代填验证码，Android同客户端验证码登录已成功；Chrome因Mac锁定暂不可用。
 - 下一步：完成新增账号记忆、验证码数字键盘、导航与续播的实机验收。用户已明确暂缓直播稳定性排查，保留现有直播功能及问题记录。
@@ -211,3 +211,10 @@
 - Global header has accessible icon-only Home and Movie Directory shortcuts. Directory always selects the movie category.
 - Encrypted synthetic credentials passed disk reopen/no-plaintext/session-logout/clear testing. User-provided test credentials were privately initialized on Chromecast and read back successfully.
 - Build/lint/18 unit tests passed. Independent agent is validating the new controls on physical Chromecast; no new APK installation until that run finishes.
+
+### S20 - ordered credentials and continuous result feed
+
+- Credential save, clear and pre-login save share a single queue; login awaits acknowledgement. Immediate in-memory state prevents stale autofill after clear. Clear uses a checked synchronous disk commit on IO.
+- Independent review confirmed the write/clear race is fixed.
+- CatalogFeed appends and deduplicates batches, retains old results on error, retries the same page and stops at end. Bounded per-filter/per-query caches retain results when returning from a movie.
+- New regression covers concurrent-load rejection, failed append, retry and end-of-list. Build/lint/all 19 unit tests passed.

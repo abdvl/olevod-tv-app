@@ -34,5 +34,5 @@ class SessionStore(context:Context,storeName:String="session") {
         val encrypted=c.doFinal(value.toString().toByteArray(Charsets.UTF_8))
         check(prefs.edit().putString("value",Base64.encodeToString(c.iv,Base64.NO_WRAP)+"."+Base64.encodeToString(encrypted,Base64.NO_WRAP)).commit()){ "无法保存登录会话" };cached=value
     }
-    fun clear(){cached=null;prefs.edit().clear().apply()}
+    fun clear(synchronous:Boolean=false){cached=null;val edit=prefs.edit().clear();if(synchronous)check(edit.commit()){ "无法清除保存的信息" }else edit.apply()}
 }

@@ -25,8 +25,39 @@ class AppViewModel(application:Application):AndroidViewModel(application) {
     var pendingResume:WatchRecord?=null
     var pendingChannel by mutableStateOf<Channel?>(null)
     val credentials=CredentialsStore(application)
-    fun rememberCredentials(username:String,password:String){if(username.isNotBlank()&&password.isNotBlank())viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO){credentials.save(username,password)}}
-    fun forgetCredentials(){credentials.clear()}
+    var rememberedCredentials by mutableStateOf(credentials.read())
+        private set
+    var credentialPersistenceError by mutableStateOf<String?>(null)
+        private set
+    private data class CredentialWrite(val value:RememberedCredentials?,val done:kotlinx.coroutines.CompletableDeferred<Unit>?=null)
+    private val credentialQueue=CoroutineChannel<CredentialWrite>(CoroutineChannel.UNLIMITED)
+    init {
+        viewModelScope.launch {
+            for(write in credentialQueue){
+                try {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO){
+                        write.value?.let{credentials.save(it.username,it.password)}?:credentials.clear()
+                    }
+                    credentialPersistenceError=null;write.done?.complete(Unit)
+                }catch(e:Exception){
+                    if(e is CancellationException)throw e
+                    credentialPersistenceError="无法记住账号密码，请重试"
+                    write.done?.completeExceptionally(e)
+                }
+            }
+        }
+    }
+    fun rememberCredentials(username:String,password:String){
+        if(username.isBlank()||password.isBlank())return
+        val value=RememberedCredentials(username,password);rememberedCredentials=value
+        credentialQueue.trySend(CredentialWrite(value))
+    }
+    fun forgetCredentials(){rememberedCredentials=null;credentialQueue.trySend(CredentialWrite(null))}
+    private suspend fun saveLoginCredentials(username:String,password:String){
+        val value=RememberedCredentials(username,password);rememberedCredentials=value
+        val done=kotlinx.coroutines.CompletableDeferred<Unit>()
+        credentialQueue.send(CredentialWrite(value,done));done.await()
+    }
     val sessions=SessionStore(application)
     val history=HistoryStore(application){sessions.accountKey}
     init{viewModelScope.launch{history.load()}}
@@ -71,7 +102,21 @@ class AppViewModel(application:Application):AndroidViewModel(application) {
     var sessionVersion by mutableIntStateOf(0)
         private set
     val api=OlevodApi(token={sessions.token},onUnauthorized={logout()})
-    suspend fun login(username:String,password:String,captcha:String,captchaId:String){kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO){credentials.save(username,password)};val result=api.login(username,password,captcha,captchaId);kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO){sessions.save(result.token,result.name,result.accountId)};history.load();sessionVersion++;loadHome()}
+    private val catalogFeeds=linkedMapOf<Filter,CatalogFeed>()
+    fun catalogFeed(filter:Filter):CatalogFeed {
+        catalogFeeds.remove(filter)?.let{catalogFeeds[filter]=it;return it}
+        val feed=CatalogFeed(api,filter,viewModelScope);catalogFeeds[filter]=feed
+        while(catalogFeeds.size>8)catalogFeeds.remove(catalogFeeds.keys.first())
+        return feed
+    }
+    private val searchFeeds=linkedMapOf<String,CatalogFeed>()
+    fun searchFeed(query:String):CatalogFeed {
+        searchFeeds.remove(query)?.let{searchFeeds[query]=it;return it}
+        val feed=CatalogFeed(viewModelScope){page->api.search(query,page=page,size=20)};searchFeeds[query]=feed
+        while(searchFeeds.size>8)searchFeeds.remove(searchFeeds.keys.first())
+        return feed
+    }
+    suspend fun login(username:String,password:String,captcha:String,captchaId:String){saveLoginCredentials(username,password);val result=api.login(username,password,captcha,captchaId);kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO){sessions.save(result.token,result.name,result.accountId)};history.load();sessionVersion++;loadHome()}
     fun logout(){sessions.clear();history.clearView();viewModelScope.launch{history.load()};sessionVersion++;loadHome()}
     private val _home=MutableStateFlow(HomeState())
     val home=_home.asStateFlow()
