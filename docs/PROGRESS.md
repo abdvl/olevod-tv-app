@@ -225,3 +225,10 @@
 - Six portrait posters per row; no page buttons. The last visible row triggers the next batch after layout has caught up, avoiding duplicate initial prefetch.
 - Filter-specific scroll/focus state and cached feeds retain loaded results on return. Emulator screenshot confirmed the initial 20 items and complete poster titles.
 - Latest implementation is installed on Chromecast for independent validation.
+
+### S22 - three-column search layout
+
+- Left: input and 6-column alphabet/number remote keyboard, clear/backspace and Chinese/system input.
+- Middle: vertical suggestions, popular and recent searches. Right: two portrait poster columns with continuous results.
+- Query-specific cache, scroll and focus avoid applying old search-card focus to a different query. Search requests remain debounced.
+- Build/lint/19 tests passed; emulator rendered the three-column layout. Physical focus verification is ongoing.

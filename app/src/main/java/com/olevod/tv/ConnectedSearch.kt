@@ -2,9 +2,9 @@ package com.olevod.tv
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.runtime.*
@@ -12,58 +12,73 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Text
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun ConnectedSearch(vm:AppViewModel,open:(Movie)->Unit) {
     var query by rememberSaveable{mutableStateOf("")}
-    var page by rememberSaveable(query){mutableIntStateOf(1)}
     var suggestions by remember{mutableStateOf<List<String>>(emptyList())}
     var hot by remember{mutableStateOf<List<String>>(emptyList())}
-    var movies by remember{mutableStateOf<List<Movie>>(emptyList())}
-    var total by remember{mutableIntStateOf(0)}
-    var loading by remember{mutableStateOf(false)}
-    var error by remember{mutableStateOf<String?>(null)}
-    var retry by remember{mutableIntStateOf(0)}
     var editRequest by remember{mutableIntStateOf(0)}
     val input=remember{FocusRequester()}
-    val keyboard=LocalSoftwareKeyboardController.current
+    val home by vm.home.collectAsStateWithLifecycle()
+    val term=query.trim()
+    val feed=remember(term){if(term.isBlank())null else vm.searchFeed(term)}
+    val result=feed?.state?:CatalogFeedState()
+    val movies=if(term.isBlank())home.sections.firstOrNull{it.category.id==1}?.movies.orEmpty()else result.items
+    val words=if(term.isBlank())(vm.searchHistory+hot).distinct().take(20)else(suggestions+movies.map{it.title}).distinct().take(20)
+    val listState=key(term){rememberLazyListState()}
     LaunchedEffect(Unit){try{hot=vm.api.hotWords()}catch(e:Exception){if(e is CancellationException)throw e}}
-    LaunchedEffect(query){suggestions=emptyList();if(query.isNotBlank())try{delay(350);suggestions=vm.api.suggestions(query.trim())}catch(e:Exception){if(e is CancellationException)throw e}}
-    LaunchedEffect(query,page,retry){
-        error=null;movies=emptyList();total=0
-        if(query.isBlank()){loading=false;return@LaunchedEffect}
-        loading=true
-        try{delay(400);val result=vm.api.search(query.trim(),page=page,size=12);movies=result.items;total=result.total}
-        catch(e:Exception){if(e is CancellationException)throw e;error=safeError(e)}finally{loading=false}
+    LaunchedEffect(term){suggestions=emptyList();if(term.isNotBlank())try{delay(350);suggestions=vm.api.suggestions(term)}catch(e:Exception){if(e is CancellationException)throw e}}
+    LaunchedEffect(feed){if(feed!=null&&feed.state.items.isEmpty()&&feed.state.error==null){delay(400);feed.loadNext()}}
+    LaunchedEffect(feed,listState){
+        snapshotFlow {
+            val layout=listState.layoutInfo;val state=feed?.state
+            state!=null && state.items.isNotEmpty() && layout.totalItemsCount>=(state.items.size+1)/2+1 &&
+                (layout.visibleItemsInfo.lastOrNull()?.index?:-1)>=layout.totalItemsCount-2 &&
+                !state.loading && !state.endReached && state.error==null
+        }.distinctUntilChanged().collect{nearEnd->if(nearEnd)feed?.loadNext()}
     }
-    Row(Modifier.fillMaxSize().padding(40.dp,12.dp,40.dp,20.dp),horizontalArrangement=Arrangement.spacedBy(30.dp)){
-        Column(Modifier.width(254.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
-            Text("发现想看的故事",color=White,fontSize=22.sp)
+    Row(Modifier.fillMaxSize().padding(36.dp,18.dp,36.dp,20.dp),horizontalArrangement=Arrangement.spacedBy(22.dp)){
+        Column(Modifier.width(254.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
             InputBox(query,{query=it},"输入片名 / 演员",Modifier.focusRequester(input),editRequest=editRequest)
-            Row{TvAction("清空",Icons.Rounded.Close){query=""};TvAction("退格",Icons.Rounded.Backspace){query=query.dropLast(1)}}
-            Column(verticalArrangement=Arrangement.spacedBy(5.dp)){"abcdefghijklmnopqrstuvwxyz1234567890".chunked(6).forEach{line->Row(horizontalArrangement=Arrangement.spacedBy(5.dp)){line.forEach{c->KeyButton(c.toString(),Modifier.weight(1f)){query+=c}}}}}
+            Row{TvAction("清空",Icons.Rounded.Close){query=""};Spacer(Modifier.weight(1f));TvAction("退格",Icons.Rounded.Backspace){query=query.dropLast(1)}}
+            Column(verticalArrangement=Arrangement.spacedBy(10.dp)){"ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".chunked(6).forEach{line->
+                Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){line.forEach{c->KeyButton(c.toString(),Modifier.weight(1f)){query+=c}}}
+            }}
             TvAction("中文 / 语音输入",Icons.Rounded.Keyboard){editRequest++}
             Text("支持系统输入法与手机遥控输入",color=Muted,fontSize=11.sp)
         }
         Box(Modifier.width(1.dp).fillMaxHeight().background(White.copy(alpha=.08f)))
-        Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(12.dp)){
-            SectionTitle(if(query.isBlank())"大家都在看" else "搜索结果",if(query.isBlank())"热门推荐" else "共 $total 部")
-            if(query.isNotBlank()&&suggestions.isNotEmpty())LazyRow{items(suggestions){word->TvAction(word){vm.saveQuery(word);query=word}}}
-            if(query.isBlank()&&vm.searchHistory.isNotEmpty()){Row{Text("最近搜索",color=Muted);TvAction("清除"){vm.clearSearchHistory()}};LazyRow{items(vm.searchHistory){word->TvAction(word){vm.saveQuery(word);query=word}}}}
-            when {
-                query.isBlank()->LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)){items(hot.chunked(2)){row->Row{row.forEach{word->TvAction(word,modifier=Modifier.weight(1f)){vm.saveQuery(word);query=word}};repeat(2-row.size){Spacer(Modifier.weight(1f))}}}}
-                error!=null->ErrorNotice(error!!){retry++}
-                loading->Text("正在搜索…",color=Muted)
-                movies.isEmpty()->Text("没有找到相关影片，请换个关键词",color=Muted)
-                else->LazyColumn(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(14.dp),contentPadding=PaddingValues(4.dp,5.dp,4.dp,15.dp)){items(movies.chunked(3)){row->Row(horizontalArrangement=Arrangement.spacedBy(14.dp)){row.forEach{m->PosterCard(m,Modifier.weight(1f),posterRatio=1.1f){vm.saveQuery(query);open(m)}};repeat(3-row.size){Spacer(Modifier.weight(1f))}}}}
+        Column(Modifier.width(170.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){
+            Text(if(term.isBlank())"热门与最近搜索"else"猜你想搜",color=White,fontSize=18.sp)
+            LazyColumn(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(5.dp)){
+                items(words,key={it}){word->TvAction(word,modifier=Modifier.fillMaxWidth()){vm.saveQuery(word);query=word}}
             }
-            if(query.isNotBlank()&&!loading&&error==null)Row{if(page>1)TvAction("上一页"){page--};Text("第 $page 页",color=Muted,fontSize=12.sp,modifier=Modifier.padding(12.dp));if(page*12<total)TvAction("下一页"){page++}}
+            if(term.isBlank()&&vm.searchHistory.isNotEmpty())TvAction("清除搜索记录"){vm.clearSearchHistory()}
+        }
+        Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(12.dp)){
+            Text(if(term.isBlank())"最近更新"else"包含「$term」的影片 · ${result.total} 部",color=White,fontSize=17.sp)
+            PosterFocusGroup(term){LazyColumn(Modifier.weight(1f),state=listState,verticalArrangement=Arrangement.spacedBy(18.dp),contentPadding=PaddingValues(4.dp,5.dp,4.dp,18.dp)){
+                items(movies.chunked(2),key={it.first().id}){row->Row(horizontalArrangement=Arrangement.spacedBy(14.dp)){
+                    row.forEach{m->PosterCard(m,Modifier.weight(1f),posterRatio=.74f){if(term.isNotBlank())vm.saveQuery(term);open(m)}}
+                    repeat(2-row.size){Spacer(Modifier.weight(1f))}
+                }}
+                item(key="load-more"){
+                    when {
+                        result.error!=null->ErrorNotice(result.error){feed?.loadNext()}
+                        term.isNotBlank()&&(result.loading||result.nextPage==1)->Text("正在搜索…",color=Muted)
+                        term.isNotBlank()&&movies.isEmpty()->Text("没有找到相关影片",color=Muted)
+                        result.endReached&&movies.isNotEmpty()->Text("已显示全部结果",color=Muted,fontSize=12.sp)
+                    }
+                }
+            }}
         }
     }
 }
