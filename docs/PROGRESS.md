@@ -4,8 +4,8 @@
 
 ## 当前检查点
 
-- 已完成：S01、S02。
-- 进行中：S03 原生 TV 预览界面。
+- 已完成：S01、S02、S03（界面预览）。
+- 进行中：S04 独立 UI 验证与修复；S05 协议实现准备。
 - 下一步：S03 原生 TV 预览界面和可批注截图；随后接真实 API。
 - 已有设计基线提交：`4552cc8 Add design docs`。
 - 用户目标设备：Google Chromecast with Google TV（4K/HD 待确认）。
@@ -36,3 +36,11 @@
 - 实测 `assembleDebug` BUILD SUCCESSFUL，首个 APK 约20MB。
 - 独立 agent 准备 Android TV API34 ARM64 1080p，emulator-5554 已启动。
 - 下一步：原生预览页面与截图。
+
+### S03 — feat: add native TV visual preview screens
+
+- 首页推荐/双行卡片、浏览筛选、字母搜索键盘、左右播放器、直播、登录与空历史/收藏页面。
+- 明确标注界面预览；公开影片样本不包含测试账号。
+- `assembleDebug` 成功；模拟器实际启动和网络图片加载成功；修复 Activity 窗口初始化崩溃。
+- 独立 agent `assembleDebug lintDebug` 通过。
+- S04 已发现：搜索页底部裁切和聚焦输入框自动弹 IME，修复后再交付截图。
