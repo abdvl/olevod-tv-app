@@ -148,6 +148,13 @@ private fun HeaderIcon(label:String,icon:ImageVector,selected:Boolean,onClick:()
 }
 
 @Composable
+private fun OfficialOlevodLogo(modifier:Modifier=Modifier) {
+    androidx.compose.foundation.Image(
+        painter=androidx.compose.ui.res.painterResource(R.drawable.official_olevod_logo),
+        contentDescription="欧乐影院",modifier=modifier,contentScale=ContentScale.Fit)
+}
+
+@Composable
 private fun Header(screen:String,status:String,go:(String)->Unit,accountLabel:String="登录") {
     Row(Modifier.fillMaxWidth().padding(start=38.dp,end=38.dp,top=19.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically) {
         HeaderIcon("首页",Icons.Rounded.Home,screen=="home"){go("home")}
@@ -158,8 +165,7 @@ private fun Header(screen:String,status:String,go:(String)->Unit,accountLabel:St
         Spacer(Modifier.weight(1f))
         Text(status,fontSize=10.sp,color=Muted,modifier=Modifier.border(1.dp,Muted.copy(alpha=.3f),RoundedCornerShape(4.dp)).padding(horizontal=6.dp,vertical=3.dp))
         Spacer(Modifier.width(18.dp))
-        Text("OLE",color=White,fontSize=22.sp,fontWeight=FontWeight.Black,letterSpacing=2.sp)
-        Text(" TV",color=Green,fontSize=22.sp,fontWeight=FontWeight.Black)
+        OfficialOlevodLogo(Modifier.width(142.dp).height(25.dp))
         Spacer(Modifier.width(18.dp))
         HeaderIcon(accountLabel,Icons.Rounded.AccountCircle,screen=="account"){go("account")}
     }
@@ -332,7 +338,7 @@ private fun PlayerPreview(movie:Movie,movies:List<Movie>,full:Boolean,toggleFull
                     Text(movie.title,color=White,fontSize=24.sp,fontWeight=FontWeight.Bold)
                     Text("播放器布局预览 · 尚未加载视频",color=White.copy(alpha=.7f),fontSize=12.sp)
                 }
-                Text("OLE TV",color=White.copy(alpha=.7f),fontSize=11.sp,modifier=Modifier.align(Alignment.TopStart).padding(17.dp))
+                OfficialOlevodLogo(Modifier.align(Alignment.TopStart).padding(17.dp).width(114.dp).height(20.dp))
             }
             Column(Modifier.padding(horizontal=if(full)30.dp else 0.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
                 Box(Modifier.fillMaxWidth().height(3.dp).background(White.copy(alpha=.16f))){Box(Modifier.fillMaxWidth(.18f).fillMaxHeight().background(Green))}

@@ -1,4 +1,11 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="320dp" android:height="180dp" android:viewportWidth="320" android:viewportHeight="180">
-    <path android:fillColor="#17201C" android:pathData="M0,0h320v180h-320z" />
-    <path android:fillColor="#62E67B" android:pathData="M130,50L195,90L130,130z" />
-</vector>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <size android:width="320dp" android:height="180dp" />
+            <solid android:color="#17201C" />
+        </shape>
+    </item>
+    <item android:width="273dp" android:height="48dp" android:gravity="center">
+        <bitmap android:src="@drawable/official_olevod_logo" android:gravity="fill" android:filter="true" />
+    </item>
+</layer-list>
