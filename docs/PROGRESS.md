@@ -359,3 +359,13 @@
 - Continue watching is the default focus; explicit horizontal targets connect Continue and Exit, with outer/up/down edges stopped. Remote Back uses Dialog dismissal and never invokes exit confirmation.
 - Added two Android Compose tests for initial focus, Left/Right navigation and boundaries, both OK actions, and Back cancellation from the Exit button. Tests use native Android remote key events.
 - Independent component implementation complete; build and emulator execution are pending the main agent's combined mini-home/root-routing integration. No device was controlled during this step.
+
+### S40b - category mini homes, exit integration, short dramas last
+
+- Middle VOD category tabs now enter a mini home. Actual API Filter(category, year=current calendar year, sort=hot/score) supplies each ranking; display takes the first10, top2 large recommendation cards plus the remaining8 in four-column rows. Empty/error states do not silently substitute other years.
+- Bottom Browse all opens full category directory; Back returns to the mini home. Player return retains the originating screen. Category tabs remain present and selected; entry callbacks remount ranking rows before focus. VIP蓝光影院 from directory is normalized to the VIP蓝光 navigation tab, fixing an independently identified unloaded focus-target risk.
+- Short dramas moved to the end of the middle navigation. Main home section order continues to end with short dramas.
+- Integrated ExitConfirmationDialog with root-home Back and MainActivity.finish. Independent agent implemented and tested the component in2766f76. Touch-to-remote verification exposed absent initial focus; keyboard input mode + frame delay now ensures Continue watching is visibly focused.
+- Final build/lint passed. Three Android tests passed: real API MiniCategoryHomeUiTest (movie hot/score top2, navigation focus, directory→VIP→mini alias path, root exit cancel) and two ExitConfirmationDialog tests (default, boundaries, both actions and Back).
+- Actual emulator touch→Back→exit showed Continue watching focus and direct OK dismissed; screenshots inspected. Latest APK installed successfully on Chromecast. No claim of complete physical mini-home validation.
+- Screenshots: verification/screenshots/emulator-mini-movie-hot.png, emulator-mini-movie-score.png, emulator-exit-confirmation.png. All show the final navigation with short dramas last.

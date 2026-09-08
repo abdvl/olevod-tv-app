@@ -80,7 +80,7 @@ data class Movie(val id: Long, val title: String, val image: String, val note: S
 data class Hero(val id: Long, val title: String, val image: String, val note: String)
 
 @Composable
-fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppViewModel = viewModel(), initialMovieId:Long?=null) {
+fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppViewModel = viewModel(), initialMovieId:Long?=null,onExit:()->Unit={}) {
     val home by vm.home.collectAsStateWithLifecycle()
     LaunchedEffect(preview){ if(!preview)vm.loadHome() }
     val context = LocalContext.current
@@ -91,9 +91,19 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
     var category by rememberSaveable { mutableStateOf("电影") }
     var selected by rememberSaveable(stateSaver=androidx.compose.runtime.saveable.Saver<Movie,String>(save={com.olevod.tv.data.MovieJson.encode(it)},restore={com.olevod.tv.data.MovieJson.decode(it)})) { mutableStateOf(initialMovieId?.let{Movie(it,"正在加载影片…","")}?:movies.first()) }
     var backScreen by rememberSaveable { mutableStateOf("home") }
+    var browseBack by rememberSaveable{mutableStateOf("home")}
+    var confirmExit by rememberSaveable{mutableStateOf(false)}
     var full by rememberSaveable { mutableStateOf(false) }
     val homeFocus=remember{FocusRequester()}
     val navigationHomeFocus=remember{FocusRequester()}
+    val categoryNavigationFocus=remember{FocusRequester()}
+    var enterCategory by remember{mutableStateOf<(() -> Unit)?>(null)}
+    val categoryDown=Modifier.onPreviewKeyEvent{event->
+        if(screen=="category"&&event.key==Key.DirectionDown&&enterCategory!=null){
+            if(event.type==KeyEventType.KeyDown)enterCategory?.invoke()
+            true
+        }else false
+    }
     val recentFocus=remember{FocusRequester()}
     var enterRecent by remember{mutableStateOf<(() -> Unit)?>(null)}
     val homeDown=Modifier.onPreviewKeyEvent{event->
@@ -103,16 +113,22 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
         }else false
     }
     val openMovie: (Movie) -> Unit = { selected=it;backScreen=screen;screen="player" }
-    BackHandler(screen!="home" || full) { if(full)full=false else screen=if(screen=="player")backScreen else "home" }
+    BackHandler { if(full)full=false else when(screen){"home"->confirmExit=true;"player"->screen=backScreen;"browse"->screen=browseBack;else->screen="home"} }
     CompositionLocalProvider(LocalBringIntoViewSpec provides EdgeBringIntoViewSpec) {
     MaterialTheme(colorScheme=darkColorScheme(primary=Green,onPrimary=Bg,surface=Panel,onSurface=White,background=Bg)) {
         Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF192425),Bg)))) {
-            if(!full) Header(screen,if(preview)"界面预览" else "实时内容",{if(it=="directory"){category="电影";screen="browse"}else screen=it},vm.sessionVersion.let{if(vm.sessions.token!=null)"账号"else"登录"},Modifier.focusRequester(homeFocus).focusProperties{if(screen in listOf("home","live"))down=navigationHomeFocus})
-            if(!full && screen in listOf("home","live")) Navigation(homeModifier=Modifier.focusRequester(navigationHomeFocus).focusProperties{up=homeFocus}.then(homeDown),category=if(screen=="home")"首页" else if(screen=="live")"直播" else category) { label -> if(label=="首页") screen="home" else if(label=="直播") screen="live" else {category=label;screen="browse"} }
+            if(!full) Header(screen,if(preview)"界面预览" else "实时内容",{if(it=="directory"){category="电影";browseBack="home";screen="browse"}else screen=it},vm.sessionVersion.let{if(vm.sessions.token!=null)"账号"else"登录"},Modifier.focusRequester(homeFocus).focusProperties{if(screen=="category")down=categoryNavigationFocus else if(screen in listOf("home","live"))down=navigationHomeFocus})
+            if(!full && screen in listOf("home","live","category")) Navigation(selectedModifier=Modifier.focusRequester(categoryNavigationFocus).focusProperties{up=homeFocus}.then(categoryDown),homeModifier=Modifier.focusRequester(navigationHomeFocus).focusProperties{up=homeFocus}.then(homeDown),category=if(screen=="home")"首页" else if(screen=="live")"直播" else if(category=="VIP蓝光影院")"VIP蓝光"else category) { label -> if(label=="首页") screen="home" else if(label=="直播") screen="live" else {category=label;screen=if(preview)"browse"else"category"} }
             pageStates.SaveableStateProvider(screen) {
                 val lastPoster=rememberSaveable{mutableLongStateOf(-1)}
                 CompositionLocalProvider(LocalPosterFocus provides lastPoster){ when(screen) {
-                "home" -> if(preview) HomeScreen(movies,heroes,openMovie,{category=it;screen="browse"}) else ConnectedHome(home,vm,openMovie,{screen="history"},navigationHomeFocus,recentFocus,{enterRecent=it}){category=it;screen="browse"}
+                "home" -> if(preview) HomeScreen(movies,heroes,openMovie,{category=it;browseBack="home";screen="browse"}) else ConnectedHome(home,vm,openMovie,{screen="history"},navigationHomeFocus,recentFocus,{enterRecent=it}){category=it;browseBack="home";screen="browse"}
+                "category" -> {
+                    val selectedCategory=home.sections.firstOrNull{it.category.name==category||(category=="VIP蓝光"&&it.category.id==6)}?.category
+                    if(selectedCategory!=null)key(selectedCategory.id){MiniCategoryHome(selectedCategory,vm,openMovie,{browseBack="category";screen="browse"},categoryNavigationFocus,{enterCategory=it})}
+                    else if(home.error!=null)ErrorNotice(home.error!!){vm.loadHome()}
+                    else Text("正在加载分类…",color=Muted)
+                }
                 "browse" -> if(preview) BrowseScreen(category,movies,openMovie) else ConnectedBrowse(category,vm,openMovie){category=it}
                 "search" -> if(preview) SearchScreen(movies,openMovie) else ConnectedSearch(vm,openMovie)
                 "player" -> if(preview) PlayerPreview(selected,movies,full,{full=!full},openMovie) else NativePlayer(selected,vm,full,{full=!full}){if(full)full=false else screen=backScreen}
@@ -122,6 +138,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
                 "account" -> if(preview) AccountPreview() else AccountScreen(vm)
             }}}
         }
+        if(confirmExit)ExitConfirmationDialog(onDismiss={confirmExit=false},onConfirm={confirmExit=false;onExit()})
     }
 }
 
@@ -184,9 +201,9 @@ private fun Header(screen:String,status:String,go:(String)->Unit,accountLabel:St
 }
 
 @Composable
-private fun Navigation(category:String,homeModifier:Modifier=Modifier,onSelect:(String)->Unit) {
+private fun Navigation(category:String,homeModifier:Modifier=Modifier,selectedModifier:Modifier=Modifier,onSelect:(String)->Unit) {
     Row(Modifier.fillMaxWidth().padding(horizontal=38.dp,vertical=4.dp).horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(7.dp)) {
-        listOf("首页","直播","短剧","电影","连续剧","综艺","动漫","VIP蓝光").forEach { tab -> TvAction(tab,selected=tab==category,modifier=if(tab=="首页")homeModifier else Modifier){onSelect(tab)} }
+        listOf("首页","直播","电影","连续剧","综艺","动漫","VIP蓝光","短剧").forEach { tab -> TvAction(tab,selected=tab==category,modifier=if(tab=="首页")homeModifier else if(tab==category)selectedModifier else Modifier){onSelect(tab)} }
     }
 }
 

@@ -6,6 +6,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
@@ -21,6 +24,7 @@ internal fun ExitConfirmationDialog(onDismiss:()->Unit,onConfirm:()->Unit) {
     val continueFocus=remember{FocusRequester()}
     val exitFocus=remember{FocusRequester()}
     Dialog(onDismissRequest=onDismiss) {
+        val inputMode=LocalInputModeManager.current
         Column(
             Modifier.width(420.dp).background(Panel,RoundedCornerShape(16.dp)).padding(28.dp),
             verticalArrangement=Arrangement.spacedBy(20.dp)
@@ -34,6 +38,6 @@ internal fun ExitConfirmationDialog(onDismiss:()->Unit,onConfirm:()->Unit) {
                     .focusProperties{left=continueFocus;right=FocusRequester.Cancel;up=FocusRequester.Cancel;down=FocusRequester.Cancel},onClick=onConfirm)
             }
         }
-        LaunchedEffect(Unit){continueFocus.requestFocus()}
+        LaunchedEffect(Unit){inputMode.requestInputMode(InputMode.Keyboard);withFrameNanos{};continueFocus.requestFocus()}
     }
 }
