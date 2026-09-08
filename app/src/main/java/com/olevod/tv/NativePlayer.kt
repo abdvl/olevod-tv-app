@@ -125,12 +125,12 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
     LaunchedEffect(ended){if(ended&&episode+1<(detail?.episodes?.size?:0)){saveProgress();episode++}}
     LaunchedEffect(full,controls){if(full&&!controls)surfaceFocus.requestFocus()else fullFocus.requestFocus()}
     BackHandler{if(speedMenu)speedMenu=false else onBack()}
-    Row(Modifier.fillMaxSize().background(Color.Black).focusRequester(surfaceFocus).focusable(enabled=full&&!controls).onPreviewKeyEvent { event ->
+    Row(Modifier.fillMaxSize().background(Color.Black).playerKeyInput(surfaceFocus,full&&!controls) { event ->
         if(event.nativeKeyEvent.keyCode==AndroidKeyEvent.KEYCODE_BACK){
             if(event.type==KeyEventType.KeyUp){if(speedMenu)speedMenu=false else onBack()}
             true
         }else if(event.type!=KeyEventType.KeyDown)false else {interactionTick++;when(event.nativeKeyEvent.keyCode){
-            AndroidKeyEvent.KEYCODE_DPAD_UP->{if(episodeAreaFocused)false else if(full){controls=false;true}else{videoFocus.requestFocus();true}}
+            AndroidKeyEvent.KEYCODE_DPAD_UP->{if(episodeAreaFocused)false else if(full){controls=false;true}else false}
             AndroidKeyEvent.KEYCODE_MEDIA_PLAY_PAUSE->{if(player.isPlaying)player.pause()else player.play();true}
             AndroidKeyEvent.KEYCODE_MEDIA_FAST_FORWARD->{player.seekForward();true}
             AndroidKeyEvent.KEYCODE_MEDIA_REWIND->{player.seekBack();true}
@@ -139,7 +139,7 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
     }}.padding(if(full)0.dp else 40.dp,if(full)0.dp else 12.dp,if(full)0.dp else 40.dp,if(full)0.dp else 24.dp),horizontalArrangement=Arrangement.spacedBy(22.dp)) {
         PlayerVideoStage(full,controls,Modifier.weight(1f),
             videoModifier=if(full)Modifier else Modifier.focusRequester(videoFocus)
-                .focusProperties{up=FocusRequester.Cancel;down=fullFocus}
+                .focusProperties{down=fullFocus}
                 .onFocusChanged{videoFocused=it.isFocused}
                 .border(if(videoFocused)2.dp else 0.dp,if(videoFocused)Green else Color.Transparent)
                 .semantics{contentDescription="视频画面，按确认键全屏"}.clickable{toggleFull()},video={

@@ -316,3 +316,9 @@
 - Episode selection moved below controls: choose a group of10, then a concrete episode; original API episode numbers are preserved. Fullscreen uses the same picker inside the translucent overlay.
 - Episode/group Up navigates toward controls instead of hiding them. Automatic hiding pauses while browsing episodes, and auto-next retains the browsed group to avoid destroying its focus.
 - Compose Android tests passed for fixed video bounds, selecting21–30 without playback,21/30 visibility, group/episode/control D-pad navigation, explicit episode24 selection and retaining focus when playback advances outside the group. Build/lint/all23 unit tests passed. Integrated Chromecast check follows.
+
+### S36 - fullscreen root key routing regression
+
+- Physical QA exposed that a preview-key listener placed after focusable misses keys when the hidden fullscreen root itself owns focus. Extracted PlayerKeyInput with the listener before the focus target.
+- Root stays disabled in normal playback; controls Up targets video, video can continue Up to navigation, and navigation Down can return to a visible focus target.
+- Added an Android regression asserting root focus, Down wake to controls, Up hide back to root, then Down wake again. All3 player Android UI regressions and23 unit tests/build/lint passed.
