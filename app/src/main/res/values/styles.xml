@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.Olevod" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowBackground">#101718</item>
+        <item name="android:colorAccent">#62E67B</item>
+    </style>
+</resources>

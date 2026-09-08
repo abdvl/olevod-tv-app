@@ -4,8 +4,8 @@
 
 ## 当前检查点
 
-- 已完成：S01 实施拆分与凭据保护。
-- 进行中：S02 Android 基础工程。
+- 已完成：S01、S02。
+- 进行中：S03 原生 TV 预览界面。
 - 下一步：S03 原生 TV 预览界面和可批注截图；随后接真实 API。
 - 已有设计基线提交：`4552cc8 Add design docs`。
 - 用户目标设备：Google Chromecast with Google TV（4K/HD 待确认）。
@@ -28,3 +28,11 @@
 2. 先恢复当前步骤，不从 S01 重新开始。
 3. 以实际构建/测试报告为准。预览数据、浏览器播放、模拟器播放和 Chromecast 实机测试必须分别标注。
 4. 遇到验证码或设备连接需求，可继续不依赖它的功能；不要假称登录/实机验收通过。
+
+### S02 — build: bootstrap native Android TV application
+
+- 固定 AGP8.9.2 / Gradle8.11.1 / Kotlin2.1.20 / JDK17 / SDK35；工程可由 Android Studio 打开。
+- TV launcher、图标、横屏、无需触屏、基础主题和 Gradle wrapper。
+- 实测 `assembleDebug` BUILD SUCCESSFUL，首个 APK 约20MB。
+- 独立 agent 准备 Android TV API34 ARM64 1080p，emulator-5554 已启动。
+- 下一步：原生预览页面与截图。
