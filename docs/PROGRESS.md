@@ -269,3 +269,9 @@
 - Search keyboard has explicit four-direction links. The right edge enters suggestions/results, and Left returns to the remembered keyboard key; first result column can return to suggestions.
 - Emulator D-pad checks passed: all seven category rows down/up; search header → input → clear → A, across to F, down L/R/X/4/0, right into a suggestion and left back to 0.
 - Build/lint/all 20 unit tests passed. Independent Chromecast verification follows.
+
+### S29 - fullscreen Up hides controls
+
+- Fullscreen Up hides the controls immediately; repeated Up keeps them hidden. Down/OK can show them again, and manual hide also works when paused.
+- Chromecast UI tree confirmed no fullscreen/play/seek buttons after one Up, and all controls returned after Down. The sampled VIP source was buffering during this UI check; this is input/visibility verification, not a new playback-stability claim.
+- Independent code review, build, lint and 20 unit tests passed. Installed on Chromecast.

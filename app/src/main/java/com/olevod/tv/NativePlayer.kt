@@ -109,6 +109,7 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
             if(event.type==KeyEventType.KeyUp){if(speedMenu)speedMenu=false else onBack()}
             true
         }else if(event.type!=KeyEventType.KeyDown)false else {interactionTick++;when(event.nativeKeyEvent.keyCode){
+            AndroidKeyEvent.KEYCODE_DPAD_UP->{if(full){controls=false;true}else false}
             AndroidKeyEvent.KEYCODE_MEDIA_PLAY_PAUSE->{if(player.isPlaying)player.pause()else player.play();true}
             AndroidKeyEvent.KEYCODE_MEDIA_FAST_FORWARD->{player.seekForward();true}
             AndroidKeyEvent.KEYCODE_MEDIA_REWIND->{player.seekBack();true}
@@ -121,7 +122,7 @@ fun NativePlayer(movie:Movie,vm:AppViewModel,full:Boolean,toggleFull:()->Unit,on
                 if(buffering)Text("正在缓冲…",color=White,modifier=Modifier.background(Bg).padding(12.dp))
                 error?.let{Column(Modifier.background(Bg).padding(20.dp)){ErrorNotice(it){retry++}}}
             }
-            if(controls || !full || !playing)Column(Modifier.padding(horizontal=if(full)30.dp else 0.dp),verticalArrangement=Arrangement.spacedBy(9.dp)) {
+            if(controls || !full)Column(Modifier.padding(horizontal=if(full)30.dp else 0.dp),verticalArrangement=Arrangement.spacedBy(9.dp)) {
                 Box(Modifier.fillMaxWidth().height(3.dp).background(Panel)){Box(Modifier.fillMaxWidth(if(duration>0)(position.toFloat()/duration).coerceIn(0f,1f)else 0f).fillMaxHeight().background(Green))}
                 Row(Modifier.fillMaxWidth()){Text(clock(position),color=Muted,fontSize=11.sp);Spacer(Modifier.weight(1f));Text(clock(duration),color=Muted,fontSize=11.sp)}
                 LazyRow(horizontalArrangement=Arrangement.spacedBy(2.dp)) {
