@@ -4,7 +4,7 @@
 
 为 Android TV / Google TV 打造的欧乐影院个人客户端。打开就能继续上次的观看，也可以从电影、电视剧、综艺、动漫和 VIP 榜单里慢慢挑一部。完整海报、清晰文字和绿色焦点，让大屏上的每一步都更顺手。
 
-> v0.2 正在准备发布。当前公开版本为 [v0.1](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.1)；下面介绍的是新版界面与功能。
+> **v0.2 · 更顺手的大屏观影** — [下载安装包](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.2)，或先看看下面的新版界面。
 
 [安装教程](docs/INSTALL.md) · [v0.2 新版亮点](docs/releases/v0.2.md) · [全部界面截图](docs/screenshots/v0.2/README.md)
 
@@ -87,7 +87,7 @@
 
 支持 Android TV / Google TV，最低 Android 8.0。使用遥控器操作，安装包以 APK 形式提供。
 
-发布后，从 [v0.2 发布页](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.2) 下载 `olevod-tv-v0.2.apk`，传到电视后用文件管理器打开安装，也可以通过电脑无线 ADB 安装。
+从 [v0.2 发布页](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.2) 下载 `olevod-tv-v0.2.apk`，传到电视后用文件管理器打开安装，也可以通过电脑无线 ADB 安装。
 
 **已经安装 v0.1 正式版，可以直接更新，无需卸载。** 开发调试版的签名不同，迁移前请先阅读 [安装与升级说明](docs/INSTALL.md)，避免丢失本机记录。
 

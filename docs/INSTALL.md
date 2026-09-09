@@ -1,6 +1,6 @@
 # 安装欧乐 TV v0.2
 
-v0.2安装包已准备，包含新版界面、Top 2模糊海报背景与搜索重试修复。GitHub下载入口待发布后生效；目前已公开版本为 [v0.1](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.1)。
+v0.2包含新版界面、Top 2模糊海报背景与搜索重试修复。[前往下载 APK](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.2)。
 
 ## 设备要求与下载
 
