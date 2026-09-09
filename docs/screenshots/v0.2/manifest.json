@@ -1,5 +1,5 @@
 {
-  "status": "Release verification complete; remote publication pending",
+  "status": "Release published as v0.2; public APK and checksum verified against frozen local assets",
   "provenance": "本版本发布验证期间的真实release截图。home、search-suggestions、search-results来自搜索修复后的最终3018708包；其余9图来自相同布局的c43c2569候选。每图分别记录安装包SHA。",
   "device": "Olevod_Release_v01 / emulator-5556 / Android TV API34 / arm64-v8a / density320",
   "capture_method": "Unedited adb exec-out screencap -p PNG; fresh uiautomator hierarchy checked before capture. XML and screenshot are sequential, not atomic.",

@@ -1,6 +1,6 @@
 # v0.2 发布验证与新版截图
 
-2026-09-08（America/Los_Angeles）。**最终原签名包 `3018708e…` 已完成构建、保留数据安装和实际网络错误恢复验证：重试按钮遥控可达，恢复网络后返回“魔女”36部结果并聚焦首卡，Back回输入框。47项release JVM通过，lint无错误。尚未远端发布。** 模拟器网络已恢复原值，应用已显式退出至系统Launcher。
+2026-09-08（America/Los_Angeles）。**最终原签名包 `3018708e…` 已完成构建、保留数据安装和实际网络错误恢复验证：重试按钮遥控可达，恢复网络后返回“魔女”36部结果并聚焦首卡，Back回输入框。47项release JVM通过，lint无错误。[已发布 v0.2](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.2)，公开附件与本地冻结文件逐字节一致。** 模拟器网络已恢复原值，应用已显式退出至系统Launcher。
 
 最终包信息：
 
@@ -124,3 +124,10 @@
 本轮确认视频画面与实际时钟推进，未验证听感、音画同步、4K/HDR、真实账号登录/VIP解码、云端写入或30分钟稳定性。此前真机证据仍按 [Chromecast报告](v2/CHROMECAST_V2.md) 的APK与范围归属，不等同于本次release包在实体电视上安装或长播。
 
 最终验证结束已显式退出至 `com.google.android.tvlauncher/.MainActivity`，网络原值再次核对无变化，交回模拟器及构建控制权。本子任务没有提交、tag、推送或发布；远端发布与资产校验仍由主代理完成。
+
+## 正式发布与公开下载校验
+
+- 发布于2026-09-08 22:25:19 PDT（2026-09-09T05:25:19Z），GitHub release ID385245245；正式版本，非草稿、非预发布，页面标为Latest。
+- `v0.2`标签指向`b9cc6dd6524afbb097fa3f12f87879dd5a2d4aea`，与发布时远端main及codex/ui-v2一致；原生产代码仍为1d10dbf。发布后的文档校验记录不改变标签或APK。
+- 从公开地址匿名下载APK及SHA256SUMS.txt，两者均与本地冻结文件逐字节一致；GitHub返回的asset digest也匹配。APK SHA-256为`3018708ebb6b1e73d62f7f91fa56b3b0f7dd3c86215e5e923dd3f703108141c5`。
+- [公开发布信息与文件摘要](v0.2-publication.json)仅记录公开元数据，不含凭据或浏览器会话。

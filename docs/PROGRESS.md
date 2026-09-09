@@ -2,7 +2,7 @@
 
 最近更新：2026-09-08（本地时间）。
 
-**最新恢复入口：UI v2 开发分支 `codex/ui-v2`，见本文末 S62–S63 与 [最终发布包验证](verification/RELEASE_V0_2_FINAL.md)。** README产品介绍、12张新版截图和Token history已更新；包含模糊海报背景及搜索重试修复的原签名v0.2包已构建。用户已授权推送和发布，本轮再次确认Mac锁定、CLI无可用GitHub写入凭据，远端发布尚未完成。旧版步骤保留在下方，不应从 S01 重做。
+**最新恢复入口：v0.2已正式发布，主分支为 `main`，见本文末 S64 与 [发布校验记录](verification/v0.2-publication.json)。** README产品介绍、12张新版截图和Token history均已推送。公开APK及校验文件与本地冻结文件逐字节一致；标签v0.2保留在发布提交b9cc6dd。旧版步骤与曾经的访问阻塞保留在下方，不应从 S01 重做。
 
 ## 当前检查点
 
@@ -580,3 +580,10 @@
 - Independent final-package search recovery passed on the isolated release emulator: one bounded network impairment produced a first-page error, Right reached resultsRetry and Back returned to input. After restoring original full speed/zero delay, explicitRetry loaded36 real results and focused the first card. Emulator network settings were restored; no production account or Chromecast data was changed. Controlled SearchUI7/7 also passed separately on the matching production-source debug build.
 - Publication remains blocked by access: CUA again reports the Mac locked and auto-unlock unavailable; both noninteractive Git push dry-run and the actual post-commit branch push failed with `fatal: unable to get password from user`. No remote push, tag, GitHub Release or asset upload completed. Pending-publication wording is deliberate. Do not overwrite the frozen APK or silently update its version/code.
 - Resume after Mac unlock: verify remote heads and local changes, use the already logged-in GitHub Desktop/browser, update pending-publication wording, fast-forwardmain if still applicable, commit/tagv0.2 at the final release checkpoint, then push and publish `releases/v0.2.md` with the frozen APK and `SHA256SUMS.txt`. Confirm remote commit/tag and public release assets before marking published. Existing user authorization is sufficient; do not request new publication approval.
+
+### S64 - publish v0.2 and verify public downloads
+
+- Mac unlock restored the already authorized GitHub Desktop/Chrome workflow. Pushedcodex/ui-v2, fast-forwardedmain without rewriting history, and verified both remote heads atb9cc6dd6524afbb097fa3f12f87879dd5a2d4aea before publication.
+- Publishedv0.2 as the latest stable GitHub Release on2026-09-08 22:25:19 PDT with the frozenAPK and SHA256SUMS.txt. Used the native file chooser after the extension upload method was unavailable; no browser permissions or credentials were changed. Existing unrelated drafts were left intact.
+- Anonymous GitHub API confirms release385245245 is not draft/prerelease. Both public assets were downloaded and byte-for-byte compared with local files, and asset digests match. APK3018708e is14,341,714 bytes; checksum file is85 bytes, SHA697b5c66d47a1333d65b9aef6dce3139cac77082edec9c0f33d87cedb42436e2. Remotev0.2 tag equalsb9cc6dd, fetched locally. Full public metadata is inverification/v0.2-publication.json.
+- Updated current recovery/build/verification status and screenshot manifest after publication. These are documentation-only follow-ups; no rebuild, new signing key, overwritten candidate, retag, or new device-data change. Accounting retains the frozen cutoff fromS63, so this release continuation is not silently included in earlier token totals.

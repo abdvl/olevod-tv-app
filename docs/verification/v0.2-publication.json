@@ -1,0 +1,28 @@
+{
+  "url": "https://github.com/abdvl/olevod-tv-app/releases/tag/v0.2",
+  "release_id": 385245245,
+  "tag": "v0.2",
+  "target_commitish": "main",
+  "published_at": "2026-09-09T05:25:19Z",
+  "draft": false,
+  "prerelease": false,
+  "assets": [
+    {
+      "name": "olevod-tv-v0.2.apk",
+      "size": 14341714,
+      "sha256": "3018708ebb6b1e73d62f7f91fa56b3b0f7dd3c86215e5e923dd3f703108141c5",
+      "github_digest": "sha256:3018708ebb6b1e73d62f7f91fa56b3b0f7dd3c86215e5e923dd3f703108141c5",
+      "download_url": "https://github.com/abdvl/olevod-tv-app/releases/download/v0.2/olevod-tv-v0.2.apk"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 85,
+      "sha256": "697b5c66d47a1333d65b9aef6dce3139cac77082edec9c0f33d87cedb42436e2",
+      "github_digest": "sha256:697b5c66d47a1333d65b9aef6dce3139cac77082edec9c0f33d87cedb42436e2",
+      "download_url": "https://github.com/abdvl/olevod-tv-app/releases/download/v0.2/SHA256SUMS.txt"
+    }
+  ],
+  "tag_commit": "b9cc6dd6524afbb097fa3f12f87879dd5a2d4aea",
+  "verified_at": "2026-09-09T05:28:22.972956+00:00",
+  "verification": "Anonymous GitHub API read; both public assets downloaded and compared byte for byte with the frozen local files; remote tag checked with git ls-remote."
+}
