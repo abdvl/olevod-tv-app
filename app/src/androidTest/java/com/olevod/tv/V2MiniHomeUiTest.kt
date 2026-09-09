@@ -37,7 +37,7 @@ class V2MiniHomeUiTest {
     @Before fun setUp() { isolated = V2FixtureViewModel("mini") }
     @After fun tearDown() { if (::isolated.isInitialized) isolated.close() }
 
-    @Test fun bothTopTensAreDistinctAndRemoteCanReturnToBrowseAll() {
+    @Test fun bothRankingsHaveTwelveDistinctMoviesInTwoRowsOfFiveAndRestoreBrowseAll() {
         showMini(hot to score)
         focused("nav:movie")
         press(KeyEvent.KEYCODE_DPAD_DOWN)
@@ -96,27 +96,60 @@ class V2MiniHomeUiTest {
         compose.runOnIdle { assertEquals(1, browseOpens); assertTrue(isolated.vm.history.records.value.isEmpty()) }
     }
 
+    @Test fun vipUsesExplicitAllYearsHeadingsWithTwelveMoviesPerRanking() {
+        val vip=Category(6,"VIP蓝光影院",emptyList(),listOf("2026"),emptyList())
+        showMini(hot to score,vip)
+        focused("nav:vip")
+        compose.onNode(hasText("全部年份",substring=true) and hasText("人气最高",substring=true)).assertExists()
+        compose.onAllNodesWithText("2026 人气最高",substring=true).assertCountEquals(0)
+        press(KeyEvent.KEYCODE_DPAD_DOWN)
+        focused("ranking:hot:1")
+        traverseRanking("hot",1L)
+        press(KeyEvent.KEYCODE_DPAD_DOWN)
+        focused("ranking:score:1")
+        compose.onNode(hasText("全部年份",substring=true) and hasText("评分最高",substring=true)).assertExists()
+        compose.onAllNodesWithText("2026 评分最高",substring=true).assertCountEquals(0)
+        traverseRanking("score",101L)
+        press(KeyEvent.KEYCODE_DPAD_DOWN)
+        focused("mini-browse-all")
+    }
+
     private fun traverseRanking(sort: String, firstId: Long) {
         focused("ranking:$sort:1")
+        val visited=mutableSetOf(firstId,firstId+1)
+        // Featured films must not be repeated among the ten regular posters.
         compose.onNodeWithTag("poster:$firstId").assertDoesNotExist()
         compose.onNodeWithTag("poster:${firstId+1}").assertDoesNotExist()
-        compose.onNodeWithTag("poster:${firstId+10}").assertDoesNotExist()
         press(KeyEvent.KEYCODE_DPAD_RIGHT)
         focused("ranking:$sort:2")
         press(KeyEvent.KEYCODE_DPAD_LEFT)
         focused("ranking:$sort:1")
         press(KeyEvent.KEYCODE_DPAD_DOWN)
-        compose.waitUntil(5_000) { currentTag().removePrefix("poster:").toLongOrNull()?.let { it in (firstId+2..firstId+5) }==true }
-        // Wide featured cards may enter either nearby column; then traverse each regular poster by keys.
-        repeat(3) { if (currentTag()!="poster:${firstId+2}") press(KeyEvent.KEYCODE_DPAD_LEFT) }
-        focused("poster:${firstId+2}")
-        (3L..5L).forEach { offset -> press(KeyEvent.KEYCODE_DPAD_RIGHT); focused("poster:${firstId+offset}") }
+        compose.waitUntil(5_000) { currentTag().removePrefix("poster:").toLongOrNull()?.let { it in (firstId+2..firstId+6) }==true }
+        repeat(4) { if(currentTag()!="poster:${firstId+2}")press(KeyEvent.KEYCODE_DPAD_LEFT) }
+        focused("poster:${firstId+2}");visited+=firstId+2
+        (3L..6L).forEach { offset -> press(KeyEvent.KEYCODE_DPAD_RIGHT);focused("poster:${firstId+offset}");visited+=firstId+offset }
+        assertFiveColumnRow(firstId+2)
         press(KeyEvent.KEYCODE_DPAD_DOWN)
-        focused("poster:${firstId+9}")
-        (8L downTo 6L).forEach { offset -> press(KeyEvent.KEYCODE_DPAD_LEFT); focused("poster:${firstId+offset}") }
+        focused("poster:${firstId+11}");visited+=firstId+11
+        (10L downTo 7L).forEach { offset -> press(KeyEvent.KEYCODE_DPAD_LEFT);focused("poster:${firstId+offset}");visited+=firstId+offset }
+        assertFiveColumnRow(firstId+7)
+        assertEquals("Two featured plus ten individually reachable regular films",(firstId..firstId+11).toSet(),visited)
+        compose.onNodeWithTag("poster:${firstId+12}").assertDoesNotExist()
     }
 
-    private fun showMini(initial: Pair<List<Movie>, List<Movie>>) {
+    private fun assertFiveColumnRow(firstId:Long) {
+        val bounds=(firstId..firstId+4).map { id ->
+            compose.onNodeWithTag("poster:$id").assertIsDisplayed().getUnclippedBoundsInRoot()
+        }
+        bounds.forEach { rect -> assertEquals("Five intended movies share one row",bounds.first().top.value,rect.top.value,1f) }
+        bounds.zipWithNext().forEach { (left,right) -> assertTrue("Five columns do not overlap",left.right<=right.left) }
+        val viewport=compose.onRoot().getUnclippedBoundsInRoot()
+        assertTrue("Last poster and title remain inside viewport",bounds.last().bottom<=viewport.bottom)
+    }
+
+    private fun showMini(initial: Pair<List<Movie>, List<Movie>>, selectedCategory:Category=category) {
+        val headerKey=if(selectedCategory.id==6)"vip"else"movie"
         compose.setContent {
             var fixture by remember { mutableStateOf(initial) }
             replaceFixture = { fixture=it }
@@ -124,17 +157,17 @@ class V2MiniHomeUiTest {
             val holder = rememberSaveableStateHolder()
             val header = remember { navigationItems.associate { it.key to FocusRequester() } }
             val body = remember { FocusRequester() }
-            val page = remember { PageFocusController(header.getValue("movie"), body) }
+            val page = remember { PageFocusController(header.getValue(headerKey), body) }
             MaterialTheme {
                 CompositionLocalProvider(LocalBringIntoViewSpec provides EdgeBringIntoViewSpec) {
                     Column(Modifier.fillMaxSize().background(Bg)) {
-                        UnifiedHeader("movie", header, { page.enterContent() }) {}
+                        UnifiedHeader(headerKey, header, { page.enterContent() }) {}
                         Box(Modifier.weight(1f).fillMaxWidth().focusRequester(body).focusGroup()) {
                             if (!catalog) CompositionLocalProvider(LocalPageFocus provides page) {
                                 holder.SaveableStateProvider("mini-movie") {
                                     ContentFocusScope {
-                                        MiniCategoryHome(category, isolated.vm, open={}, browse={browseOpens++;catalog=true},
-                                            navigationFocus=header.getValue("movie"), setEntry={page.enter=it},
+                                        MiniCategoryHome(selectedCategory, isolated.vm, open={}, browse={browseOpens++;catalog=true},
+                                            navigationFocus=header.getValue(headerKey), setEntry={page.enter=it},
                                             currentYear="2026", fixture=fixture)
                                     }
                                 }
@@ -148,7 +181,7 @@ class V2MiniHomeUiTest {
                     }
                 }
             }
-            LaunchedEffect(Unit) { withFrameNanos {}; header.getValue("movie").requestFocus() }
+            LaunchedEffect(Unit) { withFrameNanos {}; header.getValue(headerKey).requestFocus() }
         }
     }
 

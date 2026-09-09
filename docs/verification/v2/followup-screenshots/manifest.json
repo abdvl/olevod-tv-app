@@ -1,0 +1,26 @@
+{
+  "device": "Chromecast sabrina API34",
+  "app_sha256": "6c5950bfc7b3d4275c6f053c28d756690ba1c16164a2151a2c6c3c72e91c3bcb",
+  "version": "0.1.0 / code1 before metadata bump; new UI implementation",
+  "mode": "Actual VIP public catalog with user session retained; no account data shown",
+  "images": [
+    {
+      "file": "vip-home.png",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "6e1de7a3b31b0ca6719c82b98f67206875fb34e99eb4f19beb1d38cd85178cc9"
+    },
+    {
+      "file": "vip-ranks-3-7.png",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "48c23e9848eca6ffc658796e5819853eb6288fd4d594e4066ab8a194d31ada9b"
+    },
+    {
+      "file": "vip-ranks-8-12.png",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "02831a7865dbb8bcc5afd6eb06a0331ef649de87cb9fa5c8f099debcd0793885"
+    }
+  ]
+}

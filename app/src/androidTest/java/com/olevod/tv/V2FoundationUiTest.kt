@@ -85,6 +85,32 @@ class V2FoundationUiTest {
         assertTrue("Entire focused poster must be below top",bounds.top>=viewport.top)
         assertTrue("Minimum bottom room",viewport.bottom-bounds.bottom>=2.dp)
     }
+    @Test fun scoreBadgeIsOverArtworkTopRightAndLongTitleKeepsFullWidth() {
+        val longTitle="这是一个用于验证评分不再挤占文字空间的很长影片标题"
+        val scored=Movie(801L,longTitle,"",score="9.3",year="2026")
+        val unscored=Movie(802L,"没有评分的影片","",year="2026")
+        compose.setContent { MaterialTheme { Row(Modifier.padding(24.dp),horizontalArrangement=Arrangement.spacedBy(16.dp)) {
+            PosterTile(scored,Modifier.width(176.dp)){}
+            PosterTile(unscored,Modifier.width(176.dp)){}
+        } } }
+        val artwork=compose.onNodeWithTag("artwork:801",useUnmergedTree=true).getUnclippedBoundsInRoot()
+        val badge=compose.onNodeWithTag("poster-score:801",useUnmergedTree=true)
+        badge.assertIsDisplayed().assertContentDescriptionEquals("评分 9.3")
+        val scoreBounds=badge.getUnclippedBoundsInRoot()
+        assertTrue("Score is within the artwork, not the title row",scoreBounds.left>=artwork.left&&scoreBounds.right<=artwork.right&&scoreBounds.top>=artwork.top&&scoreBounds.bottom<=artwork.bottom)
+        assertTrue("Score is at the right edge",artwork.right-scoreBounds.right<=12.dp)
+        assertTrue("Score is at the top edge",scoreBounds.top-artwork.top<=12.dp)
+        assertTrue("Score is in the right half",scoreBounds.left>artwork.left+(artwork.right-artwork.left)/2)
+        val title=compose.onNodeWithText(longTitle,useUnmergedTree=true).getUnclippedBoundsInRoot()
+        assertTrue("Long title starts below artwork",title.top>=artwork.bottom)
+        assertEquals("Score no longer subtracts width from the title",(artwork.right-artwork.left).value,(title.right-title.left).value,1f)
+        compose.onNodeWithTag("poster-score:802",useUnmergedTree=true).assertDoesNotExist()
+        compose.onAllNodesWithTag("poster-score:801",useUnmergedTree=true).assertCountEquals(1)
+        // The badge exposes a single spoken description via clearAndSetSemantics.
+        // A leftover title-row score would still expose its raw Text separately.
+        compose.onAllNodesWithText("9.3",useUnmergedTree=true).assertCountEquals(0)
+    }
+
     @Test fun fitPreservesAllFourCornersForPortraitAndVeryTallImages() {
         val context=InstrumentationRegistry.getInstrumentation().targetContext
         val dimensions=listOf(100 to 150, 120 to 160, 30 to 300)

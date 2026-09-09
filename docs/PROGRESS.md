@@ -2,7 +2,7 @@
 
 最近更新：2026-09-08（本地时间）。
 
-**最新恢复入口：UI v2 开发分支 `codex/ui-v2`，见本文末 S58a–S58e 及 [Chromecast 报告](verification/v2/CHROMECAST_V2.md)。** 三项后续修复已分别提交；30分钟播放观察和后台进程重建已完成，最终修复包已安装，独立真机回归19/19通过。旧版步骤保留在下方，不应从 S01 重做。
+**最新恢复入口：UI v2 开发分支 `codex/ui-v2`，见本文末 S59 与 [最新界面复测](verification/v2/V02_UI_FOLLOWUP.md)。** VIP全部年份、每榜2+10／五列和海报评分角标已完成；0.2.0开发包已保留数据安装到Chromecast，最终限定8/8通过。用户已授权推送和发布v0.2，签名包与升级验收正在收尾；Mac锁定及CLI凭据暂阻止GitHub写入。旧版步骤保留在下方，不应从 S01 重做。
 
 ## 当前检查点
 
@@ -538,3 +538,11 @@
 - Independent verifier installed final8778ae82 App and beb08425 Test with install-r; pulling the installed APK confirmed the exact SHA. Selected PlayerErrorFocus4, CatalogViewport1, CatalogUI4, PlayerUI4, Root3, LivePlayback1 and AccountRead2 passed19/19 in126.455s, zero failures/skips. The5 new cases raise distinct passing hardware cases across builds to56; do not sum overlapping retests or claim56 reran on the final package.
 - README, implementation status, build/test notes, machine-readable results and both hardware reports record current outcomes and retain historical failures. Actual public catalog/search screenshots are archived separately from account/private-history images. Three production fixes are2fb2e77, b5c21cb and d3ad628; checkpoint1a1d2be adds explicit VIP decoding and the observation script.
 - Remaining acceptance: onsite sound/sync, real4K/HDR source, full accessibility/performance and the uncovered requirement combinations listed inV2-10. Final debug package is installed; no new release/version/signing change or push performed in this testing continuation.
+
+### S59 - populate VIP mini rankings and update poster layout
+
+- Public API diagnosis confirmed category6/current2026 hot and score each returned0 films, while all-years returned2318. VIP now explicitly requests year0 and labels both rankings All years; ordinary categories retain the current year. No API fallback silently mixes years. Added2 scope JVM cases and1 opt-in anonymous catalog case.
+- Every mini ranking shows up to12 distinct films:2 featured then10 regular posters in2 rows of5. Ranking numbers and preview fixtures match. Shared complete-fit artwork places a nonfocusable score badge at top-right; ordinary poster titles use full width. Updated the current design specification/acceptance expectations; historical execution matrices retain their original scope.
+- Independent47 JVM/lint/build pass. First hardware batch21/22 passed in152.711s; one new test incorrectly expected raw rating Text despite clearAndSetSemantics. Corrected only the semantic expectation, preserving badge position/full-title-width checks. An earlier test compilation mistake and both first logs are retained.
+- Version0.2.0/code2 debug App2a9017f3a56481db2c88ea91036347019e92342d07a5808ed58a41e3099b23e0 installed-r, preserving television data. Final targeted score1/Mini3/Root3/liveVIP1 passed8/8 in78.122s. Do not say all22 reran on this final APK. TV returned to normal Home with version2 confirmed. Report and3 real public VIP screenshots are in verification/v2/V02_UI_FOLLOWUP.md and followup-screenshots/.
+- Next: finish dedicated signed-release emulator checks, commit packaging/install/release documentation, then push and publishv0.2. Original user publication authorization remains active; Mac unlock is an access dependency, not a new approval requirement.

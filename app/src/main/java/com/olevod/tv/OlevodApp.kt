@@ -138,7 +138,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
                     fixtureRecords=if(preview)previewWatchRecords(movies)else null){openCatalog("home",it)}
                 "category" -> {
                     val selectedCategory=(if(preview)previewHome(movies,heroes)else home).sections.firstOrNull{it.category.name==category||it.category.id==selectedCategoryId}?.category
-                    if(selectedCategory!=null)key(selectedCategory.id){MiniCategoryHome(selectedCategory,vm,openMovie,{openCatalog("category",category)},headerFocus,{pageFocus.enter=it},fixture=if(preview)movies.take(10) to movies.takeLast(10)else null)}
+                    if(selectedCategory!=null)key(selectedCategory.id){MiniCategoryHome(selectedCategory,vm,openMovie,{openCatalog("category",category)},headerFocus,{pageFocus.enter=it},fixture=if(preview)movies.take(12) to movies.takeLast(12)else null)}
                     else if(home.error!=null)ErrorNotice(home.error!!){vm.loadHome()}
                     else Text("正在加载分类…",color=Muted)
                 }

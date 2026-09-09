@@ -133,6 +133,10 @@ internal fun PosterArtwork(movie: Movie, modifier: Modifier = Modifier) {
         AsyncImage(movie.image, null, Modifier.fillMaxSize().testTag("artwork:${movie.id}"),
             contentScale=ContentScale.Fit, onSuccess={failed=false}, onError={failed=true})
         if(failed) Icon(Icons.Rounded.ImageNotSupported, null, Modifier.size(28.dp), tint=Muted)
+        if(movie.score.isNotBlank()) Text(movie.score,color=Green,fontSize=13.sp,lineHeight=18.sp,fontWeight=FontWeight.Bold,
+            modifier=Modifier.align(Alignment.TopEnd).padding(6.dp).testTag("poster-score:${movie.id}")
+                .clearAndSetSemantics{contentDescription="评分 ${movie.score}"}
+                .background(Color.Black.copy(alpha=.82f),RoundedCornerShape(6.dp)).padding(horizontal=6.dp,vertical=3.dp))
     }
 }
 
@@ -156,13 +160,10 @@ internal fun PosterTile(movie: Movie, modifier: Modifier=Modifier, onFocused:()-
         .clickable(interactionSource=interaction,indication=null,onClick=onClick).padding(4.dp),
         verticalArrangement=Arrangement.spacedBy(6.dp)) {
         PosterArtwork(movie,Modifier.fillMaxWidth().aspectRatio(TvDesign.posterRatio))
-        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-            Box(Modifier.weight(1f).height(titleHeight),contentAlignment=Alignment.CenterStart) {
-                Text(movie.title,color=White,fontSize=14.sp,lineHeight=19.sp,fontWeight=FontWeight.Medium,
-                    maxLines=if(focused)1 else 2,overflow=TextOverflow.Ellipsis,
-                    modifier=if(focused)Modifier.basicMarquee(iterations=1,initialDelayMillis=800)else Modifier)
-            }
-            if(movie.score.isNotBlank()) Text(movie.score,color=Green,fontSize=14.sp,lineHeight=19.sp,modifier=Modifier.padding(top=9.dp))
+        Box(Modifier.fillMaxWidth().height(titleHeight),contentAlignment=Alignment.CenterStart) {
+            Text(movie.title,color=White,fontSize=14.sp,lineHeight=19.sp,fontWeight=FontWeight.Medium,
+                maxLines=if(focused)1 else 2,overflow=TextOverflow.Ellipsis,
+                modifier=if(focused)Modifier.basicMarquee(iterations=1,initialDelayMillis=800)else Modifier)
         }
         Text(subtitle ?: listOf(movie.year,movie.area,movie.note).filter(String::isNotBlank).joinToString(" · "),
             color=Muted,fontSize=13.sp,lineHeight=18.sp,maxLines=1,overflow=TextOverflow.Ellipsis)

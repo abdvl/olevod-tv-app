@@ -32,7 +32,8 @@ import java.time.Year
 fun MiniCategoryHome(category:Category,vm:AppViewModel,open:(Movie)->Unit,browse:()->Unit,
                      navigationFocus:FocusRequester,setEntry:((()->Unit)?)->Unit,
                      currentYear:String=Year.now().value.toString(),fixture:Pair<List<Movie>,List<Movie>>?=null){
-    val year=currentYear
+    val rankingScope=miniRankingScope(category.id,currentYear)
+    val year=rankingScope.yearFilter
     val hot=remember(category.id,year,vm.sessionVersion,fixture){if(fixture==null)vm.catalogFeed(Filter(category=category.id,year=year,sort="hot"))else null}
     val score=remember(category.id,year,vm.sessionVersion,fixture){if(fixture==null)vm.catalogFeed(Filter(category=category.id,year=year,sort="score"))else null}
     DisposableEffect(hot,score){onDispose{hot?.cancel();score?.cancel()}}
@@ -56,10 +57,10 @@ fun MiniCategoryHome(category:Category,vm:AppViewModel,open:(Movie)->Unit,browse
     }
     LazyColumn(Modifier.fillMaxSize().testTag("mini-home"),state=list,contentPadding=PaddingValues(36.dp,8.dp,36.dp,64.dp),verticalArrangement=Arrangement.spacedBy(24.dp)){
         item("hot"){
-            MiniRanking(category.id,"hot","${categoryLabel(category.id)} · $year 人气最高",hotState,hotFocus,navigationFocus,open){hot?.loadNext()}
+            MiniRanking(category.id,"hot","${categoryLabel(category.id)} · ${rankingScope.label} 人气最高",hotState,hotFocus,navigationFocus,open){hot?.loadNext()}
         }
         item("score"){
-            MiniRanking(category.id,"score","$year 评分最高",scoreState,scoreFocus,if(!hotReady)navigationFocus else null,open){score?.loadNext()}
+            MiniRanking(category.id,"score","${rankingScope.label} 评分最高",scoreState,scoreFocus,if(!hotReady)navigationFocus else null,open){score?.loadNext()}
         }
         item("browse-all"){
             Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -74,7 +75,7 @@ fun MiniCategoryHome(category:Category,vm:AppViewModel,open:(Movie)->Unit,browse
 @Composable
 private fun MiniRanking(categoryId:Int,sort:String,title:String,state:CatalogFeedState,entry:FocusRequester,
                         up:FocusRequester?,open:(Movie)->Unit,retry:()->Unit){
-    val movies=state.items.take(10)
+    val movies=state.items.take(12)
     PosterFocusGroup("mini:$categoryId:$sort"){
         Column(Modifier.focusRequester(entry).focusGroup(),verticalArrangement=Arrangement.spacedBy(14.dp)){
             SectionHeading(title,if(movies.isEmpty())""else"前 ${movies.size} 部")
@@ -87,16 +88,16 @@ private fun MiniRanking(categoryId:Int,sort:String,title:String,state:CatalogFee
                         }
                         if(movies.size==1)Spacer(Modifier.weight(1f))
                     }
-                    movies.drop(2).chunked(4).forEachIndexed{rowIndex,row->
+                    movies.drop(2).chunked(5).forEachIndexed{rowIndex,row->
                         Row(horizontalArrangement=Arrangement.spacedBy(16.dp)){
-                            row.forEachIndexed{column,movie->key(movie.id){PosterCard(movie,Modifier.weight(1f),subtitle="第 ${rowIndex*4+column+3} 名 · "+listOf(movie.year,movie.area,movie.note).filter(String::isNotBlank).joinToString(" · ")){open(movie)}}}
-                            repeat(4-row.size){Spacer(Modifier.weight(1f))}
+                            row.forEachIndexed{column,movie->key(movie.id){PosterCard(movie,Modifier.weight(1f),subtitle="第 ${rowIndex*5+column+3} 名 · "+listOf(movie.year,movie.area,movie.note).filter(String::isNotBlank).joinToString(" · ")){open(movie)}}}
+                            repeat(5-row.size){Spacer(Modifier.weight(1f))}
                         }
                     }
                 }
                 state.error!=null->ErrorNotice(state.error,retry)
                 state.loading||state.nextPage==1->Text("正在加载榜单…",color=Muted)
-                else->Text("今年暂无相关影片",color=Muted)
+                else->Text(if(categoryId==6)"暂无相关影片"else"今年暂无相关影片",color=Muted)
             }
         }
     }
@@ -116,7 +117,7 @@ internal fun RankingFeature(movie:Movie,rank:Int,sort:String,modifier:Modifier=M
         Column(Modifier.weight(1f).padding(top=6.dp,end=10.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
             Text("TOP $rank",color=Green,fontSize=18.sp,lineHeight=22.sp,fontWeight=FontWeight.Bold)
             Text(movie.title,color=White,fontSize=22.sp,lineHeight=28.sp,fontWeight=FontWeight.Bold,maxLines=2,overflow=TextOverflow.Ellipsis)
-            Text(listOf(movie.year,movie.area,movie.score.takeIf(String::isNotBlank)?.let{"评分 $it"}.orEmpty()).filter(String::isNotBlank).joinToString(" · "),color=Muted,fontSize=13.sp,lineHeight=18.sp,maxLines=2)
+            Text(listOf(movie.year,movie.area).filter(String::isNotBlank).joinToString(" · "),color=Muted,fontSize=13.sp,lineHeight=18.sp,maxLines=2)
             if(movie.note.isNotBlank())Text(movie.note,color=White,fontSize=13.sp,lineHeight=18.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
         }
     }

@@ -25,6 +25,16 @@
 
 ![UI v2 首页运行预览](docs/verification/v2/screenshots/home-default.png)
 
+### 最新界面修订
+
+- VIP小首页使用全部年份的片库榜单，标题明确显示“全部年份”；普通分类仍使用当年人气／评分榜。
+- 每个榜单最多12部：顶部2部突出，下方10部按五列两行排列，不重复前两部。
+- 评分放在海报右上角的半透明深色角标中，片名使用下方全宽；竖图继续完整等比显示。
+
+[独立复测记录](docs/verification/v2/V02_UI_FOLLOWUP.md) · [本轮三张Chromecast实际截图](docs/verification/v2/followup-screenshots/README.md)
+
+![VIP全部年份小首页与评分角标](docs/verification/v2/followup-screenshots/vip-home.png)
+
 ## v0.1 功能与界面
 
 以下十张图片均为应用运行时的真实界面截图，均来自 v0.1 正式签名 APK 在干净 TV 模拟器中的实际运行，并非设计稿。网站内容会持续更新，实际片单可能与截图不同。
