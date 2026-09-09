@@ -155,6 +155,97 @@ class V2SearchUiTest {
         compose.runOnIdle { assertTrue(opened.isEmpty()) }
     }
 
+    @Test fun failedConfirmedSearchCanEnterRetryAndRestoresFocusAcrossBusySuccessAndBack() {
+        var attempts = 0
+        showSearchFixture(SearchFixture(hot=emptyList(), suggest={ listOf("魔女") }, feed={ query ->
+            feeds.getOrPut(query) { CatalogFeed(jobs) { page ->
+                val items = if(query == "魔女") {
+                    attempts++
+                    witchStarted.complete(Unit)
+                    if(attempts == 1) throw java.io.IOException("Controlled first-page failure")
+                    witchResponse.await()
+                    listOf(witch)
+                } else emptyList()
+                CatalogPage(items, items.size, page, 20)
+            } }
+        }))
+        enterMnAndConfirmWitch()
+        compose.waitUntil(5_000) { feeds["魔女"]?.state?.error != null }
+        compose.onNodeWithText("重试", substring=false).assertExists()
+        compose.onNodeWithTag("poster:501").assertDoesNotExist()
+        focused("suggestion:魔女")
+        press(KeyEvent.KEYCODE_DPAD_RIGHT)
+        compose.onNodeWithText("重试", substring=false).assertIsFocused()
+        compose.runOnIdle { assertEquals("Navigation must not retry", 1, attempts) }
+        press(KeyEvent.KEYCODE_DPAD_CENTER)
+        focused("search-input")
+        compose.waitUntil(5_000) { attempts == 2 }
+        compose.onNodeWithText("重试", substring=false).assertDoesNotExist()
+        compose.onNodeWithTag("search-input").assertTextContains("魔女")
+        compose.runOnIdle { witchResponse.complete(Unit) }
+        focused("poster:501")
+        compose.runOnIdle { assertEquals(2, attempts); assertTrue(opened.isEmpty()) }
+        press(KeyEvent.KEYCODE_BACK)
+        focused("search-input")
+    }
+
+    @Test fun confirmingSameSuggestionAfterFirstPageFailureRetriesExistingFeed() {
+        var attempts = 0
+        showSearchFixture(SearchFixture(hot=emptyList(), suggest={ listOf("魔女") }, feed={ query ->
+            feeds.getOrPut(query) { CatalogFeed(jobs) { page ->
+                val items = if(query == "魔女") {
+                    attempts++
+                    witchStarted.complete(Unit)
+                    if(attempts == 1) throw java.io.IOException("Controlled first-page failure")
+                    witchResponse.await()
+                    listOf(witch)
+                } else emptyList()
+                CatalogPage(items, items.size, page, 20)
+            } }
+        }))
+        enterMnAndConfirmWitch()
+        compose.waitUntil(5_000) { feeds["魔女"]?.state?.error != null }
+        focused("suggestion:魔女")
+        press(KeyEvent.KEYCODE_DPAD_CENTER)
+        compose.waitUntil(5_000) { attempts == 2 }
+        compose.onNodeWithTag("search-input").assertTextContains("魔女")
+        compose.runOnIdle { witchResponse.complete(Unit) }
+        focused("poster:501")
+        compose.runOnIdle { assertEquals(2, attempts); assertTrue(opened.isEmpty()) }
+        press(KeyEvent.KEYCODE_BACK)
+        focused("search-input")
+    }
+
+    @Test fun backBeforeResultEntryFrameCancelsPendingRetryFocus() {
+        showSearchFixture(SearchFixture(hot=emptyList(), suggest={ listOf("魔女") }, feed={ query ->
+            feeds.getOrPut(query) { CatalogFeed(jobs) { page ->
+                if(query == "魔女") {
+                    witchStarted.complete(Unit)
+                    throw java.io.IOException("Controlled first-page failure")
+                }
+                CatalogPage(emptyList(), 0, page, 20)
+            } }
+        }))
+        enterMnAndConfirmWitch()
+        compose.waitUntil(5_000) { feeds["魔女"]?.state?.error != null }
+        focused("suggestion:魔女")
+        // Hold the frame that enterResults awaits, so Back is guaranteed to occur first.
+        compose.mainClock.autoAdvance = false
+        try {
+            InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT)
+            compose.onNodeWithText("重试", substring=false).assertIsNotFocused()
+            compose.onNodeWithTag("suggestion:魔女").assertIsFocused()
+            InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+            compose.mainClock.advanceTimeBy(500)
+        } finally {
+            compose.mainClock.autoAdvance = true
+        }
+        compose.waitForIdle()
+        focused("search-input")
+        compose.onNodeWithText("重试", substring=false).assertExists().assertIsNotFocused()
+        compose.runOnIdle { assertTrue(opened.isEmpty()) }
+    }
+
     private fun enterMnAndConfirmWitch() {
         focused("search-input")
         press(KeyEvent.KEYCODE_DPAD_DOWN) // Clear
