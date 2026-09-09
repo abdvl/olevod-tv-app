@@ -1,0 +1,847 @@
+{
+  "schema_version": 1,
+  "milestone": "UI v2 implementation and validation",
+  "implementation_included": true,
+  "source": {
+    "kind": "local Codex session metadata and per-request token_usage_record",
+    "baseline": "docs/accounting/ui-v2-design-2026-09-08.json",
+    "privacy": "Only usage/session/parent/model/timestamp metadata retained. No prompts, credentials, or raw logs copied."
+  },
+  "period": {
+    "start_exclusive_utc": "2026-09-08T14:35:11.093Z",
+    "end_inclusive_utc": "2026-09-09T04:18:45.833Z",
+    "end_inclusive_local": "2026-09-08T21:18:45.833-07:00",
+    "timezone": "America/Los_Angeles",
+    "next_user_request_started_utc": "2026-09-09T04:21:17.855Z",
+    "last_included_response_id": "resp_0330c464021f1cc6016aa0de178d1087d0b835485f630316f1",
+    "freeze_rule": "Last usage record before the current README / screenshot / token history / publish request; all subsequent accounting and release work excluded."
+  },
+  "scope": {
+    "root_session_id": "01a07e67-b5bc-78c1-873a-9b14a987f5c3",
+    "included_work_session_ids": [
+      "01a07e67-b5bc-78c1-873a-9b14a987f5c3",
+      "01a07e7c-157d-7312-948c-86f2e30e4637",
+      "01a07f34-a94e-7601-8006-683f4e347f8f",
+      "01a08162-75b9-7713-802a-4313b45aca26",
+      "01a083c2-bf9f-7a91-93a2-c1c623b681ad"
+    ],
+    "work_session_count": 5,
+    "active_work_session_count": 4,
+    "proof": "session_meta.parent_thread_id transitive ancestry; normal worker source.subagent.thread_spawn.agent_path. Includes earlier zero-usage sort_fix for scope continuity.",
+    "system_approval_policy": "Parent-linked source.subagent.other=guardian is disclosed separately; excluded from work-model token subtotal and cost, consistent with prior design-stage scope.",
+    "excluded": "Independent sessions without parent ancestry; inherited fork records whose token_usage_record.thread_id differs from the owning session; all records outside the frozen interval."
+  },
+  "method": {
+    "record": "token_usage_record.usage",
+    "deduplication": "response_id within owning thread, then global uniqueness asserted across included records",
+    "thread_filter": "token_usage_record.thread_id equals session_meta.id",
+    "model": "Most recent turn_context.model before the usage record in the owning log",
+    "input_definition": "input_tokens includes cached and cache-write tokens; uncached=input-cached-cache_write",
+    "reasoning_definition": "reasoning_output_tokens is a subset of output_tokens and is not added twice",
+    "compaction": "All matching per-request usage included, including compaction. token_count snapshots are cross-checks only.",
+    "prior_ledger_cross_check": "All four previous design ledger session cutoffs exactly match the newly recomputed start ledgers.",
+    "end_ledger_cross_check": "For every scoped session, the cumulative deduplicated own-request usage equals the last thread_token_usage at cutoff.",
+    "metadata_rows_sha256": "0270a83543d2032e39af1b8265130cce31da400758cc5ea867f1f06e8da94e4f"
+  },
+  "sessions": [
+    {
+      "session_id": "01a07e67-b5bc-78c1-873a-9b14a987f5c3",
+      "role": "main",
+      "parent_thread_id": null,
+      "request_count": 659,
+      "request_ledger_before": {
+        "input_tokens": 112611121,
+        "cached_input_tokens": 109614464,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 433184,
+        "reasoning_output_tokens": 113861,
+        "total_tokens": 113044305
+      },
+      "request_ledger_at_cutoff": {
+        "input_tokens": 203036338,
+        "cached_input_tokens": 198423168,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 807692,
+        "reasoning_output_tokens": 212709,
+        "total_tokens": 203844030
+      },
+      "usage": {
+        "input_tokens": 90425217,
+        "cached_input_tokens": 88808704,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 374508,
+        "reasoning_output_tokens": 98848,
+        "total_tokens": 90799725
+      },
+      "snapshot_before": {
+        "input_tokens": 111301088,
+        "cached_input_tokens": 108924928,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 399902,
+        "reasoning_output_tokens": 113861,
+        "total_tokens": 111700990
+      },
+      "snapshot_at_cutoff": {
+        "input_tokens": 199825858,
+        "cached_input_tokens": 195863680,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 726367,
+        "reasoning_output_tokens": 212554,
+        "total_tokens": 200552225
+      },
+      "snapshot_delta": {
+        "input_tokens": 88524770,
+        "cached_input_tokens": 86938752,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 326465,
+        "reasoning_output_tokens": 98693,
+        "total_tokens": 88851235
+      },
+      "ledger_minus_snapshot_increment": {
+        "input_tokens": 1900447,
+        "cached_input_tokens": 1869952,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 48043,
+        "reasoning_output_tokens": 155,
+        "total_tokens": 1948490
+      },
+      "prior_ledger_matches": true,
+      "last_usage_timestamp": "2026-09-09T04:18:45.833Z",
+      "compacted_event_count": 8,
+      "duplicate_records_ignored": 0,
+      "model": "gpt-6-astra",
+      "unrounded_standard_equivalent_usd": "123.699234",
+      "summed_requests_match_thread_ledger_at_cutoff": true
+    },
+    {
+      "session_id": "01a07e7c-157d-7312-948c-86f2e30e4637",
+      "role": "/root/verification",
+      "parent_thread_id": "01a07e67-b5bc-78c1-873a-9b14a987f5c3",
+      "request_count": 113,
+      "request_ledger_before": {
+        "input_tokens": 57010369,
+        "cached_input_tokens": 56301568,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 90271,
+        "reasoning_output_tokens": 6337,
+        "total_tokens": 57100640
+      },
+      "request_ledger_at_cutoff": {
+        "input_tokens": 78487565,
+        "cached_input_tokens": 77367296,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 115115,
+        "reasoning_output_tokens": 11466,
+        "total_tokens": 78602680
+      },
+      "usage": {
+        "input_tokens": 21477196,
+        "cached_input_tokens": 21065728,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 24844,
+        "reasoning_output_tokens": 5129,
+        "total_tokens": 21502040
+      },
+      "snapshot_before": {
+        "input_tokens": 56535613,
+        "cached_input_tokens": 55832064,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 84720,
+        "reasoning_output_tokens": 6337,
+        "total_tokens": 56620333
+      },
+      "snapshot_at_cutoff": {
+        "input_tokens": 78012809,
+        "cached_input_tokens": 76897792,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 109564,
+        "reasoning_output_tokens": 11466,
+        "total_tokens": 78122373
+      },
+      "snapshot_delta": {
+        "input_tokens": 21477196,
+        "cached_input_tokens": 21065728,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 24844,
+        "reasoning_output_tokens": 5129,
+        "total_tokens": 21502040
+      },
+      "ledger_minus_snapshot_increment": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 0
+      },
+      "prior_ledger_matches": true,
+      "last_usage_timestamp": "2026-09-09T04:11:50.371Z",
+      "compacted_event_count": 0,
+      "duplicate_records_ignored": 0,
+      "model": "gpt-6-astra",
+      "unrounded_standard_equivalent_usd": "26.422608",
+      "summed_requests_match_thread_ledger_at_cutoff": true
+    },
+    {
+      "session_id": "01a07f34-a94e-7601-8006-683f4e347f8f",
+      "role": "/root/sort_fix",
+      "parent_thread_id": "01a07e67-b5bc-78c1-873a-9b14a987f5c3",
+      "request_count": 0,
+      "request_ledger_before": {
+        "input_tokens": 4383364,
+        "cached_input_tokens": 4292352,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 13418,
+        "reasoning_output_tokens": 2708,
+        "total_tokens": 4396782
+      },
+      "request_ledger_at_cutoff": {
+        "input_tokens": 4383364,
+        "cached_input_tokens": 4292352,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 13418,
+        "reasoning_output_tokens": 2708,
+        "total_tokens": 4396782
+      },
+      "usage": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 0
+      },
+      "snapshot_before": {
+        "input_tokens": 4383364,
+        "cached_input_tokens": 4292352,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 13418,
+        "reasoning_output_tokens": 2708,
+        "total_tokens": 4396782
+      },
+      "snapshot_at_cutoff": {
+        "input_tokens": 4383364,
+        "cached_input_tokens": 4292352,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 13418,
+        "reasoning_output_tokens": 2708,
+        "total_tokens": 4396782
+      },
+      "snapshot_delta": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 0
+      },
+      "ledger_minus_snapshot_increment": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 0
+      },
+      "prior_ledger_matches": true,
+      "last_usage_timestamp": null,
+      "compacted_event_count": 0,
+      "duplicate_records_ignored": 0,
+      "model": "gpt-6-astra",
+      "unrounded_standard_equivalent_usd": "0.0",
+      "summed_requests_match_thread_ledger_at_cutoff": true
+    },
+    {
+      "session_id": "01a08162-75b9-7713-802a-4313b45aca26",
+      "role": "/root/design_spec_review",
+      "parent_thread_id": "01a07e67-b5bc-78c1-873a-9b14a987f5c3",
+      "request_count": 263,
+      "request_ledger_before": {
+        "input_tokens": 750951,
+        "cached_input_tokens": 680064,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 3860,
+        "reasoning_output_tokens": 2005,
+        "total_tokens": 754811
+      },
+      "request_ledger_at_cutoff": {
+        "input_tokens": 36260314,
+        "cached_input_tokens": 35384704,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 146935,
+        "reasoning_output_tokens": 41179,
+        "total_tokens": 36407249
+      },
+      "usage": {
+        "input_tokens": 35509363,
+        "cached_input_tokens": 34704640,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 143075,
+        "reasoning_output_tokens": 39174,
+        "total_tokens": 35652438
+      },
+      "snapshot_before": {
+        "input_tokens": 750951,
+        "cached_input_tokens": 680064,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 3860,
+        "reasoning_output_tokens": 2005,
+        "total_tokens": 754811
+      },
+      "snapshot_at_cutoff": {
+        "input_tokens": 35813118,
+        "cached_input_tokens": 34946176,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 138355,
+        "reasoning_output_tokens": 41179,
+        "total_tokens": 35951473
+      },
+      "snapshot_delta": {
+        "input_tokens": 35062167,
+        "cached_input_tokens": 34266112,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 134495,
+        "reasoning_output_tokens": 39174,
+        "total_tokens": 35196662
+      },
+      "ledger_minus_snapshot_increment": {
+        "input_tokens": 447196,
+        "cached_input_tokens": 438528,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 8580,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 455776
+      },
+      "prior_ledger_matches": true,
+      "last_usage_timestamp": "2026-09-08T17:29:08.505Z",
+      "compacted_event_count": 2,
+      "duplicate_records_ignored": 0,
+      "model": "gpt-6-astra",
+      "unrounded_standard_equivalent_usd": "49.90562",
+      "summed_requests_match_thread_ledger_at_cutoff": true
+    },
+    {
+      "session_id": "01a083c2-bf9f-7a91-93a2-c1c623b681ad",
+      "role": "/root/device_verification",
+      "parent_thread_id": "01a07e67-b5bc-78c1-873a-9b14a987f5c3",
+      "request_count": 313,
+      "request_ledger_before": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 0
+      },
+      "request_ledger_at_cutoff": {
+        "input_tokens": 41278947,
+        "cached_input_tokens": 40129792,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 119037,
+        "reasoning_output_tokens": 29913,
+        "total_tokens": 41397984
+      },
+      "usage": {
+        "input_tokens": 41278947,
+        "cached_input_tokens": 40129792,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 119037,
+        "reasoning_output_tokens": 29913,
+        "total_tokens": 41397984
+      },
+      "snapshot_before": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 0
+      },
+      "snapshot_at_cutoff": {
+        "input_tokens": 40823404,
+        "cached_input_tokens": 39868032,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 107967,
+        "reasoning_output_tokens": 29913,
+        "total_tokens": 40931371
+      },
+      "snapshot_delta": {
+        "input_tokens": 40823404,
+        "cached_input_tokens": 39868032,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 107967,
+        "reasoning_output_tokens": 29913,
+        "total_tokens": 40931371
+      },
+      "ledger_minus_snapshot_increment": {
+        "input_tokens": 455543,
+        "cached_input_tokens": 261760,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 11070,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 466613
+      },
+      "prior_ledger_matches": null,
+      "last_usage_timestamp": "2026-09-09T03:53:47.074Z",
+      "compacted_event_count": 3,
+      "duplicate_records_ignored": 0,
+      "model": "gpt-6-astra",
+      "unrounded_standard_equivalent_usd": "57.573192",
+      "summed_requests_match_thread_ledger_at_cutoff": true
+    }
+  ],
+  "request_count": 1348,
+  "models": [
+    {
+      "model": "gpt-6-astra",
+      "request_count": 1348,
+      "usage": {
+        "input_tokens": 188690723,
+        "cached_input_tokens": 184708864,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 661464,
+        "reasoning_output_tokens": 173064,
+        "total_tokens": 189352187
+      },
+      "uncached_input_tokens": 3981859,
+      "max_request_input_tokens": 232805,
+      "long_context_requests": 0,
+      "unrounded_cost_usd": {
+        "uncached_input": "39.81859",
+        "cached_input": "184.708864",
+        "cache_write_input": "0.0",
+        "output": "33.0732",
+        "total": "257.600654"
+      }
+    }
+  ],
+  "max_request_input_tokens": 232805,
+  "usage": {
+    "input_tokens": 188690723,
+    "cached_input_tokens": 184708864,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 661464,
+    "reasoning_output_tokens": 173064,
+    "total_tokens": 189352187
+  },
+  "uncached_input_tokens": 3981859,
+  "compaction_cross_check": {
+    "compacted_event_count": 13,
+    "request_ledger_minus_snapshot_increment": {
+      "input_tokens": 2803186,
+      "cached_input_tokens": 2570240,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 67693,
+      "reasoning_output_tokens": 155,
+      "total_tokens": 2870879
+    },
+    "note": "This is the observed ledger-versus-snapshot difference, not a separately added charge. Per-request totals already include it; compaction event count is not assumed to equal request count."
+  },
+  "pricing": {
+    "checked_date": "2026-09-08",
+    "currency": "USD",
+    "basis": "Standard API equivalent; not actual Codex subscription billing, Fast pricing, or a confirmed service-tier charge",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+    "rates_per_million_tokens": {
+      "uncached_input": "10",
+      "cached_input": "1",
+      "cache_write_input": "12.5",
+      "output": "50"
+    },
+    "long_context_input_threshold": 272000,
+    "long_context_rule": "When a single request input exceeds 272000, multiply all its input/cache rates by 2 and output rate by 1.5.",
+    "long_context_requests": 0,
+    "unrounded_cost_usd": {
+      "uncached_input": "39.81859",
+      "cached_input": "184.708864",
+      "cache_write_input": "0.0",
+      "output": "33.0732",
+      "total": "257.600654"
+    },
+    "rounded_total_usd": "257.60",
+    "rounding": "Decimal arithmetic; sum unrounded components first and round the total to 2 decimal places only for display."
+  },
+  "system_approval_usage": {
+    "model": "codex-auto-review",
+    "classification": "Platform system approval / guardian, not a normal work agent",
+    "request_count": 340,
+    "usage": {
+      "input_tokens": 55901413,
+      "cached_input_tokens": 44818432,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 58516,
+      "reasoning_output_tokens": 15068,
+      "total_tokens": 55959929
+    },
+    "uncached_input_tokens": 11082981,
+    "max_request_input_tokens": 259616,
+    "sessions": [
+      {
+        "session_id": "01a07e6a-0981-77e3-a19b-df16d4ebfa6f",
+        "role": "guardian",
+        "parent_thread_id": "01a07e67-b5bc-78c1-873a-9b14a987f5c3",
+        "request_count": 213,
+        "request_ledger_before": {
+          "input_tokens": 67028384,
+          "cached_input_tokens": 54460160,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 76020,
+          "reasoning_output_tokens": 23202,
+          "total_tokens": 67104404
+        },
+        "request_ledger_at_cutoff": {
+          "input_tokens": 105176631,
+          "cached_input_tokens": 85463552,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 115265,
+          "reasoning_output_tokens": 33118,
+          "total_tokens": 105291896
+        },
+        "usage": {
+          "input_tokens": 38148247,
+          "cached_input_tokens": 31003392,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 39245,
+          "reasoning_output_tokens": 9916,
+          "total_tokens": 38187492
+        },
+        "snapshot_before": {
+          "input_tokens": 61066882,
+          "cached_input_tokens": 54343424,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 49126,
+          "reasoning_output_tokens": 23202,
+          "total_tokens": 61116008
+        },
+        "snapshot_at_cutoff": {
+          "input_tokens": 96000959,
+          "cached_input_tokens": 85283584,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 72324,
+          "reasoning_output_tokens": 33118,
+          "total_tokens": 96073283
+        },
+        "snapshot_delta": {
+          "input_tokens": 34934077,
+          "cached_input_tokens": 30940160,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 23198,
+          "reasoning_output_tokens": 9916,
+          "total_tokens": 34957275
+        },
+        "ledger_minus_snapshot_increment": {
+          "input_tokens": 3214170,
+          "cached_input_tokens": 63232,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 16047,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 3230217
+        },
+        "prior_ledger_matches": null,
+        "last_usage_timestamp": "2026-09-09T04:18:26.206Z",
+        "compacted_event_count": 13,
+        "duplicate_records_ignored": 0,
+        "model": "codex-auto-review",
+        "estimated_cost_usd": null,
+        "cost_status": "未统计：平台系统审批模型无公开可核对单价",
+        "summed_requests_match_thread_ledger_at_cutoff": true
+      },
+      {
+        "session_id": "01a07e7c-15e0-73c2-aada-2d5e36745e7e",
+        "role": "guardian",
+        "parent_thread_id": "01a07e7c-157d-7312-948c-86f2e30e4637",
+        "request_count": 16,
+        "request_ledger_before": {
+          "input_tokens": 42608465,
+          "cached_input_tokens": 40254464,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 28667,
+          "reasoning_output_tokens": 4765,
+          "total_tokens": 42637132
+        },
+        "request_ledger_at_cutoff": {
+          "input_tokens": 45324284,
+          "cached_input_tokens": 42161152,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 31712,
+          "reasoning_output_tokens": 5299,
+          "total_tokens": 45355996
+        },
+        "usage": {
+          "input_tokens": 2715819,
+          "cached_input_tokens": 1906688,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 3045,
+          "reasoning_output_tokens": 534,
+          "total_tokens": 2718864
+        },
+        "snapshot_before": {
+          "input_tokens": 41635537,
+          "cached_input_tokens": 40235008,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 23101,
+          "reasoning_output_tokens": 4765,
+          "total_tokens": 41658638
+        },
+        "snapshot_at_cutoff": {
+          "input_tokens": 44105020,
+          "cached_input_tokens": 42136832,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 24546,
+          "reasoning_output_tokens": 5299,
+          "total_tokens": 44129566
+        },
+        "snapshot_delta": {
+          "input_tokens": 2469483,
+          "cached_input_tokens": 1901824,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1445,
+          "reasoning_output_tokens": 534,
+          "total_tokens": 2470928
+        },
+        "ledger_minus_snapshot_increment": {
+          "input_tokens": 246336,
+          "cached_input_tokens": 4864,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1600,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 247936
+        },
+        "prior_ledger_matches": null,
+        "last_usage_timestamp": "2026-09-09T04:10:02.642Z",
+        "compacted_event_count": 1,
+        "duplicate_records_ignored": 0,
+        "model": "codex-auto-review",
+        "estimated_cost_usd": null,
+        "cost_status": "未统计：平台系统审批模型无公开可核对单价",
+        "summed_requests_match_thread_ledger_at_cutoff": true
+      },
+      {
+        "session_id": "01a07f34-a98e-72b1-84c9-c03f6e5dec49",
+        "role": "guardian",
+        "parent_thread_id": "01a07f34-a94e-7601-8006-683f4e347f8f",
+        "request_count": 0,
+        "request_ledger_before": {
+          "input_tokens": 1336979,
+          "cached_input_tokens": 1196288,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 2668,
+          "reasoning_output_tokens": 782,
+          "total_tokens": 1339647
+        },
+        "request_ledger_at_cutoff": {
+          "input_tokens": 1336979,
+          "cached_input_tokens": 1196288,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 2668,
+          "reasoning_output_tokens": 782,
+          "total_tokens": 1339647
+        },
+        "usage": {
+          "input_tokens": 0,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 0
+        },
+        "snapshot_before": {
+          "input_tokens": 1336979,
+          "cached_input_tokens": 1196288,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 2668,
+          "reasoning_output_tokens": 782,
+          "total_tokens": 1339647
+        },
+        "snapshot_at_cutoff": {
+          "input_tokens": 1336979,
+          "cached_input_tokens": 1196288,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 2668,
+          "reasoning_output_tokens": 782,
+          "total_tokens": 1339647
+        },
+        "snapshot_delta": {
+          "input_tokens": 0,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 0
+        },
+        "ledger_minus_snapshot_increment": {
+          "input_tokens": 0,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 0
+        },
+        "prior_ledger_matches": null,
+        "last_usage_timestamp": null,
+        "compacted_event_count": 0,
+        "duplicate_records_ignored": 0,
+        "model": "codex-auto-review",
+        "estimated_cost_usd": null,
+        "cost_status": "未统计：平台系统审批模型无公开可核对单价",
+        "summed_requests_match_thread_ledger_at_cutoff": true
+      },
+      {
+        "session_id": "01a08162-75fb-78f0-b691-b09a2ed530d0",
+        "role": "guardian",
+        "parent_thread_id": "01a08162-75b9-7713-802a-4313b45aca26",
+        "request_count": 39,
+        "request_ledger_before": {
+          "input_tokens": 0,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 0
+        },
+        "request_ledger_at_cutoff": {
+          "input_tokens": 5078398,
+          "cached_input_tokens": 3832064,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 4923,
+          "reasoning_output_tokens": 1062,
+          "total_tokens": 5083321
+        },
+        "usage": {
+          "input_tokens": 5078398,
+          "cached_input_tokens": 3832064,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 4923,
+          "reasoning_output_tokens": 1062,
+          "total_tokens": 5083321
+        },
+        "snapshot_before": {
+          "input_tokens": 0,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 0
+        },
+        "snapshot_at_cutoff": {
+          "input_tokens": 4580799,
+          "cached_input_tokens": 3822336,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 3634,
+          "reasoning_output_tokens": 1062,
+          "total_tokens": 4584433
+        },
+        "snapshot_delta": {
+          "input_tokens": 4580799,
+          "cached_input_tokens": 3822336,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 3634,
+          "reasoning_output_tokens": 1062,
+          "total_tokens": 4584433
+        },
+        "ledger_minus_snapshot_increment": {
+          "input_tokens": 497599,
+          "cached_input_tokens": 9728,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1289,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 498888
+        },
+        "prior_ledger_matches": null,
+        "last_usage_timestamp": "2026-09-08T17:10:56.184Z",
+        "compacted_event_count": 2,
+        "duplicate_records_ignored": 0,
+        "model": "codex-auto-review",
+        "estimated_cost_usd": null,
+        "cost_status": "未统计：平台系统审批模型无公开可核对单价",
+        "summed_requests_match_thread_ledger_at_cutoff": true
+      },
+      {
+        "session_id": "01a083c2-bfed-7251-95af-0954f72c3a6c",
+        "role": "guardian",
+        "parent_thread_id": "01a083c2-bf9f-7a91-93a2-c1c623b681ad",
+        "request_count": 72,
+        "request_ledger_before": {
+          "input_tokens": 0,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 0
+        },
+        "request_ledger_at_cutoff": {
+          "input_tokens": 9958949,
+          "cached_input_tokens": 8076288,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 11303,
+          "reasoning_output_tokens": 3556,
+          "total_tokens": 9970252
+        },
+        "usage": {
+          "input_tokens": 9958949,
+          "cached_input_tokens": 8076288,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 11303,
+          "reasoning_output_tokens": 3556,
+          "total_tokens": 9970252
+        },
+        "snapshot_before": {
+          "input_tokens": 0,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 0
+        },
+        "snapshot_at_cutoff": {
+          "input_tokens": 9212193,
+          "cached_input_tokens": 8061696,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 8123,
+          "reasoning_output_tokens": 3556,
+          "total_tokens": 9220316
+        },
+        "snapshot_delta": {
+          "input_tokens": 9212193,
+          "cached_input_tokens": 8061696,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 8123,
+          "reasoning_output_tokens": 3556,
+          "total_tokens": 9220316
+        },
+        "ledger_minus_snapshot_increment": {
+          "input_tokens": 746756,
+          "cached_input_tokens": 14592,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 3180,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 749936
+        },
+        "prior_ledger_matches": null,
+        "last_usage_timestamp": "2026-09-09T03:45:45.490Z",
+        "compacted_event_count": 3,
+        "duplicate_records_ignored": 0,
+        "model": "codex-auto-review",
+        "estimated_cost_usd": null,
+        "cost_status": "未统计：平台系统审批模型无公开可核对单价",
+        "summed_requests_match_thread_ledger_at_cutoff": true
+      }
+    ],
+    "estimated_cost_usd": null,
+    "cost_status": "未统计：无公开可核对单价；不填零，不套用 GPT-6 Astra 单价，不纳入工作模型小计。"
+  },
+  "full_observation_scope": {
+    "request_count": 1688,
+    "usage": {
+      "input_tokens": 244592136,
+      "cached_input_tokens": 229527296,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 719980,
+      "reasoning_output_tokens": 188132,
+      "total_tokens": 245312116
+    },
+    "estimated_cost_usd": null,
+    "cost_status": "工作模型费用可估算；系统审批费用未统计，因此整体费用不报确定总额。"
+  },
+  "other_costs": "Image generation, tools, and other non-token charges are outside this token-ledger estimate and are not asserted to be zero."
+}
