@@ -2,6 +2,8 @@
 
 2026-09-08 · Kotlin / Compose for TV / Media3 原生实现。设计来源：[DESIGN_SPEC](docs/design-v2/DESIGN_SPEC.md)、[十张认可的参考图](docs/design-v2/README.md)；运行结果：[24张截图](docs/verification/v2/screenshots/README.md)。
 
+后续用户修订已经实施：VIP明确显示全部年份榜，每榜顶部2部＋下方10部五列两行，评分叠在海报右上角。对应 [最新独立复测](docs/verification/v2/V02_UI_FOLLOWUP.md) 与 [三张真实VIP运行图](docs/verification/v2/followup-screenshots/README.md)；下方原设计对照图库保留原始版本，不把旧四列／标题旁评分截图当成当前外观。
+
 **当前结论：可运行的开发版已完成；所执行的视觉/交互检查通过，完整验收门槛尚未关闭。** 在本次明确检查范围内发现的布局和焦点问题均已修复并复验；不据此声明没有其他缺陷、74条设计要求全部通过或已适配全部 Chromecast 行为。
 
 ## 比较方法

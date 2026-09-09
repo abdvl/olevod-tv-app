@@ -1,0 +1,158 @@
+{
+  "status": "release candidate; publication pending",
+  "captured_at_timezone": "America/Los_Angeles",
+  "device": "Olevod_Release_v01 / emulator-5556 / Android TV API34 / arm64-v8a",
+  "resolution": [
+    1920,
+    1080
+  ],
+  "release_apk_sha256": "001c33cf20736cbe675347e1e5a13c56d2eb6eca72796fcf504432723a8d89ab",
+  "source_commit": "fba0f77ea8a77e3542a3d183a026363b2727d3d6",
+  "capture_method": "adb exec-out screencap -p; unedited image bytes; XML and image captured sequentially, not atomically",
+  "scope": "Actual installed signed release app, public catalog and isolated test viewing history. v01-home is the pre-upgrade v0.1 baseline; all other images are v0.2.0. No account login or credentials displayed.",
+  "screenshots": [
+    {
+      "file": "v01-home.png",
+      "source": ".tools/v02-release/v01-home.png",
+      "caption": "升级前 v0.1：隔离模拟器中的既有观看记录 00:58。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 1102357,
+      "sha256": "a05bca9efc38d4443375a44e59a2a05059d63ffea615ae20000307f5b02ddf3b",
+      "source_xml_sha256": "ef43a1e99f8373fb73c5b50f1ea48b60930d8add0c26d79bac6049d53bdb9db9",
+      "captured_file_modified_at": "2026-09-08T20:37:21.121849-07:00"
+    },
+    {
+      "file": "home.png",
+      "source": ".tools/v02-release/home.png",
+      "caption": "v0.2：默认首页焦点、单行导航、原观看记录保留；传入 debug extras 仍为真实首页。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 870800,
+      "sha256": "5096a2578e136b9c0b74fc77b141c93741607b96c06b7a9ffb0bcc1f13d04792",
+      "source_xml_sha256": "281f55e46656337f0f88cd339e9a520adae9f145daf2787c8c05d265ec291b16",
+      "captured_file_modified_at": "2026-09-08T20:37:51.161781-07:00"
+    },
+    {
+      "file": "vip-top.png",
+      "source": ".tools/v02-release/vip-top.png",
+      "caption": "VIP 全部年份人气榜：前 12 部中的前两部独立展示。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 1574341,
+      "sha256": "e5ecb8aff6925d9d847070d9072704f40998aedee52540a178ca66a1cf31b030",
+      "source_xml_sha256": "041d008e3fe3d43db74ffab8eef32932f8dd55880c26960948a89f7d58c28dc2",
+      "captured_file_modified_at": "2026-09-08T20:38:42.076332-07:00"
+    },
+    {
+      "file": "vip-row-one.png",
+      "source": ".tools/v02-release/vip-row-one.png",
+      "caption": "人气榜第 3–7 名：每行 5 张完整竖海报，评分叠加于海报右上角。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 1675720,
+      "sha256": "7b4d1c874e87fed53ffd7bdb86a28c33e5ed58cd47be04a14d481a2f0d72a1db",
+      "source_xml_sha256": "5e631d3e012d35b1042a835745fc8b95209dda7d5ffa977a61545b92baa1cd0a",
+      "captured_file_modified_at": "2026-09-08T20:39:15.336089-07:00"
+    },
+    {
+      "file": "vip-score-top.png",
+      "source": ".tools/v02-release/vip-score-top.png",
+      "caption": "VIP 全部年份评分榜：前两部独立展示。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 1170149,
+      "sha256": "c7fe1f907a155a83a03f5bd00ad8e8d6d1c50cdc85682c4e913fab30636cb401",
+      "source_xml_sha256": "9716437b39d3e9e9a6e4b30ae665b973adbc8bd67321882967791cc75c86252b",
+      "captured_file_modified_at": "2026-09-08T20:39:35.009226-07:00"
+    },
+    {
+      "file": "vip-score-row-one.png",
+      "source": ".tools/v02-release/vip-score-row-one.png",
+      "caption": "评分榜第 3–7 名：第一行 5 张海报。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 1575344,
+      "sha256": "4bc3f47b6357a996c939861ae3541149cc21a09274aa0488199d02e08662deec",
+      "source_xml_sha256": "4e65df1150a058d48e91ade1d34c6e43095c99135a47651fb703fe06a0d9b137",
+      "captured_file_modified_at": "2026-09-08T20:40:38.015487-07:00"
+    },
+    {
+      "file": "vip-score-row-two.png",
+      "source": ".tools/v02-release/vip-score-row-two.png",
+      "caption": "评分榜第 8–12 名：第二行 5 张海报。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 1552012,
+      "sha256": "59ca8dea9f2974f830d321c5aed6b4edc4770801f7c1d913cab96d73e880eec1",
+      "source_xml_sha256": "0830cfcf2f55467bf5f94806b07284211ca69e5243a15e1fd9c2ef0ec2a31352",
+      "captured_file_modified_at": "2026-09-08T20:40:41.730087-07:00"
+    },
+    {
+      "file": "catalog.png",
+      "source": ".tools/v02-release/catalog.png",
+      "caption": "浏览全部 VIP 后的真实目录：2318 部、精简筛选入口。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 1519232,
+      "sha256": "d942f4821ef8c26fcc6380933da449a9e5da56f3683186d71632fd8cdb6a080f",
+      "source_xml_sha256": "9a9d034ad793c65594f322421140b2b2fd91910f656336c4c098de263838f0bb",
+      "captured_file_modified_at": "2026-09-08T20:41:04.786784-07:00"
+    },
+    {
+      "file": "search-results.png",
+      "source": ".tools/v02-release/search-results.png",
+      "caption": "MN → 魔女：36 部真实结果，首张结果卡获得焦点。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 954219,
+      "sha256": "32252ad84f3a2c798793373555e67f9fd6ce944dd29b799772e1cebb530bfd52",
+      "source_xml_sha256": "21d0bfc1c84f9dfdef80dc878a2d17baaf91d0b34d410e8665798eecae2a0fbf",
+      "captured_file_modified_at": "2026-09-08T20:43:01.974413-07:00"
+    },
+    {
+      "file": "search-return-input.png",
+      "source": ".tools/v02-release/search-return-input.png",
+      "caption": "Back 返回搜索输入框：保留魔女关键词及结果。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 952732,
+      "sha256": "749b101809548bcc87b420dac30c03dd01589a776cd013b0513e5671d4aa3099",
+      "source_xml_sha256": "66c9ae86c0a2d124a703062c196cb3d5f593c503ed251ca93b0cd55bdd4ef089",
+      "captured_file_modified_at": "2026-09-08T20:44:56.176512-07:00"
+    },
+    {
+      "file": "player.png",
+      "source": ".tools/v02-release/player.png",
+      "caption": "普通视频真实播放画面：全屏按钮默认聚焦，8 个控制按钮及按 10 集分组选集。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 787483,
+      "sha256": "bca89423f3d8654fee6d433e54ea74b624b744e6f5120c6c89155a303667350a",
+      "source_xml_sha256": "30c938ead6f82cff5eed67bc38aab0fcf9da91b20166e836208b438938cb316a",
+      "captured_file_modified_at": "2026-09-08T20:43:48.287997-07:00"
+    },
+    {
+      "file": "player-fullscreen-restored.png",
+      "source": ".tools/v02-release/player-fullscreen-restored.png",
+      "caption": "全屏 Up 隐藏、Down 恢复后的覆盖控制栏；1280×720 与峰值码率显示。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 2040100,
+      "sha256": "9a8a92526a0efa7d1297c6856a5497dd2aa0e8cb6bcec7142174905a3181993d",
+      "source_xml_sha256": "f5d78f59a5e1e875d517bab2cfd75de08cdc797de2871aaca6e785882ddfa199",
+      "captured_file_modified_at": "2026-09-08T20:44:12.442856-07:00"
+    },
+    {
+      "file": "exit-confirmation.png",
+      "source": ".tools/v02-release/exit-confirmation.png",
+      "caption": "退出确认框：默认聚焦继续观看；本轮另验证取消与确认退出。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 683669,
+      "sha256": "a6bb5f19c22fc1bcfdb103aecb26c29384371197f33a742a4023f547b7613e27",
+      "source_xml_sha256": "11a5cf9bd8ef6c64f54ab4766236654b261df9de7f9a732c311199291cc9864d",
+      "captured_file_modified_at": "2026-09-08T20:45:03.390346-07:00"
+    }
+  ]
+}

@@ -71,9 +71,9 @@ Always pass `adb -s IP:CONNECT_PORT` when the emulator is also connected. The pr
 
 The supplied Chromecast has been paired, installed and logged in on the device. Read `verification/CHROMECAST_REGRESSION.md` for physical-device outcomes, separate from simulator results.
 
-## v0.1 发布构建与签名
+## 发布构建与签名
 
-正式安装包版本名0.1.0、versionCode1，对应 GitHub tag `v0.1`。`release` 关闭调试入口，使用本机私有发布证书；debug 继续使用开发证书。
+当前待发布版本名0.2.0、versionCode2，对应 GitHub tag `v0.2`；沿用v0.1发布证书。`release` 关闭调试入口，使用本机私有发布证书；debug 继续使用开发证书。各次发布结果分别记录在 `verification/RELEASE_V0_1.md` 和 `verification/RELEASE_V0_2.md`。
 
 首次为自己的分发创建签名（只执行一次）：
 
@@ -87,9 +87,9 @@ python3 scripts/init-release-signing.py
 已有签名时，恢复备份而不是重新生成。构建并校验：
 
 ```sh
-bash scripts/build-release.sh
+bash scripts/build-release.sh v0.2
 ```
 
-输出到 `artifacts/releases/v0.1/`：`olevod-tv-v0.1.apk`、`SHA256SUMS.txt`。脚本执行 release 构建、release 单元测试、lint 与签名校验，不会上传文件。没有签名配置时脚本直接停止，避免误发未签名 APK。
+输出到 `artifacts/releases/v0.2/`：`olevod-tv-v0.2.apk`、`SHA256SUMS.txt`。脚本检查tag与versionName匹配、拒绝覆盖已有版本目录，再执行release构建、release单元测试、lint与签名校验；临时产物完整后才移动到版本目录。没有签名配置时直接停止，不会生成新签名或自动上传文件。后续版本先递增versionCode/versionName，再使用对应tag构建；不得覆盖v0.1等历史产物。
 
 首次从 debug 版迁移到发布签名 APK 需卸载旧版，会清本机数据；详见 [安装说明](INSTALL.md)。正式签名 APK 在独立干净 API34 TV 模拟器上验收，不为测试清除已有 Chromecast 的账号和历史。

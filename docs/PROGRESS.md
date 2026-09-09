@@ -2,7 +2,7 @@
 
 最近更新：2026-09-08（本地时间）。
 
-**最新恢复入口：UI v2 开发分支 `codex/ui-v2`，见本文末 S59 与 [最新界面复测](verification/v2/V02_UI_FOLLOWUP.md)。** VIP全部年份、每榜2+10／五列和海报评分角标已完成；0.2.0开发包已保留数据安装到Chromecast，最终限定8/8通过。用户已授权推送和发布v0.2，签名包与升级验收正在收尾；Mac锁定及CLI凭据暂阻止GitHub写入。旧版步骤保留在下方，不应从 S01 重做。
+**最新恢复入口：UI v2 开发分支 `codex/ui-v2`，见本文末 S60 与 [发布包验证](verification/RELEASE_V0_2.md)。** VIP全部年份、每榜2+10／五列和海报评分角标已完成；0.2.0开发包已保留数据安装到Chromecast，最终限定8/8通过。原签名v0.2候选包及模拟器覆盖升级验收完成，13张真实截图已归档。用户已授权推送和发布；Mac锁定及CLI凭据暂阻止GitHub写入。旧版步骤保留在下方，不应从 S01 重做。
 
 ## 当前检查点
 
@@ -546,3 +546,12 @@
 - Independent47 JVM/lint/build pass. First hardware batch21/22 passed in152.711s; one new test incorrectly expected raw rating Text despite clearAndSetSemantics. Corrected only the semantic expectation, preserving badge position/full-title-width checks. An earlier test compilation mistake and both first logs are retained.
 - Version0.2.0/code2 debug App2a9017f3a56481db2c88ea91036347019e92342d07a5808ed58a41e3099b23e0 installed-r, preserving television data. Final targeted score1/Mini3/Root3/liveVIP1 passed8/8 in78.122s. Do not say all22 reran on this final APK. TV returned to normal Home with version2 confirmed. Report and3 real public VIP screenshots are in verification/v2/V02_UI_FOLLOWUP.md and followup-screenshots/.
 - Next: finish dedicated signed-release emulator checks, commit packaging/install/release documentation, then push and publishv0.2. Original user publication authorization remains active; Mac unlock is an access dependency, not a new approval requirement.
+
+### S60 - prepare signed v0.2 candidate and verify in-place upgrade
+
+- Original-signature APK is frozen at `artifacts/releases/v0.2/olevod-tv-v0.2.apk`, 14,341,714 bytes, version0.2.0/code2, SHA-256 `001c33cf20736cbe675347e1e5a13c56d2eb6eca72796fcf504432723a8d89ab`. Certificate matchesv0.1 (`db2d039b4b6685678c5c71e397df7146d5e3bac038d438d55f496db1cdd060f4`); both originalv0.1 assets remain unchanged. Production source isfba0f77; subsequent packaging edits do not change App code.
+- Independent release build/signature checks,47 JVM cases and lint passed (0 errors,21 warnings). Dedicated API34 TV emulator install-r upgradedv0.1 to this exact APK, retaining installation identity, a controlled data marker and the old isolated test viewing record. Actual Home/VIP2+10/catalog/MN-search/first-frame playback/fullscreen/exit journeys passed. No Chromecast data was cleared or release-signature migration attempted.
+- Reviewed and archived13 original screenshots (12v0.2 plus1v0.1 upgrade baseline), with hashes and provenance in `verification/v0.2-screenshots/manifest.json`. Full scope, old test-history provenance and limitations are in `verification/RELEASE_V0_2.md`. README, install guide and release notes link these results; token-history implementation/release amounts remain explicitly uncounted.
+- Generalized release script requires an explicit matching tag and refuses an existing version directory. Syntax and negative cases (existingv0.2, mismatchedv0.3, invalid tag) passed. Do not rerun against or overwrite the frozenv0.2 candidate.
+- Push/publication remain pending: CUA reports the Mac locked and unable to auto-unlock; CLI dry-run push has no usable HTTPS password, and no SSH agent identity was available. No remote tag, Release or asset upload has occurred. Last verified remote main is141878d22acf3563e24eb27627bf0cd79aa6c495; last remote release tag isv0.1. No new publication approval is required.
+- Resume after Mac unlock: re-check Git state and remote heads, use the existing logged-in GitHub Desktop/browser to push the completed branch and fast-forwardmain if still applicable. Update pending-publication text, tagv0.2 at the final release commit, publish `docs/releases/v0.2.md` with the frozen APK and `SHA256SUMS.txt`, then verify remote commit/tag, public release and asset checksum. Do not claim publication from a filled UI form alone.
