@@ -1,8 +1,8 @@
 # UI v2 Chromecast 真机验证
 
-2026-09-08 · 分支 `codex/ui-v2` · 测试基线提交 `c8e50e7`。
+2026-09-08（America/Los_Angeles） · 分支 `codex/ui-v2` · 初始基线 `c8e50e7`，最终修复源码 `d3ad628`。
 
-**累计51个不同自动化用例通过，其中修复版定向复测17项通过。** 旧会话失效导致的VIP空地址已定位；新增VIP首帧、视频与音频输出检查也通过。30分钟稳定性正在采样；以下区分原始包与修复包，保留先前失败，不把所有51项说成在修复包上重新跑过。
+**跨批次累计56个不同自动化用例通过；最终修复包19/19定向回归通过。** VIP空地址的旧会话原因、播放错误按钮焦点及目录排序视口问题已修复。30分钟播放观察及实际后台进程重建在会话修复基线上完成。以下区分各包并保留先前失败，不把累计56项或长时观察说成在最终包上全部重跑。
 
 ## 环境与安装
 
@@ -85,7 +85,11 @@ adb -s "$ANDROID_SERIAL" shell am instrument -w -r \
 
 ## 持续播放采样
 
-`scripts/chromecast-soak.py` 只读观察已开始播放的实际应用，不发送控制键、不读取凭据、不输出片源URL。保持非全屏控制栏可见，每30秒记录新UI层级中的实际播放时钟、平台状态、前台、PID、PSS和新应用崩溃计数；不是根据平台anchor外推播放时间。6秒短采样验证通过后，于2026-09-09 02:28 UTC启动30分钟观察，日志 `.tools/chromecast-v2/soak-30min.jsonl`，结果未完成前不标通过。
+观察基线为 `2af5e7a…`：播放途中只读拉取已安装APK并校验SHA一致。期间在模拟器完成以下UI修复，未覆盖安装或导航该Chromecast。
+
+`scripts/chromecast-soak.py` 只读观察已开始播放的实际应用，不发送控制键、不读取凭据、不输出片源URL。保持非全屏控制栏可见，每30秒记录新UI层级中的实际播放时钟、平台状态、前台、PID、PSS和新应用崩溃计数；不是根据平台anchor外推播放时间。6秒短采样验证通过后，于2026-09-09 02:28–02:58 UTC完成30分钟观察。61次全新UI采样的起点跨度1800.014秒，实际时钟11:34→41:33，推进1799秒；每一步29–31秒，没有采样到停住或倒退。全部保持播放状态3、速度1.0及应用前台，PID一致。PSS为155.12–162.40MiB；0观察错误、0缓冲提示采样、0脚本检测到的新应用崩溃记录。独立agent按原始61行重算与汇总完全一致。
+
+日志 `.tools/chromecast-v2/soak-30min.jsonl` SHA-256为 `902f1bcc9c19130fc4211d24506b2ea2de60bdcebf2936cb14d061fe8271907a`；汇总SHA为 `0b244fbb7e1a27ace0ed7e6242419b41ba9d9a4f32a93aa65df7084926afdca9`。记录中的elapsed1804.116秒包含末次约4秒采样耗时，不误称视频推进1804秒。
 
 ```sh
 source scripts/android-env.sh
@@ -95,6 +99,46 @@ python3 scripts/chromecast-soak.py --adb "$ANDROID_HOME/platform-tools/adb" \
 ```
 
 使用当前设备连接端口；输出文件必须不存在，以保留历次证据。该采样不证明每帧连续、零短暂缓冲或实际声音正常。
+
+## 实际系统Home与后台进程重建
+
+在上述 `2af5e7a…` 基线上，播放观察后按真实系统Home，稍后连续读取的平台位置固定在2696275ms、speed0。随后执行 `am kill com.olevod.tv` 终止后台进程；原PID21785消失，`pidof`返回空且退出码1。未卸载、清除数据或重放登录请求。
+
+重新打开原任务，启动结果为COLD、7420ms，新PID30594。页面先显示异步加载态，随后恢复同一影片“海洋奇缘：启航”，默认全屏按钮有焦点；读取平台位置2706586ms、speed1，新UI时钟45:13。这支持从保存的44:56附近恢复后继续播放，不是从零开始；没有测得重建的精确初始seek点，也不声称跨进程保留暂停状态。常规Home往返保持暂停的证据另见前述379879ms读数。
+
+此项验证实际后台终止后的安全恢复；没有模拟系统内存压力，不承诺最后一次云端同步完成。数值及本地原图保存在 `.tools/chromecast-v2/process-recovery-*`。
+
+## 播放错误操作与目录视口修复
+
+- 播放错误的登录／重试按钮虽可见，但父视频区域拦截了焦点入口。独立4项先全部失败；修复明确的Header Down、控制Up、主／次操作／控制之间的路径后，同断言4项通过（6.907秒），原Player4+Root3也通过（19.670秒）。错误晚到时不抢Header焦点；全屏错误保留恢复按钮，重试按钮消失前先交回控制焦点。
+- 字体放大为1.3后，新错误4项再次通过（10.026秒），按钮完整在屏幕内且未被控制栏覆盖；模拟器字体已恢复。修复提交 `b5c21cb`，错误态全屏提示改为“返回键退出全屏”。这些先是模拟器结果，不能自动计为新的真机通过数。
+- 目录新排序首批结果到达时可能继承旧位置。独立新增测试先失败（2.600秒）：从旧第五行变成新结果第八行。增加一次性、按筛选条件保存的首批结果回顶后，新测试和旧目录4项共5项通过（13.651秒）；完整断言同时确认追加和影片返回都保留深位置。修复提交 `d3ad628`。
+- 三个修复合并后的最终App SHA-256为 `8778ae82d97cc859f4aacf356834a7a144b96a3bc5d8406f5eec753e162499cc`，Test SHA为 `beb08425c10de7e8acd9d12e6d9cecbca211e8c98acb25a832cfdf5e9edd8302`。独立最终构建、完整JVM45项通过，lint为0错误／21警告。长时观察结束后独立agent以 `install -r` 安装，并从电视拉取已安装APK核验SHA一致。
+
+## 最终修复包真机回归
+
+独立agent在上述 `8778ae82…` 包执行7类19项，126.455秒，19次开始／19次成功，0失败／跳过。未修改断言或重跑失败。新增错误焦点4项与视口1项均在真机通过，连同原51项去重后为56个不同用例；其他14项是原有用例复测。
+
+| 测试类 | 通过 |
+| --- | --- |
+| V2PlayerErrorFocusTest | 4/4 |
+| V2CatalogViewportTest | 1/1 |
+| V2CatalogUiTest | 4/4 |
+| V2PlayerUiTest | 4/4 |
+| V2RootJourneyUiTest | 3/3 |
+| V2LivePlaybackTest | 1/1 |
+| V2AccountReadTest | 2/2 |
+
+```sh
+adb -s "$ANDROID_SERIAL" shell am instrument -w -r \
+  -e liveV2 true -e liveLogin true \
+  -e class com.olevod.tv.V2PlayerErrorFocusTest,com.olevod.tv.V2CatalogViewportTest,com.olevod.tv.V2CatalogUiTest,com.olevod.tv.V2PlayerUiTest,com.olevod.tv.V2RootJourneyUiTest,com.olevod.tv.V2LivePlaybackTest,com.olevod.tv.V2AccountReadTest \
+  com.olevod.tv.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+原始日志 `final-device-regression.log` SHA-256为 `5a73f8cca0ddadfd0f7194cfdca5e214d506c28163bb1d4007efaeee35776823`。安全数值标签、安装和拉取记录见本机 `.tools/chromecast-v2/`；逐项断言与计数由独立报告说明。此轮账户测试仅读取，实际普通播放使用隔离历史；未运行未筛选的全包测试。
+
+主执行agent随后在最终包的实际电影目录补查：遥控进入深列表，完整焦点框／标题／元信息可见；向上逐行返回排序按钮，打开浮层并选择“评分最高”。新结果到达后首行立即可见，焦点留在排序按钮，尚未按Down进入正文。此手动路径由真实服务驱动；共享ID重排的深视口复现场景由上述独立控制数据用例证明。结束后返回应用首页。
 
 ## 截图
 
@@ -108,10 +152,26 @@ python3 scripts/chromecast-soak.py --adb "$ANDROID_HOME/platform-tools/adb" \
 
 ![真实电影目录](chromecast-screenshots/catalog.png)
 
+![最新上传排序](chromecast-screenshots/catalog-latest-upload.png)
+
+![人气最高排序](chromecast-screenshots/catalog-popular.png)
+
+![评分最高首行](chromecast-screenshots/catalog-score-first-row.png)
+
+![自动追加后的第六行](chromecast-screenshots/catalog-score-sixth-row.png)
+
+以下三张来自最终修复包 `8778ae82…`：
+
+![最终包深列表完整焦点卡](chromecast-screenshots/final-catalog-deep.png)
+
+![最终包遥控排序浮层](chromecast-screenshots/final-catalog-sort-menu.png)
+
+![最终包评分排序完成后首行及按钮焦点](chromecast-screenshots/final-catalog-score-applied.png)
+
 ## 证据范围
 
 - 在实机执行夹具测试证明该设备上的布局、焦点与状态行为；夹具播放器不证明真实解码。
 - 实际媒体的首帧回调、播放状态和解码格式与现场听感分开报告。
 - 4K 屏幕信息、VIP 栏目或 1080p 媒体不能证明 4K/HDR 片源通过。
 - 既有 v0.1 用户音画反馈不用于宣称 UI v2 音画已确认。
-- 本轮没有完成30分钟持续播放、真实4K/HDR源、听感／同步、真实系统Home／进程重建、全套放大字体及屏幕阅读器验收；这些继续保持待测。未发布新版本或改变正式签名。
+- 本轮已完成指定基线的30分钟播放采样、真实系统Home暂停及后台进程重建；真实4K/HDR源、现场听感／同步、全套放大字体、屏幕阅读器及完整性能目标继续待测。未发布新版本或改变正式签名。

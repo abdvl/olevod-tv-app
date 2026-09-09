@@ -16,7 +16,7 @@
     "skipped": 0
   },
   "device": "emulator-5554 Android 14 API 34",
-  "chromecast": "core 48 passed; saved-account VIP source empty, 1 failed; complete device acceptance pending",
+  "chromecast": "56 unique automated cases passed across documented builds; final 8778 app targeted19 passed; 30-minute observation and actual Home/background process recovery completed on 2af5e7a",
   "design_gate": "partial; hardware and remaining requirement branches pending",
   "requirements": [
     {
@@ -497,6 +497,125 @@
       "seconds": 29.889,
       "first_attempt": "JUnit method return type initialization failure; preserved separately"
     },
-    "scope": "See linked reports; audio/HDR/long playback/process recovery/accessibility remain pending"
+    "scope": "See linked reports; audio/HDR/long playback/process recovery/accessibility remain pending",
+    "record_status": "Historical first batch; expired session subsequently diagnosed, renewed, retested and fixed in chromecast_session_recovery"
+  },
+  "chromecast_session_recovery": {
+    "report": "CHROMECAST_V2.md",
+    "independent_report": "CHROMECAST_INDEPENDENT.md",
+    "date": "2026-09-08",
+    "app_sha256": "2af5e7a174200a90d70f21f3b0808b58f73d27fc3d2631d2c0b999592793f3ae",
+    "test_apk_sha256": "8dd48499c8b291ea71d33b4eca59cdec6c39fb3eaff029ef2a3b2adde16555c3",
+    "session_reads": {
+      "passed": 2,
+      "seconds": 4.569,
+      "vip_https_sources": 1,
+      "vip_blank_sources": 0,
+      "premium_variants": 0
+    },
+    "post_fix_regression": {
+      "passed": 16,
+      "seconds": 112.443
+    },
+    "vip_decode": {
+      "passed": 1,
+      "seconds": 15.451,
+      "first_frame": true,
+      "width": 1920,
+      "height": 1040,
+      "progress_ms": 4770,
+      "video_buffers": 115,
+      "audio_buffers": 242
+    },
+    "unique_automated_cases_across_builds": 51,
+    "jvm": {
+      "new_passed": 15,
+      "total_passed": 45,
+      "first_attempt_passed": 13,
+      "first_attempt_failed": 1
+    },
+    "actual_system_home": {
+      "app_sha256": "e14387a733c072d46a78b7af722336893115dd7409ba8deaf549cbed725587ce",
+      "paused_position_ms": 379879,
+      "returned_position_ms": 379879,
+      "returned_speed": 0
+    },
+    "soak": {
+      "samples": 61,
+      "elapsed_seconds": 1804.116,
+      "position_samples": 61,
+      "actual_ui_advance_seconds": 1799,
+      "unique_pids": 1,
+      "nonplaying_samples": 0,
+      "background_samples": 0,
+      "buffering_samples": 0,
+      "observation_errors": 0,
+      "new_app_crash_lines": 0,
+      "scope": "Sampled state and actual visible player clock; not continuous frame, audible sound, or zero-buffering proof",
+      "status": "completed_and_independently_audited",
+      "app_sha256": "2af5e7a174200a90d70f21f3b0808b58f73d27fc3d2631d2c0b999592793f3ae",
+      "duration_target_minutes": 30,
+      "sample_interval_seconds": 30,
+      "sample_start_span_seconds": 1800.014,
+      "pss_mib_min": 155.12,
+      "pss_mib_max": 162.4,
+      "log": ".tools/chromecast-v2/soak-30min.jsonl",
+      "log_sha256": "902f1bcc9c19130fc4211d24506b2ea2de60bdcebf2936cb14d061fe8271907a",
+      "summary_sha256": "0b244fbb7e1a27ace0ed7e6242419b41ba9d9a4f32a93aa65df7084926afdca9"
+    },
+    "limits": [
+      "Counts include overlapping retests; do not sum batches as unique cases",
+      "Decoder audio buffers do not confirm audible sound or synchronization",
+      "4K/HDR, full accessibility and complete performance acceptance pending",
+      "Soak and process recovery used 2af5e7a; see chromecast_final_ui_regression for latest8778 device evidence",
+      "Catalog viewport and player error-focus fixes verified in final19 hardware batch"
+    ],
+    "actual_process_recovery": {
+      "baseline_app_sha256": "2af5e7a174200a90d70f21f3b0808b58f73d27fc3d2631d2c0b999592793f3ae",
+      "background_pid": "21785",
+      "after_am_kill_pidof_exit_code": 1,
+      "after_am_kill_pidof_output": "",
+      "restored_pid": "30594",
+      "launch_state": "COLD",
+      "launch_total_ms": 7420,
+      "home_pause_position_ms": 2696275,
+      "home_pause_speed": 0.0,
+      "restored_settled_position_ms": 2706586,
+      "restored_settled_speed": 1.0,
+      "restored_title": "海洋奇缘：启航",
+      "fresh_ui_position": "45:13",
+      "focused_control": "全屏",
+      "scope": "Actual Home followed by am kill of background app; retained app data; resumed near saved position. Not exact restart-offset measurement, OS pressure simulation, or final cloud-upload guarantee."
+    }
+  },
+  "chromecast_final_ui_regression": {
+    "date": "2026-09-08",
+    "source_commit": "d3ad628",
+    "app_sha256": "8778ae82d97cc859f4aacf356834a7a144b96a3bc5d8406f5eec753e162499cc",
+    "test_apk_sha256": "beb08425c10de7e8acd9d12e6d9cecbca211e8c98acb25a832cfdf5e9edd8302",
+    "installed_app_pulled_sha_verified": true,
+    "passed": 19,
+    "failures": 0,
+    "skipped": 0,
+    "seconds": 126.455,
+    "classes": {
+      "V2PlayerErrorFocusTest": 4,
+      "V2CatalogViewportTest": 1,
+      "V2CatalogUiTest": 4,
+      "V2PlayerUiTest": 4,
+      "V2RootJourneyUiTest": 3,
+      "V2LivePlaybackTest": 1,
+      "V2AccountReadTest": 2
+    },
+    "unique_automated_cases_across_builds": 56,
+    "new_unique_cases": 5,
+    "jvm_passed": 45,
+    "lint_errors": 0,
+    "lint_warnings": 21,
+    "log": ".tools/chromecast-v2/final-device-regression.log",
+    "log_sha256": "5a73f8cca0ddadfd0f7194cfdca5e214d506c28163bb1d4007efaeee35776823",
+    "scope": "Final targeted regression, not all56 repeated on this app. Thirty-minute playback and process-recovery observations used earlier2af app.",
+    "manual_catalog": "Actual public movie catalog: deep row card fully visible; D-pad back to sort trigger; score selection returned visible first row while keeping trigger focus; app left on Home.",
+    "public_device_screenshots": 11
   }
 }

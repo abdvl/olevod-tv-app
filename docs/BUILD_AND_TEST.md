@@ -37,7 +37,7 @@ debug可用 `--es screen home|browse|search|player|live|history|favorites|accoun
 
 ## UI v2 回归与运行截图
 
-当前 `codex/ui-v2` 的构建、45项UI/状态、30项JVM、真实API/普通首帧证据与未覆盖分支见 [V2-10](verification/v2/V2-10.md)。后续 [Chromecast 真机验证](verification/v2/CHROMECAST_V2.md) 已通过48项核心检查，VIP空地址1项失败，现场音画／长时等仍待测。模拟器、这次真机和下面的旧版结果分别记录。
+当前 `codex/ui-v2` 最初交付时的45项UI/状态、30项JVM、真实API/普通首帧与未覆盖分支见 [V2-10](verification/v2/V2-10.md)。后续 [Chromecast 真机验证](verification/v2/CHROMECAST_V2.md) 跨批次累计56个不同用例通过，最终修复包19项定向回归通过；完整JVM45项、lint与构建通过。VIP重登读取与真实解码通过；会话修复基线的30分钟播放采样、实际Home暂停及后台进程重建完成。现场听感／同步等仍待确认。模拟器、各真机批次与下面的旧版结果分别记录。
 
 新版UI采用 `V2*` 测试类作为回归入口，精确类清单与结果见V2-10。`V2AccountReadTest` / `V2LivePlaybackTest` 分别需要显式 `liveLogin=true` / `liveV2=true`，不包含在45项夹具回归中。仓库保留旧版的UI测试和服务测试供历史参照，本轮没有执行整个未筛选的 instrumentation 包，也没有将其声明为全部通过。
 
@@ -57,7 +57,7 @@ debug可用 `--es screen home|browse|search|player|live|history|favorites|accoun
 
 ## 实机验收
 
-使用Android Studio的设备配对或已配置的ADB连接实机。当前重点检查遥控器所有入口、点播/VIP、返回焦点、续播与待机恢复；至少30分钟连续播放仍待完成。直播和回看进一步稳定性验收按用户要求暂缓。请以设备协商出来的解码能力为准，不把网站“蓝光”栏目名称当成4K/HDR保证。
+使用Android Studio的设备配对或已配置的ADB连接实机。UI v2指定基线已完成30分钟普通播放采样、实际Home与后台进程恢复；各APK散列和测试命令见上述报告。现场音画／同步、真实4K/HDR及完整性能目标继续待测。直播和回看进一步稳定性验收按用户要求暂缓。请以设备协商出来的解码能力为准，不把网站“蓝光”栏目名称当成4K/HDR保证。
 
 ## 暂停后继续
 

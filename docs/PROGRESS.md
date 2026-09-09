@@ -1,6 +1,8 @@
 # 实施进度 / 恢复入口
 
-最近更新：2026-09-07。
+最近更新：2026-09-08（本地时间）。
+
+**最新恢复入口：UI v2 开发分支 `codex/ui-v2`，见本文末 S58a–S58e 及 [Chromecast 报告](verification/v2/CHROMECAST_V2.md)。** 三项后续修复已分别提交；30分钟播放观察和后台进程重建已完成，最终修复包已安装，独立真机回归19/19通过。旧版步骤保留在下方，不应从 S01 重做。
 
 ## 当前检查点
 
@@ -21,8 +23,8 @@
 | S19–S28 | 账号记忆、导航展开、分类/搜索重设计、无限滚动、播放控制、底部留白、历史卡片与明确方向键焦点已实现；目录/搜索跨区焦点、末行可见性、历史卡片/续播与播放器控制均已独立实机复核 |
 
 - 登录依赖已解除：用户授权本次登录调试代填验证码，Android同客户端验证码登录已成功；Chrome因Mac锁定暂不可用。
-- 待补：记住凭据后通过实际验证码表单再次登录、多结果搜索追加，以及30分钟播放稳定性。导航、历史续播与新增首行最近播放已实机验证。用户已明确暂缓直播稳定性排查，保留现有直播功能及问题记录。
-- 用户已授权每步本地commit、使用Android Studio、独立agent验证和`.secrects`测试账号。未推送远端。
+- 最新补测：记住凭据后的真实验证码重登、VIP首帧解码、实际Home暂停、后台进程重建和30分钟播放采样已完成，具体包与证据范围见最新报告。现场听感／同步、4K/HDR、完整无障碍及其他未覆盖组合仍待验收。直播按用户要求暂缓。
+- 用户已授权每步本地commit、使用Android Studio、独立agent验证和`.secrects`测试账号。当前分支推送状态须用远端SHA核验；本轮真机测评不代表发布新版。
 - 恢复时保留已完成提交，先检查未提交修改和本表的“待验收”。
 
 ## 已完成记录
@@ -528,3 +530,11 @@
 - The independent controlled catalog test reproduced the physical-device sort finding: from an old fifth-row viewport, an asynchronous new sort with shared poster IDs displayed its eighth row while focus correctly stayed on the sort trigger. Initial test1/1 failed (2.600s), retaining evidence; its later append/return assertions had not run.
 - Added a Filter-scoped, saved pending reset. The first nonempty, nonloading result scrolls to row0 after attachment, then consumes the flag. Appends, canceled popovers and saved route returns do not request another reset.
 - Original independent test now completes, including append/loading and leaving/returning to the same deep card. New1 + existing Catalog4 pass5/5 (13.651s). Final build/JVM45/lint pass (0lint errors,21warnings). App SHA `8778ae82d97cc859f4aacf356834a7a144b96a3bc5d8406f5eec753e162499cc`; Test SHA `beb08425c10de7e8acd9d12e6d9cecbca211e8c98acb25a832cfdf5e9edd8302`. Chromecast installation and final focused rerun wait for the unchanged2af5e7a30-minute observation to finish.
+
+### S58e - complete playback observation, recovery and final hardware regression
+
+- The uninterrupted30-minute observation on installed2af5e7a completed61 fresh samples. Independent raw-log audit verified1800.014s between sampling starts and actual UI time11:34 to41:33,1799s advancement. All samples had the same PID, playing state3, speed1.0 and foreground; zero sampled buffering/error/new detected app-crash records. PSS155.12-162.40MiB. This is sampled playback evidence, not a zero-stutter, audible-sync or no-memory-leak guarantee; it does not represent30minutes on the later UI package.
+- Actual Home paused at2696275ms. After killing only the background app, PID21785 disappeared; reopening the original task created PID30594, restored the same film and fullscreen-button focus, and played near the saved position (settled2706586ms). No app data was cleared. Initial resumed offset and final cloud-write success were not asserted.
+- Independent verifier installed final8778ae82 App and beb08425 Test with install-r; pulling the installed APK confirmed the exact SHA. Selected PlayerErrorFocus4, CatalogViewport1, CatalogUI4, PlayerUI4, Root3, LivePlayback1 and AccountRead2 passed19/19 in126.455s, zero failures/skips. The5 new cases raise distinct passing hardware cases across builds to56; do not sum overlapping retests or claim56 reran on the final package.
+- README, implementation status, build/test notes, machine-readable results and both hardware reports record current outcomes and retain historical failures. Actual public catalog/search screenshots are archived separately from account/private-history images. Three production fixes are2fb2e77, b5c21cb and d3ad628; checkpoint1a1d2be adds explicit VIP decoding and the observation script.
+- Remaining acceptance: onsite sound/sync, real4K/HDR source, full accessibility/performance and the uncovered requirement combinations listed inV2-10. Final debug package is installed; no new release/version/signing change or push performed in this testing continuation.

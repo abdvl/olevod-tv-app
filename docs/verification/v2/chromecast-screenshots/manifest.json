@@ -26,6 +26,55 @@
       "width": 1920,
       "height": 1080,
       "sha256": "3956d3e1dabccce32cc58b4cc479ecea811523030f5a194cb9abab85820a4eda"
+    },
+    {
+      "file": "catalog-latest-upload.png",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "72b278e6a5a84b54acaa7af4fc96d46d6014af4a060e337ba37ef1f62764a0a3",
+      "app_sha256": "e14387a733c072d46a78b7af722336893115dd7409ba8deaf549cbed725587ce"
+    },
+    {
+      "file": "catalog-popular.png",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "0d0b05c9d443c05d361b90cfbe6187ae87f7f16d208a869169a47610e848677c",
+      "app_sha256": "e14387a733c072d46a78b7af722336893115dd7409ba8deaf549cbed725587ce"
+    },
+    {
+      "file": "catalog-score-first-row.png",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "153a3af588bd643b1e0386086bcec90e3bf61a302a8915c35e64c3cdcec7e294",
+      "app_sha256": "2af5e7a174200a90d70f21f3b0808b58f73d27fc3d2631d2c0b999592793f3ae"
+    },
+    {
+      "file": "catalog-score-sixth-row.png",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "5ea0021c971532d334a5acfa133e0fe15b98f3b216199e72f1636958d4208698",
+      "app_sha256": "2af5e7a174200a90d70f21f3b0808b58f73d27fc3d2631d2c0b999592793f3ae"
+    },
+    {
+      "file": "final-catalog-deep.png",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "25d6babc5824d18049eb0f73b61b28a8bcac6d82f7d26dee2bc7fd6e6a3de264",
+      "app_sha256": "8778ae82d97cc859f4aacf356834a7a144b96a3bc5d8406f5eec753e162499cc"
+    },
+    {
+      "file": "final-catalog-sort-menu.png",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "ce5adf7a65ef9da2f0b099cd63c0d8d24a41968e8f6e9a1f279f6339672ff3fe",
+      "app_sha256": "8778ae82d97cc859f4aacf356834a7a144b96a3bc5d8406f5eec753e162499cc"
+    },
+    {
+      "file": "final-catalog-score-applied.png",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "21a7995125712f1322308b3f2ce3265f7e7c5b059ccee54d6f051eab4d4362ff",
+      "app_sha256": "8778ae82d97cc859f4aacf356834a7a144b96a3bc5d8406f5eec753e162499cc"
     }
   ]
 }
