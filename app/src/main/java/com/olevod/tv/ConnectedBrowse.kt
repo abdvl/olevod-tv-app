@@ -52,6 +52,7 @@ fun ConnectedBrowse(categoryName:String,vm:AppViewModel,open:(Movie)->Unit,choos
 internal fun CatalogPageContent(category:Category,categories:List<Category>,filter:Filter,result:CatalogFeedState,
                                 open:(Movie)->Unit,changeFilter:(Filter)->Unit,chooseCategory:(Int)->Unit,loadMore:()->Unit){
     val list=rememberSaveable(filter,saver=LazyListState.Saver){LazyListState()}
+    var pendingTopReset by rememberSaveable(filter){mutableStateOf(true)}
     val triggers=remember{List(5){FocusRequester()}}
     val title=remember{FocusRequester()};val reset=remember{FocusRequester()};val firstRow=remember{List(6){FocusRequester()}}
     var lastTrigger by rememberSaveable{mutableIntStateOf(0)}
@@ -66,6 +67,15 @@ internal fun CatalogPageContent(category:Category,categories:List<Category>,filt
     DisposableEffect(page){page?.enter={triggers[0].requestFocus()};onDispose{page?.enter=null}}
     LaunchedEffect(Unit){if(memory?.anchor?.value==null){withFrameNanos{};triggers[0].requestFocus()}}
     LaunchedEffect(restoreTrigger){if(restoreTrigger>0){withFrameNanos{};(if(overlaySource<0)title else triggers[overlaySource]).requestFocus()}}
+    // Reused poster keys can retain an old viewport when an asynchronous sorted page arrives.
+    // Reset once after the first real rows attach; appends and saved route returns keep position.
+    LaunchedEffect(list,filter,pendingTopReset,result.loading,result.items.isNotEmpty()){
+        if(pendingTopReset&&!result.loading&&result.items.isNotEmpty()){
+            withFrameNanos{}
+            list.scrollToItem(0)
+            pendingTopReset=false
+        }
+    }
     val close:()->Unit={overlay=null;restoreTrigger++}
     // Updated callbacks/state are read in the scrolling observer; each query has a separate saved anchor.
     val currentResult by rememberUpdatedState(result)
