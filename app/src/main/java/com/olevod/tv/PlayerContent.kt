@@ -44,6 +44,9 @@ internal data class PlayerActions(val back:()->Unit,val toggleFull:()->Unit,val 
 internal fun PlayerContent(state:PlayerUiState,full:Boolean,actions:PlayerActions,video:@Composable ()->Unit){
     val refs=remember{List(8){FocusRequester()}}
     val surface=remember{FocusRequester()};val stage=remember{FocusRequester()};val description=remember{FocusRequester()};val groups=remember{FocusRequester()}
+    val errorPrimary=remember{FocusRequester()};val errorRetry=remember{FocusRequester()}
+    var playerFocused by remember{mutableStateOf(false)}
+    val focusWasInPlayer=playerFocused
     var stageFocused by remember{mutableStateOf(false)}
     var controls by remember{mutableStateOf(true)}
     var speedMenu by remember{mutableStateOf(false)}
@@ -57,9 +60,16 @@ internal fun PlayerContent(state:PlayerUiState,full:Boolean,actions:PlayerAction
     val accessibility=LocalContext.current.getSystemService(android.content.Context.ACCESSIBILITY_SERVICE) as android.view.accessibility.AccessibilityManager
     var exploring by remember{mutableStateOf(accessibility.isTouchExplorationEnabled)}
     DisposableEffect(accessibility){val listener=android.view.accessibility.AccessibilityManager.TouchExplorationStateChangeListener{exploring=it};accessibility.addTouchExplorationStateChangeListener(listener);onDispose{accessibility.removeTouchExplorationStateChangeListener(listener)}}
-    DisposableEffect(page,full){page?.forceEntry=true;page?.enter={stage.requestFocus()};onDispose{page?.forceEntry=false;page?.enter=null}}
+    DisposableEffect(page,full,state.error){page?.forceEntry=true;page?.enter={(if(state.error!=null)errorPrimary else stage).requestFocus()};onDispose{page?.forceEntry=false;page?.enter=null}}
     LaunchedEffect(full){controls=true}
-    LaunchedEffect(full,controls){withFrameNanos{};if(full&&!controls)surface.requestFocus()else refs[0].requestFocus()}
+    LaunchedEffect(full,controls){withFrameNanos{};when{state.error!=null->errorPrimary.requestFocus();full&&!controls->surface.requestFocus();else->refs[0].requestFocus()}}
+    LaunchedEffect(state.error,state.loginRequired){
+        if(state.error!=null){
+            controls=true
+            // A late response must not steal focus from a user already browsing the header.
+            if(focusWasInPlayer){withFrameNanos{};errorPrimary.requestFocus()}
+        }
+    }
     LaunchedEffect(full,controls,state.playing,state.buffering,state.error,speedMenu,descriptionMenu,episodeFocused,exploring,tick){
         if(full&&controls&&state.playing&&!state.buffering&&state.error==null&&!speedMenu&&!descriptionMenu&&!episodeFocused&&!exploring){delay(5000);controls=false}
     }
@@ -70,29 +80,44 @@ internal fun PlayerContent(state:PlayerUiState,full:Boolean,actions:PlayerAction
     val actualEpisode=episodes.getOrNull(state.episode)
     val enabled=List(8){it !in 2..5||state.seekable}
     val mediaKeys=setOf(AndroidKeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,AndroidKeyEvent.KEYCODE_MEDIA_FAST_FORWARD,AndroidKeyEvent.KEYCODE_MEDIA_REWIND)
-    Row(Modifier.fillMaxSize().background(Bg).playerKeyInput(surface,full&&!controls){event->
+    Row(Modifier.fillMaxSize().background(Bg).onFocusChanged{playerFocused=it.hasFocus}.playerKeyInput(surface,full&&!controls){event->
         val key=event.nativeKeyEvent.keyCode
         if(key in mediaKeys){if(event.type==KeyEventType.KeyDown&&event.nativeKeyEvent.repeatCount==0){tick++;when(key){AndroidKeyEvent.KEYCODE_MEDIA_PLAY_PAUSE->actions.togglePlay();AndroidKeyEvent.KEYCODE_MEDIA_FAST_FORWARD->if(state.seekable)actions.seek(30000);else->if(state.seekable)actions.seek(-30000)}};true}
         else if(event.type!=KeyEventType.KeyDown)false
         else{tick++;when{
             full&&!controls->{when(key){AndroidKeyEvent.KEYCODE_DPAD_DOWN,AndroidKeyEvent.KEYCODE_DPAD_CENTER,AndroidKeyEvent.KEYCODE_ENTER->controls=true;AndroidKeyEvent.KEYCODE_DPAD_LEFT->if(state.seekable)actions.seek(-30000);AndroidKeyEvent.KEYCODE_DPAD_RIGHT->if(state.seekable)actions.seek(30000)};key in setOf(19,20,21,22,23,66)}
-            full&&key==AndroidKeyEvent.KEYCODE_DPAD_UP&&!episodeFocused->{controls=false;true}
+            full&&state.error==null&&key==AndroidKeyEvent.KEYCODE_DPAD_UP&&!episodeFocused->{controls=false;true}
             else->false
         }}
     }.padding(if(full)0.dp else 36.dp,if(full)0.dp else 4.dp,if(full)0.dp else 36.dp,if(full)0.dp else 24.dp),horizontalArrangement=Arrangement.spacedBy(24.dp)){
         PlayerVideoStage(full,controls,Modifier.weight(1f),
-            videoModifier=(if(full)Modifier.testTag("player-video")else Modifier.focusRequester(stage).testTag("player-video")
+            videoModifier=(if(full||state.error!=null)Modifier.testTag("player-video")else Modifier.focusRequester(stage).testTag("player-video")
                 .focusProperties{down=refs[0];up=page?.header?:FocusRequester.Default;right=if(state.detail!=null)description else FocusRequester.Cancel}
                 .onFocusChanged{stageFocused=it.isFocused}.border(2.dp,if(stageFocused)Green else Color.Transparent)
                 .semantics{contentDescription="视频画面，按确认键全屏"}.clickable(onClick=actions.toggleFull)).semantics{stateDescription=if(state.renderedFrame)"视频已开始显示"else"等待视频画面"},
             video={
                 video()
                 if(state.buffering)Text("正在缓冲…",color=White,fontSize=14.sp,modifier=Modifier.background(Bg).padding(12.dp))
-                state.error?.let{Column(Modifier.background(Bg).padding(16.dp)){ErrorNotice(it,actions.retry);if(state.loginRequired)TvAction("登录后继续",onClick=actions.login)}}
+                state.error?.let{message->
+                    // Keep recovery above the fullscreen control overlay without resizing video.
+                    Box(Modifier.fillMaxSize().padding(top=if(full)24.dp else 0.dp),contentAlignment=if(full)Alignment.TopCenter else Alignment.Center){
+                        Column(Modifier.widthIn(max=420.dp).background(Bg).padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
+                            Text(message,color=TvDesign.error,fontSize=15.sp)
+                            TvAction(if(state.loginRequired)"登录后继续"else"重试",modifier=Modifier.focusRequester(errorPrimary).testTag("player-error-primary").focusProperties{
+                                up=if(full)FocusRequester.Cancel else page?.header?:FocusRequester.Default
+                                down=if(state.loginRequired)errorRetry else refs[0]
+                                left=FocusRequester.Cancel;right=if(!full&&state.detail!=null)description else FocusRequester.Cancel
+                            }){if(state.loginRequired)actions.login()else{refs[0].requestFocus();actions.retry()}}
+                            if(state.loginRequired)TvAction("重试",modifier=Modifier.focusRequester(errorRetry).testTag("player-error-retry").focusProperties{
+                                up=errorPrimary;down=refs[0];left=FocusRequester.Cancel;right=FocusRequester.Cancel
+                            }){refs[0].requestFocus();actions.retry()}
+                        }
+                    }
+                }
             },controlContent={
                 if(full)Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
                     Text(state.movie.title+actualEpisode?.let{" · ${it.title}"}.orEmpty(),color=White,fontSize=18.sp,lineHeight=24.sp,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.weight(1f))
-                    Text("上键隐藏 · 返回退出全屏",color=Muted,fontSize=13.sp,lineHeight=18.sp)
+                    Text(if(state.error==null)"上键隐藏 · 返回退出全屏"else"返回键退出全屏",color=Muted,fontSize=13.sp,lineHeight=18.sp)
                 }
                 Column(Modifier.fillMaxWidth().height(24.dp),verticalArrangement=Arrangement.spacedBy(2.dp)){
                     Box(Modifier.fillMaxWidth().height(3.dp).background(TvDesign.border)){Box(Modifier.fillMaxWidth(if(state.duration>0)(state.position.toFloat()/state.duration).coerceIn(0f,1f)else 0f).fillMaxHeight().background(Green))}
@@ -104,7 +129,7 @@ internal fun PlayerContent(state:PlayerUiState,full:Boolean,actions:PlayerAction
                     Row(Modifier.weight(1f),horizontalArrangement=Arrangement.spacedBy(7.dp)){
                         labels.forEachIndexed{index,label->PlayerAction(label,icons[index],if(index==6)"${state.speed}×"else null,enabled[index],Modifier.weight(1f).focusRequester(refs[index]).testTag("player-action:$index")
                             .onFocusChanged{if(it.isFocused)lastAction=index}.focusProperties{
-                                up=if(full)FocusRequester.Cancel else stage;down=if(episodes.isNotEmpty())groups else FocusRequester.Cancel
+                                up=if(state.error!=null)errorPrimary else if(full)FocusRequester.Cancel else stage;down=if(episodes.isNotEmpty())groups else FocusRequester.Cancel
                                 left=(index-1 downTo 0).firstOrNull{enabled[it]}?.let{refs[it]}?:FocusRequester.Cancel
                                 right=(index+1..7).firstOrNull{enabled[it]}?.let{refs[it]}?:FocusRequester.Cancel
                             }){when(index){0->actions.toggleFull();1->actions.togglePlay();2->actions.seek(-30000);3->actions.seek(30000);4->actions.seek(-300000);5->actions.seek(300000);6->speedMenu=true;7->if(!state.favoriteBusy)actions.favorite()}}
@@ -123,7 +148,7 @@ internal fun PlayerContent(state:PlayerUiState,full:Boolean,actions:PlayerAction
             Box(Modifier.fillMaxWidth().height(1.dp).background(TvDesign.border))
             Text("剧情简介",color=White,fontSize=16.sp,lineHeight=22.sp)
             Text(state.detail?.description?:"正在加载影片信息…",color=Muted,fontSize=14.sp,lineHeight=22.sp,maxLines=4,overflow=TextOverflow.Ellipsis)
-            if(state.detail!=null)TvAction("展开简介",Icons.Rounded.ExpandMore,modifier=Modifier.focusRequester(description).testTag("player-description").focusProperties{left=stage;up=page?.header?:FocusRequester.Default;down=refs[0];right=FocusRequester.Cancel}){descriptionMenu=true}
+            if(state.detail!=null)TvAction("展开简介",Icons.Rounded.ExpandMore,modifier=Modifier.focusRequester(description).testTag("player-description").focusProperties{left=if(state.error!=null)errorPrimary else stage;up=page?.header?:FocusRequester.Default;down=refs[0];right=FocusRequester.Cancel}){descriptionMenu=true}
             state.detail?.let{d->if(d.director.isNotBlank())Text("导演：${d.director}",color=Muted,fontSize=13.sp,lineHeight=18.sp,maxLines=1,overflow=TextOverflow.Ellipsis);if(d.actor.isNotBlank())Text("主演：${d.actor}",color=Muted,fontSize=13.sp,lineHeight=18.sp,maxLines=2,overflow=TextOverflow.Ellipsis)}
             if(!state.seekable)Text("此片源暂不支持跳转",color=Muted,fontSize=13.sp,lineHeight=18.sp)
             if(state.ended&&state.episode==episodes.lastIndex)Text("已播放完",color=Green,fontSize=14.sp)
