@@ -21,6 +21,8 @@
 
 查看 **[新版运行截图集](docs/verification/v2/screenshots/README.md)**、[设计对照检查](design-qa.md) 和 [集成验证与待验收项](docs/verification/v2/V2-10.md)。截图运行的是正式页面组件，使用公开影片素材和虚拟观看记录；播放器布局图不代表真实媒体解码证据。新版尚未发布，顶部 v0.1 下载链接和下面的发布版截图仍对应 v0.1。
 
+[Chromecast 真机结果与4张实际截图](docs/verification/v2/CHROMECAST_V2.md)：48项核心检查通过，覆盖实际30秒／5分钟跳转、1.5倍速、全屏和后台暂停；保存账号的VIP样本返回空地址，1项失败。现场音画、4K/HDR、长时等完整验收仍待完成，详见[独立报告](docs/verification/v2/CHROMECAST_INDEPENDENT.md)。
+
 ![UI v2 首页运行预览](docs/verification/v2/screenshots/home-default.png)
 
 ## v0.1 功能与界面

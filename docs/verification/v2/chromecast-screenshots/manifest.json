@@ -1,0 +1,31 @@
+{
+  "device": "Chromecast/sabrina Android 14",
+  "app_sha256": "e14387a733c072d46a78b7af722336893115dd7409ba8deaf549cbed725587ce",
+  "mode": "actual app and live public catalog; deliberate test query",
+  "images": [
+    {
+      "file": "catalog.png",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "ec63688520fbbd977c89731221bfccf1486a6a0348a45da121a0e33545c65a5c"
+    },
+    {
+      "file": "search-result.png",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "c6ec883b1d381ceede3a5ca2392c47eebae45977a32e300a6766817450d49fe3"
+    },
+    {
+      "file": "search-return-input.png",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "0a73df88b723541d002895815d2cfc747f8513054fe9675cb67673df9d1d0bc1"
+    },
+    {
+      "file": "search-suggestion.png",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "3956d3e1dabccce32cc58b4cc479ecea811523030f5a194cb9abab85820a4eda"
+    }
+  ]
+}

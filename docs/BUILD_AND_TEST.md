@@ -37,9 +37,11 @@ debug可用 `--es screen home|browse|search|player|live|history|favorites|accoun
 
 ## UI v2 回归与运行截图
 
-当前 `codex/ui-v2` 的构建、45项UI/状态、30项JVM、真实API/普通首帧证据与未覆盖分支见 [V2-10](verification/v2/V2-10.md)。模拟器与目标Chromecast分开记录；当前目标设备连接超时，不能把下面的旧版结果当作新版通过。
+当前 `codex/ui-v2` 的构建、45项UI/状态、30项JVM、真实API/普通首帧证据与未覆盖分支见 [V2-10](verification/v2/V2-10.md)。后续 [Chromecast 真机验证](verification/v2/CHROMECAST_V2.md) 已通过48项核心检查，VIP空地址1项失败，现场音画／长时等仍待测。模拟器、这次真机和下面的旧版结果分别记录。
 
 新版UI采用 `V2*` 测试类作为回归入口，精确类清单与结果见V2-10。`V2AccountReadTest` / `V2LivePlaybackTest` 分别需要显式 `liveLogin=true` / `liveV2=true`，不包含在45项夹具回归中。仓库保留旧版的UI测试和服务测试供历史参照，本轮没有执行整个未筛选的 instrumentation 包，也没有将其声明为全部通过。
+
+`V2DevicePlaybackTest` 需显式 `liveDevicePlayback=true`，使用普通网络媒体与隔离历史，检查实际30/300秒seek、1.5倍速、全屏会话/位置、Activity ON_STOP暂停和释放；测试不会修改账号或收藏。它通过instrumentation临时采用媒体控制读取权限，结束后释放。不要把夹具测试、真实媒体测试和真实账号测试合为未筛选的全包运行。
 
 [新版24张截图](verification/v2/screenshots/README.md) 通过 `--ez preview true` 运行正式页面组件，使用公开素材和虚拟状态。Android Studio运行默认入口使用真实服务；preview不是媒体播放成功的证据。
 

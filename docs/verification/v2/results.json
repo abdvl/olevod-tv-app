@@ -16,7 +16,7 @@
     "skipped": 0
   },
   "device": "emulator-5554 Android 14 API 34",
-  "chromecast": "not verified; connection timeout",
+  "chromecast": "core 48 passed; saved-account VIP source empty, 1 failed; complete device acceptance pending",
   "design_gate": "partial; hardware and remaining requirement branches pending",
   "requirements": [
     {
@@ -471,5 +471,32 @@
     "skipped": 0,
     "seconds": 9.634,
     "change": "Compact initial filter padding and check icon only; no text size reduction"
+  },
+  "chromecast_followup": {
+    "report": "CHROMECAST_V2.md",
+    "independent_report": "CHROMECAST_INDEPENDENT.md",
+    "date": "2026-09-08",
+    "app_sha256": "e14387a733c072d46a78b7af722336893115dd7409ba8deaf549cbed725587ce",
+    "passed": 48,
+    "failed": 1,
+    "failed_case": "V2AccountReadTest: VIP 80632 episode URL empty; subsequent favorites and cloud-history checks not reached",
+    "ui_state": {
+      "passed": 45,
+      "seconds": 225.692
+    },
+    "live_catalog": {
+      "passed": 1,
+      "seconds": 9.597
+    },
+    "live_first_frame": {
+      "passed": 1,
+      "seconds": 19.508
+    },
+    "live_controls": {
+      "passed": 1,
+      "seconds": 29.889,
+      "first_attempt": "JUnit method return type initialization failure; preserved separately"
+    },
+    "scope": "See linked reports; audio/HDR/long playback/process recovery/accessibility remain pending"
   }
 }
