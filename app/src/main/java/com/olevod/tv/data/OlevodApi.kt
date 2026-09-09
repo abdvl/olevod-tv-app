@@ -9,6 +9,7 @@ import java.util.zip.GZIPInputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.CancellationException
 import okhttp3.*
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -94,8 +95,31 @@ class OlevodApi(
         return CatalogPage(o.optJSONArray("list").objects().map(::movie),o.optInt("total",-1),page,size)
     }
     suspend fun detail(id:Long):Detail {
+        val detailToken=token()
         val o=get("v1","pub","vod","detail",id.toString(),"true") as JSONObject
-        return Detail(movie(o),o.optString("content").replace(Regex("<[^>]*>"),""),o.optString("actor"),o.optString("director"),o.optJSONArray("urls").objects().map{Episode(it.getInt("index"),it.optString("title"),it.optString("url"),it.optBoolean("vip"))},o.optBoolean("favorite"),o.optInt("recordEpisode"),o.optLong("recordWatchDuration"))
+        fun ensureSameAccount(){if(token()!=detailToken)throw CancellationException("Account changed while loading playback")}
+        ensureSameAccount()
+        val detail=Detail(movie(o),o.optString("content").replace(Regex("<[^>]*>"),""),o.optString("actor"),o.optString("director"),o.optJSONArray("urls").objects().map{Episode(it.getInt("index"),it.optString("title"),it.optString("url"),it.optBoolean("vip"))},o.optBoolean("favorite"),o.optInt("recordEpisode"),o.optLong("recordWatchDuration"))
+        // The public detail endpoint can return success with blank VIP URLs for an expired
+        // session. Only diagnose that shape; healthy media keeps the single-request path.
+        if(detail.episodes.isNotEmpty() && detail.episodes.all{it.uri.isBlank()} &&
+            (detail.movie.vip || detail.episodes.any{it.vip})){
+            if(detailToken==null)throw ApiException(12,"请先登录账号后播放此影片")
+            ensureSameAccount()
+            val user=try{request(listOf("pub","user","info"),JSONObject()).optJSONObject("data")}
+            catch(e:Exception){
+                // An expired response can clear this session itself. Preserve that login error,
+                // but never deliver an old account's error to a newly signed-in account.
+                if(token()!=detailToken && !(token()==null && e is ApiException && e.code in setOf(13,14,16)))ensureSameAccount()
+                throw e
+            }
+            ensureSameAccount()
+            if(user==null || user.optLong("userId",-1)<=0 || user.optInt("groupId",-1)<1)
+                throw ApiException(-2,"暂时无法确认会员状态，请稍后重试")
+            if(user.optInt("groupId")!=3)throw ApiException(-2,"此影片需要有效的 VIP 权益")
+            throw ApiException(-2,"此影片的播放源暂不可用，请稍后重试")
+        }
+        return detail
     }
     suspend fun search(query:String,category:Int=0,page:Int=1,size:Int=20):CatalogPage {
         val o=get("v1","pub","index","search",query,"vod",category.toString(),page.toString(),size.toString()) as JSONObject
