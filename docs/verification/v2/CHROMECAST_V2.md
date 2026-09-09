@@ -2,7 +2,7 @@
 
 2026-09-08 · 分支 `codex/ui-v2` · 测试基线提交 `c8e50e7`。
 
-**按最终用例结果计：48 项通过；保存账号的 VIP 片源检查 1 项失败。** 已保留数据覆盖安装新版。普通播放与核心 UI 回归通过，VIP、现场音画与长时稳定性尚未完成验收。
+**累计51个不同自动化用例通过，其中修复版定向复测17项通过。** 旧会话失效导致的VIP空地址已定位；新增VIP首帧、视频与音频输出检查也通过。30分钟稳定性正在采样；以下区分原始包与修复包，保留先前失败，不把所有51项说成在修复包上重新跑过。
 
 ## 环境与安装
 
@@ -58,13 +58,43 @@ adb -s "$ANDROID_SERIAL" shell am instrument -w -r \
 
 在手动目录阶段，后续画面出现播放器和电视剧榜单，与预期按键路径不一致。已询问是否存在同步遥控操作并暂停继续发键；没有把来源不确定的截图当成该目录步骤通过。独立批次在此之前已明确交回设备。
 
-## VIP 未通过项
+## VIP 旧会话失败记录
 
 使用设备原有保存会话，不重新登录，也不读取或输出账号凭据。`V2AccountReadTest` 的 token非空与VIP详情存在剧集断言通过，随后“每条地址为HTTPS”断言失败。为定位问题仅改进测试错误文字，保持原断言；第二轮输出 `VIP source schemes (URLs omitted): {empty=1}`，2.461秒、1项失败。
 
-因此当前证据是ID80632的一条剧集地址为空；尚不能区分会话权益、站点策略或该样本资源原因，也不能归因Chromecast解码器。该方法在VIP失败后终止，后面的真实收藏、云历史读取没有运行。没有通过放宽HTTPS断言、跳过失败或更改用户账号来伪装成功。
+该轮结束时仅能确认ID80632的一条剧集地址为空，尚不能区分会话权益、站点策略或样本资源原因，也不能归因Chromecast解码器。该方法在VIP失败后终止，后面的真实收藏、云历史读取没有运行。没有通过放宽HTTPS断言、跳过失败或更改用户账号来伪装成功。
 
-原始失败日志保存在 `.tools/chromecast-v2/saved-account-read.log` 和 `saved-account-read-2.log`。后续先核对有效登录／会员权益与官网同ID返回，再重跑VIP和独立私有只读检查。现有生产播放器对空地址显示不可用提示；本轮不据未确认原因改写服务协议。
+原始失败日志保存在 `.tools/chromecast-v2/saved-account-read.log` 和 `saved-account-read-2.log`，没有覆盖。
+
+## 重新登录与针对性修复
+
+后续分别检查用户信息与私有列表，两项均明确返回“登录已失效，请重新登录”。主执行agent在真实电视上退出旧会话；账号密码仍自动填入，数字键盘默认聚焦，只输入新的验证码完成登录。凭据和验证码均不写入报告。
+
+独立agent重新执行 `V2AccountReadTest`，2/2通过，4.569秒：用户信息接受当前会话、会员组3；同ID返回1条HTTPS基础片源，0条空地址、0个premium变体；收藏与云历史第一页实际读取通过。这支持旧会话失效是本次空地址原因，不是解码器判断。
+
+`OlevodApi.detail` 对受限、非空剧集且地址全空的详情补充会话检查：游客登录提示、过期重新登录、无法确认会员、权益不足、片源不可用分别处理；健康HTTPS与混合片源不增加请求，不自动改选其他地址。独立新增15项JVM、完整45项JVM、lint和构建通过，修复提交 `2fb2e77`。修复后App SHA-256为 `2af5e7a174200a90d70f21f3b0808b58f73d27fc3d2631d2c0b999592793f3ae`，已保留数据安装；播放器和UI实现未改。
+
+主执行agent在最初App上实际打开VIP80632：进度推进，全屏显示1920×1040、峰值7.83Mbps。系统Home后平台暂停位置379879ms；返回应用仍为379879ms、speed0，没有自动恢复。这次实际Home补充了先前仅ActivityScenario的证据。截图中的硬件视频层不可见，因此另做显式首帧和解码输出测试，不能据黑色截图判断电视黑屏。
+
+## 修复包定向真机复测
+
+- `V2AccountReadTest` 2项、`V2LivePlaybackTest` 1项、`V2PlayerUiTest` 4项、`V2RootJourneyUiTest` 3项、`V2AccountUiTest` 6项，共16/16通过，112.443秒。以上与原有用例重合，不能再加到51个独立用例上。
+- 新增 `V2VipDecodeTest -e liveLogin true`，独立1/1通过，15.451秒。读取保存会话但不写历史／收藏；使用真实VIP地址和与生产播放器一致的HTTP头，在PlayerView上验证Media3解码。首帧回调为true，格式1920×1040，实际位置0→4770ms，videoBuffers115、audioBuffers242。这证明媒体处理输出，不能代替扬声器听感、音画同步、4K或HDR。
+- VIP测试包SHA-256：`8dd48499c8b291ea71d33b4eca59cdec6c39fb3eaff029ef2a3b2adde16555c3`。App仍为上面的 `2af5e7a…`。日志 `post-guard-device-regression.log`、`independent-vip-decode.log` 和专用数字标签 `independent-vip-decode-values.log` 留本机。
+- 真实目录：确认“评分最高”显示4125部，从第一行依次导航到第五行“黑水”、第六行“亲密”，向上返回第五行。每行六列、自动追加、焦点绿框及完整标题／元信息在屏幕内。切排序后列表偶尔停在较深行，Down进入正文才回到首片，此项保留为待修现象，不宣称排序时自动复位通过。
+
+## 持续播放采样
+
+`scripts/chromecast-soak.py` 只读观察已开始播放的实际应用，不发送控制键、不读取凭据、不输出片源URL。保持非全屏控制栏可见，每30秒记录新UI层级中的实际播放时钟、平台状态、前台、PID、PSS和新应用崩溃计数；不是根据平台anchor外推播放时间。6秒短采样验证通过后，于2026-09-09 02:28 UTC启动30分钟观察，日志 `.tools/chromecast-v2/soak-30min.jsonl`，结果未完成前不标通过。
+
+```sh
+source scripts/android-env.sh
+python3 scripts/chromecast-soak.py --adb "$ANDROID_HOME/platform-tools/adb" \
+  --serial "$ANDROID_SERIAL" --minutes 30 --interval 30 \
+  --output .tools/chromecast-v2/soak-next.jsonl
+```
+
+使用当前设备连接端口；输出文件必须不存在，以保留历次证据。该采样不证明每帧连续、零短暂缓冲或实际声音正常。
 
 ## 截图
 
