@@ -1,14 +1,14 @@
-# v0.2 release candidate 验证
+# v0.2 首个候选包验证（历史记录）
 
 2026-09-08（America/Los_Angeles）。**原签名 release APK 已构建并完成专用 Android TV 模拟器覆盖升级和实际界面冒烟验证；尚待远端发布。** 本报告不代表 GitHub tag、Release 或资产已经上传。
 
-后续修订：本报告记录的冻结候选包不含最新Top 2模糊背景；该修订见[背景效果验证](v2/MINI_BACKDROP.md)。发布前需要构建并验证包含后续修改的新候选包，本报告的哈希和截图仍只对应下列旧候选包。
+本报告记录的候选包不含后续Top 2模糊背景，已完整归档至 `artifacts/releases/candidates/v0.2-before-backdrop-001c33cf/`。包含后续修订的新候选包见[最终发布包验证](RELEASE_V0_2_FINAL.md)；本报告的哈希、截图和升级结果仅对应归档包。
 
 ## 安装包与构建
 
 | 项目 | 本轮结果 |
 | --- | --- |
-| 安装包 | `artifacts/releases/v0.2/olevod-tv-v0.2.apk` |
+| 安装包 | `artifacts/releases/candidates/v0.2-before-backdrop-001c33cf/olevod-tv-v0.2.apk` |
 | Package / version | `com.olevod.tv` / `0.2.0` / versionCode `2` |
 | APK SHA-256 | `001c33cf20736cbe675347e1e5a13c56d2eb6eca72796fcf504432723a8d89ab` |
 | 原 release 证书 SHA-256 | `db2d039b4b6685678c5c71e397df7146d5e3bac038d438d55f496db1cdd060f4` |

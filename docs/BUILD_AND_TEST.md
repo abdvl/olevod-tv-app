@@ -73,7 +73,7 @@ The supplied Chromecast has been paired, installed and logged in on the device. 
 
 ## 发布构建与签名
 
-当前待发布版本名0.2.0、versionCode2，对应 GitHub tag `v0.2`；沿用v0.1发布证书。`release` 关闭调试入口，使用本机私有发布证书；debug 继续使用开发证书。各次发布结果分别记录在 `verification/RELEASE_V0_1.md` 和 `verification/RELEASE_V0_2.md`。
+当前待发布版本名0.2.0、versionCode2，对应 GitHub tag `v0.2`；沿用v0.1发布证书。`release` 关闭调试入口，使用本机私有发布证书；debug 继续使用开发证书。各次发布结果分别记录在 `verification/RELEASE_V0_1.md` 和 `verification/RELEASE_V0_2_FINAL.md`；`RELEASE_V0_2.md`仅保留第一个候选包的历史验证。
 
 首次为自己的分发创建签名（只执行一次）：
 
