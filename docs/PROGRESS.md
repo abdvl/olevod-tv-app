@@ -2,7 +2,7 @@
 
 最近更新：2026-09-08（本地时间）。
 
-**最新恢复入口：UI v2 开发分支 `codex/ui-v2`，见本文末 S60 与 [发布包验证](verification/RELEASE_V0_2.md)。** VIP全部年份、每榜2+10／五列和海报评分角标已完成；0.2.0开发包已保留数据安装到Chromecast，最终限定8/8通过。原签名v0.2候选包及模拟器覆盖升级验收完成，13张真实截图已归档。用户已授权推送和发布；Mac锁定及CLI凭据暂阻止GitHub写入。旧版步骤保留在下方，不应从 S01 重做。
+**最新恢复入口：UI v2 开发分支 `codex/ui-v2`，见本文末 S61 与 [Top 2背景效果](verification/v2/MINI_BACKDROP.md)。** 模糊海报背景修订已保留数据装到Chromecast，3张真机截图已核对；独立模拟器回归6/6、JVM47/47及lint通过。S60的冻结签名候选包不含本修订，正式发布前需更新候选包。用户已授权推送和发布；此前Mac锁定及CLI凭据阻止GitHub写入，本轮未重复尝试。旧版步骤保留在下方，不应从 S01 重做。
 
 ## 当前检查点
 
@@ -555,3 +555,11 @@
 - Generalized release script requires an explicit matching tag and refuses an existing version directory. Syntax and negative cases (existingv0.2, mismatchedv0.3, invalid tag) passed. Do not rerun against or overwrite the frozenv0.2 candidate.
 - Push/publication remain pending: CUA reports the Mac locked and unable to auto-unlock; CLI dry-run push has no usable HTTPS password, and no SSH agent identity was available. No remote tag, Release or asset upload has occurred. Last verified remote main is141878d22acf3563e24eb27627bf0cd79aa6c495; last remote release tag isv0.1. No new publication approval is required.
 - Resume after Mac unlock: re-check Git state and remote heads, use the existing logged-in GitHub Desktop/browser to push the completed branch and fast-forwardmain if still applicable. Update pending-publication text, tagv0.2 at the final release commit, publish `docs/releases/v0.2.md` with the frozen APK and `SHA256SUMS.txt`, then verify remote commit/tag, public release and asset checksum. Do not claim publication from a filled UI form alone.
+
+### S61 - soften Top 2 cards with blurred poster backgrounds
+
+- Each featured card now layers a stretched blurred copy of its poster behind the unchanged complete foreground artwork. A horizontal dark gradient reaches72% before the text area and82% at the right, with additional bottom shading; text and rating stay sharp. Card size, single click/focus identity, border and2+10 ranking are unchanged. Missing images keep the Panel fallback.
+- Coil requests a small software image and caches a160×80 output after two radius8 horizontal/vertical blur passes. Input bitmaps are read-only, never recycled; cacheKey contains all transformation parameters. No API31-only blur or per-frame/focus image processing. Independent review prompted the stronger text-area shading; worst-white small-text contrast calculation is4.96:1, not a screen measurement.
+- Final App4dfa722ab77682a8a7c5b5224b29c6c8ef18df219154ff090368e612f62a7fde; Test66a0024d8c236b5729a1ec1a14568f6d8c7c8da49fe24843761e47d87a93ef3b. Build/JVM47/lint0errors21warnings pass. Independent emulator Mini3+Root3 pass6/6 in24.26s, no failures/skips. No new permanent tests added for this visual change.
+- Installed-r on Chromecast, pulled installedAPK to confirm the final hash, and reviewed3 real public catalog screenshots (movie/series/VIP). Actual white-heavyVIP artwork remains readable and focused card border remains visible. Returned from an unintended player navigation to the originalVIP first card; intermediate/loading images excluded. No uninstall or data clearing. Full evidence and limitations in `verification/v2/MINI_BACKDROP.md`.
+- Updated design specification/README and saved this resumable checkpoint. Existing S60 releasecandidate001c33cf is now behind this visual revision; preserve its files and historical report, but prepare and verify a new signed candidate before publication. No push/tag/release in this visual revision turn.

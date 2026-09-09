@@ -1,6 +1,6 @@
 # 安装欧乐 TV v0.2
 
-当前为发布候选版，GitHub v0.2 下载入口待发布后生效；已公开版本仍是 [v0.1](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.1)。本地候选包位于 `artifacts/releases/v0.2/`。
+当前为发布候选版，GitHub v0.2 下载入口待发布后生效；已公开版本仍是 [v0.1](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.1)。本地已有候选包位于 `artifacts/releases/v0.2/`，尚未包含最新Top 2模糊背景修订；该修订当前在开发包，正式签名包需更新后才发布。
 
 ## 设备要求与下载
 

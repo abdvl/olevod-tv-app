@@ -4,7 +4,7 @@
 
 这是个人项目，与欧乐影院官方没有隶属关系。影片、海报、分类与播放源来自网站；官方标识的素材来源见 [品牌资产说明](docs/BRAND_ASSETS.md)。
 
-**v0.2 发布候选包已构建，等待推送与 GitHub 发布。** [新版发布说明](docs/releases/v0.2.md) · [安装与覆盖升级教程](docs/INSTALL.md) · [发布包验证](docs/verification/RELEASE_V0_2.md)
+**v0.2 发布准备中。** 已构建候选包并验证覆盖升级；最新Top 2模糊背景修订目前位于开发包，正式签名包待更新后推送和发布。[新版发布说明](docs/releases/v0.2.md) · [安装与覆盖升级教程](docs/INSTALL.md) · [已有候选包验证](docs/verification/RELEASE_V0_2.md)
 
 当前已公开的旧版仍是 **[v0.1 APK](https://github.com/abdvl/olevod-tv-app/releases/download/v0.1/olevod-tv-v0.1.apk)** · [v0.1 发布页](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.1)。
 
@@ -46,10 +46,13 @@
 - VIP小首页使用全部年份的片库榜单，标题明确显示“全部年份”；普通分类仍使用当年人气／评分榜。
 - 每个榜单最多12部：顶部2部突出，下方10部按五列两行排列，不重复前两部。
 - 评分放在海报右上角的半透明深色角标中，片名使用下方全宽；竖图继续完整等比显示。
+- Top 2卡片使用本片海报铺满的模糊背景和深色渐变，前景海报保持完整，标题和元信息清晰显示；实际截图见[背景效果验证](docs/verification/v2/MINI_BACKDROP.md)。
 
 [独立复测记录](docs/verification/v2/V02_UI_FOLLOWUP.md) · [本轮三张Chromecast实际截图](docs/verification/v2/followup-screenshots/README.md)
 
 ![VIP全部年份小首页与评分角标](docs/verification/v2/followup-screenshots/vip-home.png)
+
+![Top 2模糊海报背景的Chromecast实际效果](docs/verification/v2/mini-backdrop-screenshots/series.png)
 
 ## v0.1 功能与界面
 

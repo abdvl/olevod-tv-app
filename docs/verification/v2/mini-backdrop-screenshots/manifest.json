@@ -1,0 +1,38 @@
+{
+  "device": "Google Chromecast with Google TV / sabrina / Android14 / 1920x1080",
+  "app_sha256": "4dfa722ab77682a8a7c5b5224b29c6c8ef18df219154ff090368e612f62a7fde",
+  "capture_method": "adb exec-out screencap -p; original unedited PNG bytes; XML captured separately where available",
+  "scope": "Real catalog data on installed debug build; no private account/history screenshots included",
+  "screenshots": [
+    {
+      "file": "movie.png",
+      "caption": "电影榜：深色与明黄色海报生成不同模糊底色。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 1967447,
+      "sha256": "dc54d811cc9ab06dd8d67d7738dc0e083f032e2c286a66197bc36928c08b384f",
+      "source": ".tools/chromecast-v2/mini-backdrop-movie.png",
+      "source_xml_sha256": null
+    },
+    {
+      "file": "series.png",
+      "caption": "电视剧榜：第一张卡聚焦，绿色边框完整。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 1772562,
+      "sha256": "1fc15a09d4c48f46cdbf63ad6dd79cfed4f182899faa9bf7d1354c673b5c0021",
+      "source": ".tools/chromecast-v2/mini-backdrop-movie-focused.png",
+      "source_xml_sha256": "b57702754d64fd0829363f53da8fec93a8d817626df7db2103b77c39a8f74e05"
+    },
+    {
+      "file": "vip.png",
+      "caption": "VIP榜：浅色海报背景，首卡返回焦点及完整前景。",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 2132206,
+      "sha256": "6d58bd7e90f0249badf55f781b27191f2fa8c2647faca5759b4df638188077dc",
+      "source": ".tools/chromecast-v2/mini-backdrop-vip-top.png",
+      "source_xml_sha256": "85debd24008eecc906e686493b4def99ad6cac6fa4de36bbe2cf6926bcbfc223"
+    }
+  ]
+}
