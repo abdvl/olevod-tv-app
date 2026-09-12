@@ -1,11 +1,11 @@
 # 安装欧乐 TV v0.3
 
-v0.3包含新版界面、Top 2模糊海报背景与搜索重试修复。[前往下载 APK](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.3)。
+v0.3 新增设置页与 GitHub 应用更新，保留 v0.2 的界面与播放功能。[前往下载 APK](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.3)。
 
 ## 设备要求与下载
 
 - Android TV / Google TV，Android 8.0（API26）及以上；需要互联网连接和遥控器。
-- 已实测 Google Chromecast with Google TV（sabrina / Android14）。其他设备的解码、遥控器和系统安装界面可能不同。
+- 既有 v0.2 功能曾在 Google Chromecast with Google TV（sabrina / Android14）验证；v0.3 正式包本次仅完成 Android TV 模拟器覆盖升级验证。其他设备的解码、遥控器和系统安装界面可能不同。
 - APK 是独立安装包，不是手机应用，也不是 Play 商店版本。
 - 在 [v0.3 Release](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.3) 的 Assets 下载 **olevod-tv-v0.3.apk**。不要把 GitHub 自动生成的 Source code 压缩包当成安装包。
 - 同页的 `SHA256SUMS.txt` 可用于检查下载是否完整。
