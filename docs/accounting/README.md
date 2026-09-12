@@ -1,6 +1,6 @@
 # Token history：统计方法与历史明细
 
-[返回产品介绍](../../README.md#token-history) · [v0.2 实现与验证明细](ui-v2-implementation-2026-09-08.md)
+[返回产品介绍](../../README.md#token-history) · [v0.3 与 v0.2 发布收尾明细](v0.3-2026-09-12.md) · [v0.2 实现与验证明细](ui-v2-implementation-2026-09-08.md)
 
 ## v0.1 统计口径与费用明细
 
