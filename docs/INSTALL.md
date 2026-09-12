@@ -1,28 +1,30 @@
-# 安装欧乐 TV v0.2
+# 安装欧乐 TV v0.3
 
-v0.2包含新版界面、Top 2模糊海报背景与搜索重试修复。[前往下载 APK](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.2)。
+v0.3包含新版界面、Top 2模糊海报背景与搜索重试修复。[前往下载 APK](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.3)。
 
 ## 设备要求与下载
 
 - Android TV / Google TV，Android 8.0（API26）及以上；需要互联网连接和遥控器。
 - 已实测 Google Chromecast with Google TV（sabrina / Android14）。其他设备的解码、遥控器和系统安装界面可能不同。
 - APK 是独立安装包，不是手机应用，也不是 Play 商店版本。
-- 在 [v0.2 Release](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.2) 的 Assets 下载 **olevod-tv-v0.2.apk**。不要把 GitHub 自动生成的 Source code 压缩包当成安装包。
+- 在 [v0.3 Release](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.3) 的 Assets 下载 **olevod-tv-v0.3.apk**。不要把 GitHub 自动生成的 Source code 压缩包当成安装包。
 - 同页的 `SHA256SUMS.txt` 可用于检查下载是否完整。
 
-## 从 v0.1 正式版升级
+## 从 v0.1 / v0.2 正式版升级
 
-v0.2 使用与 v0.1 相同的发布证书，版本为0.2.0、versionCode2。已安装原 v0.1 正式 APK 时，直接打开新版 APK 选择更新，或使用下方 `adb install -r`；无需卸载。升级会保留本机数据，登录会话是否仍有效取决于网站。
+v0.3 使用与 v0.1 / v0.2 相同的发布证书，版本为 0.3.0、versionCode 3。已安装原正式 APK 时，直接打开新版 APK 选择更新，或使用下方 `adb install -r`；无需卸载。升级会保留本机数据，登录会话是否仍有效取决于网站。
+
+v0.1 / v0.2 尚无应用内更新入口，需要先手动安装 v0.3。从 v0.3 起可通过头像左侧齿轮 → 检查新版本下载后续正式版本，首次需要允许欧乐 TV 安装未知来源应用，最后在系统安装页确认。
 
 ## 从已有开发调试版迁移
 
-v0.2 使用专用发布证书；此前 Android Studio/ADB 安装的 debug 版使用开发证书。两者包名相同（`com.olevod.tv`），签名不同，**不能直接覆盖安装**。Android更新包需要兼容的签名身份，见 [应用签名说明](https://developer.android.com/studio/publish/app-signing)。
+v0.3 使用专用发布证书；此前 Android Studio/ADB 安装的 debug 版使用开发证书。两者包名相同（`com.olevod.tv`），签名不同，**不能直接覆盖安装**。Android更新包需要兼容的签名身份，见 [应用签名说明](https://developer.android.com/studio/publish/app-signing)。
 
 如果设备已有开发调试版：
 
 1. 先确认需要保留的观看记录已出现在网站云历史中。应用没有本机历史/保存密码的导出功能；尚未同步的本机记录不能保证迁移。
 2. 在电视的设置 → 应用 → 欧乐 TV 中卸载旧版。**这会清除本机历史、搜索记录、登录状态以及记住的账号密码。** 不会因此删除网站账号或网站已有的云历史/收藏。
-3. 按下面任一种方法安装 v0.2，再在电视上登录。
+3. 按下面任一种方法安装 v0.3，再在电视上登录。
 
 已安装同一发布签名的版本时，后续同签名、更高版本可覆盖升级；通常会保留应用数据。维护者必须保留原发布私钥并递增 versionCode。
 
@@ -51,7 +53,7 @@ adb pair TV_IP:PAIR_PORT
 # 按提示输入电视本次显示的配对码
 adb connect TV_IP:DEBUG_PORT
 adb devices
-adb -s TV_IP:DEBUG_PORT install -r olevod-tv-v0.2.apk
+adb -s TV_IP:DEBUG_PORT install -r olevod-tv-v0.3.apk
 adb -s TV_IP:DEBUG_PORT shell am start -n com.olevod.tv/.MainActivity
 ```
 
@@ -89,10 +91,10 @@ shasum -a 256 -c SHA256SUMS.txt
 Windows PowerShell 可执行下列命令，并与 `SHA256SUMS.txt` 中的值对比：
 
 ```powershell
-Get-FileHash .\olevod-tv-v0.2.apk -Algorithm SHA256
+Get-FileHash .\olevod-tv-v0.3.apk -Algorithm SHA256
 ```
 
-v0.2 发布证书 SHA-256：
+v0.3 发布证书 SHA-256：
 
 ```text
 db2d039b4b6685678c5c71e397df7146d5e3bac038d438d55f496db1cdd060f4
