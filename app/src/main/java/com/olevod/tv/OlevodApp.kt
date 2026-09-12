@@ -150,6 +150,7 @@ fun OlevodApp(initialScreen: String = "home", preview: Boolean = false, vm: AppV
                 "history" -> if(!preview) HistoryScreen(vm,openMovie,browse={openCatalog("history","电影")},initialCloud=historyCloudReturn){historyCloudReturn=true;requestLogin(null)}
                     else HistoryPreviewFixture(vm,movies,openMovie,{openCatalog("history","电影")}){requestLogin(null)}
                 "favorites" -> if(!preview) FavoritesScreen(vm,openMovie,{requestLogin(null)},browse={openCatalog("favorites","电影")})else FavoritesPreviewFixture(vm,movies,openMovie){openCatalog("favorites","电影")}
+                "settings" -> SettingsScreen()
                 "account" -> if(preview) AccountPreviewFixture(vm) else AccountScreen(vm,onLoggedIn={
                     loginFavorite?.let{desired->if(loginOrigin=="player")vm.pendingFavorite=PendingFavorite(selected.id,desired,vm.sessions.accountKey)}
                     screen=loginOrigin?:"account";loginOrigin=null;loginFavorite=null

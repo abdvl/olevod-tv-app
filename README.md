@@ -4,18 +4,26 @@
 
 这是个人项目，与欧乐影院官方没有隶属关系。影片、海报、分类与播放源来自网站；官方标识的素材来源见 [品牌资产说明](docs/BRAND_ASSETS.md)。
 
-**[v0.2 已发布](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.2)。** [下载 APK](https://github.com/abdvl/olevod-tv-app/releases/download/v0.2/olevod-tv-v0.2.apk) · [新版发布说明](docs/releases/v0.2.md) · [安装与覆盖升级教程](docs/INSTALL.md) · [正式包验证与公开下载校验](docs/verification/RELEASE_V0_2_FINAL.md)
+**[v0.3](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.3)。** [下载 APK](https://github.com/abdvl/olevod-tv-app/releases/download/v0.3/olevod-tv-v0.3.apk) · [新版发布说明](docs/releases/v0.3.md) · [安装与覆盖升级教程](docs/INSTALL.md) · [正式包验证](docs/verification/RELEASE_V0_3.md)
 
-历史版本：[v0.1 APK](https://github.com/abdvl/olevod-tv-app/releases/download/v0.1/olevod-tv-v0.1.apk) · [v0.1 发布页](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.1)。
+历史版本：[v0.2 发布页](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.2) · [v0.1 APK](https://github.com/abdvl/olevod-tv-app/releases/download/v0.1/olevod-tv-v0.1.apk) · [v0.1 发布页](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.1)。
 
-| 项目 | v0.2 正式版 |
+| 项目 | v0.3 正式版 |
 | --- | --- |
-| 应用版本 | 0.2.0 · versionCode 2 |
-| 安装包 | `olevod-tv-v0.2.apk`，14,341,714 字节（约14.3 MB） |
+| 应用版本 | 0.3.0 · versionCode 3 |
+| 安装包 | `olevod-tv-v0.3.apk`，14,375,134 字节（约14.4 MB） |
 | 设备要求 | Android TV / Google TV，Android 8.0（API 26）及以上 |
 | 操作方式 | 遥控器方向键、确认键、返回键；支持系统输入法 |
 | 包名 | `com.olevod.tv` |
 | 发布形式 | 独立签名 APK，侧载安装；不通过 Play 商店发布 |
+
+## v0.3 新增设置与更新
+
+头像左侧新增齿轮入口。打开设置可检查 GitHub 最新正式版本，发现新版后下载并校验 APK，再由 Android 系统确认安装。设置采用分组和独立选项组件，后续可扩展播放器偏好。
+
+**v0.1 / v0.2 用户先手动下载本次 APK 覆盖升级；应用内更新从 v0.3 开始提供。**
+
+![设置与检查新版本](docs/verification/settings/settings-v0.3.png)
 
 ## v0.2 界面与功能
 
@@ -118,11 +126,11 @@
 
 ## 安装与升级
 
-1. 从 [v0.2 Release](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.2) 下载 `olevod-tv-v0.2.apk`，可用同页的 `SHA256SUMS.txt` 校验文件。
+1. 从 [v0.3 Release](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.3) 下载 `olevod-tv-v0.3.apk`，可用同页的 `SHA256SUMS.txt` 校验文件。
 2. 将 APK 传到电视，用文件管理器打开；按系统提示允许该文件管理器安装未知应用。也可使用电脑通过 ADB 安装。
 3. 安装后在电视应用列表中打开“欧乐 TV”。需要会员内容或网站历史/收藏时，在账号页登录。
 
-**已经安装 v0.1 正式版，可直接覆盖更新，无需卸载。** v0.2沿用原发布证书，覆盖升级会保留本机数据；登录会话是否仍有效取决于网站。
+**已经安装 v0.1 / v0.2 正式版，可直接覆盖更新，无需卸载。** v0.3 沿用原发布证书，覆盖升级会保留本机数据；登录会话是否仍有效取决于网站。
 
 **已经安装 Android Studio / ADB 开发调试版的用户请先阅读迁移说明。** 正式版使用独立发布证书，与此前 debug 版签名不同，同包名无法直接覆盖安装。卸载开发版会删除本机历史、搜索记录、登录状态和记住的账号密码；网站已有的云历史和收藏不受影响。应用目前没有本机数据导出功能，应先确认需要保留的记录已同步。
 
@@ -187,6 +195,9 @@ source scripts/android-env.sh
 | [v0.1](https://github.com/abdvl/olevod-tv-app/releases/tag/v0.1) | GPT-6 Astra（主任务 + 2 个子 agent） | 157,985,669 | 155,394,048 | 413,809 | 158,399,478 | **$202.00** |
 | [UI v2 设计定稿](docs/design-v2/DESIGN_SPEC.md)（仅设计阶段） | GPT-6 Astra（主任务 + 设计审阅 agent） | 15,226,201 | 14,570,880 | 92,184 | 15,318,385 | **$25.73**，图片生成额外费用未统计 |
 | [v0.2 实现、测试与迭代](docs/accounting/ui-v2-implementation-2026-09-08.md)（设计定稿后的工作阶段） | GPT-6 Astra（主任务 + 相关工作子 agent） | 188,690,723 | 184,708,864 | 661,464 | 189,352,187 | **$257.60** |
+| [v0.3 设置与更新](docs/releases/v0.3.md) | GPT-6 Astra | 未统计 | 未统计 | 未统计 | 未统计 | 未统计 |
+
+v0.3 用量尚未核算，包含本次设置实现、验证及发布工作，不计入下方历史合计。
 
 以上已统计阶段合计 **363,070,050 token，约 $485.33**。v0.2这一行截至洛杉矶时间 **2026-09-08 21:18:45.833**，涵盖设计定稿后的实现、测试与界面迭代；该截止点之后的 README 重写、重新截图、统计、最终发布及本次修订工作尚未计入。
 

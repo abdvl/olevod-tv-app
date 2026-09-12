@@ -63,6 +63,7 @@ internal val navigationItems = listOf(
     NavigationItem("short", "短剧"), NavigationItem("browse", "目录", Icons.Rounded.GridView),
     NavigationItem("history", "历史", Icons.Rounded.History),
     NavigationItem("favorites", "收藏", Icons.Rounded.BookmarkBorder),
+    NavigationItem("settings", "设置", Icons.Rounded.Settings),
     NavigationItem("account", "账号", Icons.Rounded.AccountCircle)
 )
 internal fun categoryLabel(id: Int) = when(id) { 1 -> "电影"; 2 -> "电视剧"; 3 -> "综艺"; 4 -> "动漫"; 6 -> "VIP"; 14 -> "短剧"; else -> "影片" }
@@ -88,7 +89,7 @@ internal fun UnifiedHeader(selected: String, requesters: Map<String, FocusReques
         .padding(start=TvDesign.safeHorizontal,end=TvDesign.safeHorizontal,top=12.dp).testTag("unified-header")) {
     val availableWidth=maxWidth
     Row(Modifier.horizontalScroll(rememberScrollState())) {
-    Row(Modifier.width(maxOf(availableWidth, 785.dp * androidx.compose.ui.platform.LocalDensity.current.fontScale + 40.dp)).height(52.dp),
+    Row(Modifier.width(maxOf(availableWidth, 785.dp * androidx.compose.ui.platform.LocalDensity.current.fontScale + 84.dp)).height(52.dp),
         verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
         OfficialOlevodLogo(Modifier.width(120.dp).aspectRatio(364f / 64f))
         Spacer(Modifier.width(8.dp))
@@ -96,7 +97,7 @@ internal fun UnifiedHeader(selected: String, requesters: Map<String, FocusReques
             if(item.key=="browse")Spacer(Modifier.weight(1f))
             val interaction = remember { MutableInteractionSource() }
             val focused by interaction.collectIsFocusedAsState()
-            val width by animateDpAsState(if(item.icon != null && focused) 76.dp else 36.dp, tween(120), label="header-width")
+            val width by animateDpAsState(if(item.icon != null && focused && item.key != "settings") 76.dp else 36.dp, tween(120), label="header-width")
             val tint = if(focused) Bg else if(selected == item.key) Green else White
             Column(Modifier.then(if(item.icon != null) Modifier.width(width) else Modifier)
                 .height(40.dp).focusRequester(requesters.getValue(item.key))
@@ -115,7 +116,7 @@ internal fun UnifiedHeader(selected: String, requesters: Map<String, FocusReques
                 horizontalAlignment=Alignment.CenterHorizontally, verticalArrangement=Arrangement.Center) {
                 Row(verticalAlignment=Alignment.CenterVertically, horizontalArrangement=Arrangement.spacedBy(5.dp)) {
                     item.icon?.let { Icon(it,null,Modifier.size(22.dp),tint=tint) }
-                    if(item.icon == null || focused) Text(item.label,color=tint,fontSize=16.sp,lineHeight=22.sp,fontWeight=FontWeight.Medium,maxLines=1)
+                    if(item.icon == null || (focused && item.key != "settings")) Text(item.label,color=tint,fontSize=16.sp,lineHeight=22.sp,fontWeight=FontWeight.Medium,maxLines=1)
                 }
                 Box(Modifier.padding(top=2.dp).width(20.dp).height(2.dp)
                     .background(if(selected==item.key && !focused)Green else Color.Transparent))
