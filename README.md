@@ -33,7 +33,7 @@
 
 [全部新版界面截图](docs/screenshots/v0.2/README.md)
 
-![欧乐 TV 首页：继续观看与精选推荐](docs/screenshots/v0.2/home.png)
+![欧乐 TV 首页：最近播放卡片展开，显示观看进度与继续播放按钮](docs/verification/v2/screenshots/home-recent-focused.png)
 
 ### 上次看到哪里，打开就知道
 
